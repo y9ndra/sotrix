@@ -3,17 +3,17 @@
 A modern social media application.
 
 ## Structure
-- `/backend`: Node.js Express server with TypeScript
-- `/frontend`: React client with TypeScript and Vite
+- `/server`: Node.js Express server with TypeScript
+- `/client`: React client with TypeScript and Vite
 
 ## Getting Started
 
-### Backend
-1. `cd backend`
+### Server
+1. `cd server`
 2. `npm install`
 3. `npm run dev`
 
-### Frontend
-1. `cd frontend`
+### Client
+1. `cd client`
 2. `npm install`
 3. `npm run dev`
