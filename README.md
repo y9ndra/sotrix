@@ -4,7 +4,7 @@ A modern social media application.
 
 ## Structure
 - `/server`: Node.js Express server with TypeScript
-- `/client`: React client with TypeScript and Vite
+- `/web`: React web app with TypeScript and Vite
 
 ## Getting Started
 
@@ -13,7 +13,7 @@ A modern social media application.
 2. `npm install`
 3. `npm run dev`
 
-### Client
-1. `cd client`
+### Web
+1. `cd web`
 2. `npm install`
 3. `npm run dev`
