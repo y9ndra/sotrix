@@ -1,7 +1,13 @@
 import { Request, Response } from "express";
 import User from "../models/user";
 
-export const signup = async (req: Request, res: Response): Promise<any> => {
+interface SignupBody {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export const signup = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<any> => {
   try {
     const { username, email, password } = req.body;
 
@@ -18,14 +24,11 @@ export const signup = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ message: "User with this email or username already exists" });
     }
 
-    // Create and save new user
-    const newUser = new User({
+    const newUser = await User.create({
       username,
       email,
       password,
     });
-
-    await newUser.save();
 
     return res.status(201).json({
       message: "User registered successfully",
