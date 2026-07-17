@@ -1,25 +1,41 @@
-import {useState} from "react";
+import React, {useState} from "react";
 import Button from "../components/Button"
 import Input from "../components/Input"
+import { signup } from "../api/auth.api";
 function Signup(){
 
       const [username, setUsername] = useState("");
       const [password, setPassword] = useState("");
+      const [confirmPassword, setConfirmPassword] = useState("");
       const [email, setEmail] = useState("");
-      function handleusernamechange(event){
+      function handleusernamechange(event: React.ChangeEvent<HTMLInputElement>){
         setUsername(event.target.value);
         console.log(username);
       }
-      function handlepasswordchange(event){
+      function handlepasswordchange(event: React.ChangeEvent<HTMLInputElement>){
         setPassword(event.target.value);
         console.log(password);
       }
-      function handleemailchange(event){
+      function handleconfirmpasswordchange(event: React.ChangeEvent<HTMLInputElement>){
+        setConfirmPassword(event.target.value);
+        console.log(confirmPassword);
+      }
+      function handleemailchange(event: React.ChangeEvent<HTMLInputElement>){
         setEmail(event.target.value);
         console.log(email);
       }
-      function handleclick(){
-        console.log("button clicked",username,password);
+      async function handlesignup(){
+        if (password !== confirmPassword) {
+          console.log("Passwords do not match");
+          return;
+        }
+        try{
+          const response = await signup(username,email,password);
+          console.log(response);
+        }
+        catch(error){
+          console.log(error);
+        }
       }
 
     return(
@@ -45,11 +61,11 @@ function Signup(){
         <Input 
           label="Confirm Password"
           placeholder="Confirm your password"
-           value={password}
-           onChange={handlepasswordchange}/>
+           value={confirmPassword}
+           onChange={handleconfirmpasswordchange}/>
 
         <Button name="Signup"
-        onClick={handleclick}/>
+        onClick={handlesignup}/>
         </>
     )
 }

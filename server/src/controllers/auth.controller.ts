@@ -10,6 +10,11 @@ interface SignupBody {
   password: string;
 }
 
+interface LoginBody {
+  identifier: string;
+  password: string;
+}
+
 const signup = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<any> => {
   try {
     const { username, email, password } = req.body;
@@ -48,23 +53,23 @@ const signup = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<
   }
 };
 
-const login = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<any> => {
+const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<any> => {
   try {
-    const { username, email, password } = req.body;
+    const { identifier, password } = req.body;
 
-    if (!username || !email || !password) {
+    if (!identifier || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     const user = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: identifier }, { username: identifier }],
     });
 
     if (!user) {
       return res.status(400).json({ message: "User with this email or username does not exist" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password!);
 
     if (!isPasswordValid) {
       return res.status(400).json({ message: "Invalid password" });
@@ -79,7 +84,7 @@ const login = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<a
     return res.status(200).json({
       success:true,
       message: "User logged in successfully",
-        token,
+      token,
     });
     
   } catch (error: any) {
@@ -87,4 +92,29 @@ const login = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<a
   }
 };
 
-export {signup,login};
+const getMe = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized: No user identifier in token" });
+    }
+
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message || "Internal server error" });
+  }
+};
+
+export { signup, login, getMe };

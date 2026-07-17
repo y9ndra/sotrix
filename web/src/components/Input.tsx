@@ -1,4 +1,13 @@
-function Input({ label, placeholder,value,onChange }) {
+import React from "react";
+
+interface InputProps {
+  label: string;
+  placeholder?: string;
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+function Input({ label, placeholder,value,onChange }: InputProps) {
   return (
     <div>
       <label>{label}</label>

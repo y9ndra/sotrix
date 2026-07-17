@@ -1,4 +1,9 @@
-const Button = ({name,onClick}) => {
+interface ButtonProps {
+  name: string;
+  onClick: () => void;
+}
+
+const Button = ({name,onClick}: ButtonProps) => {
     return (
         <>
             <button

@@ -1,4 +1,5 @@
-import { useState } from "react";   
+import { login } from "../api/auth.api"
+import React, { useState } from "react";   
 import Button from "../components/Button"
 import Input from "../components/Input"
 
@@ -7,14 +8,21 @@ function Login(){
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  function handleusernamechange(event){
+  function handleusernamechange(event: React.ChangeEvent<HTMLInputElement>){
     setUsername(event.target.value);
   }
-  function handlepasswordchange(event){
+  function handlepasswordchange(event: React.ChangeEvent<HTMLInputElement>){
     setPassword(event.target.value);
   }
-  function handleclick(){
-    console.log("button clicked",username,password);
+  async function handlelogin(){
+    try{
+
+      const response = await login(username,password);
+      console.log(response);
+    }
+    catch(error){
+      console.log(error);
+    }
   }
     return(
         <>
@@ -29,7 +37,7 @@ function Login(){
            value={password}
            onChange={handlepasswordchange}/>
         <Button name="Login" 
-        onClick={handleclick}/>
+        onClick={handlelogin}/>
         </>
     )
 }
