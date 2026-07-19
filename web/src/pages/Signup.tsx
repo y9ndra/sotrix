@@ -2,6 +2,7 @@ import React, {useState} from "react";
 import Button from "../components/Button"
 import Input from "../components/Input"
 import { signup } from "../api/auth.api";
+import { Link } from "react-router-dom";
 
 function Signup(){
       const [username, setUsername] = useState("");
@@ -84,7 +85,14 @@ function Signup(){
 
         <br />
         <Button name="Signup" onClick={handlesignup}/>
+        
+        <div style={{ marginTop: "15px" }}>
+          Already have an account? <Link to="/login">Log in</Link>
+        </div>
+        <div style={{ marginTop: "10px" }}>
+          <Link to="/">Back to Home</Link>
+        </div>
         </div>
     )
 }
-export default Signup
+export default Signup

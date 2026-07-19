@@ -2,6 +2,7 @@ import { login } from "../api/auth.api"
 import React, { useState } from "react";   
 import Button from "../components/Button"
 import Input from "../components/Input"
+import { Link } from "react-router-dom";
 
 function Login(){
   const [username, setUsername] = useState("");
@@ -54,7 +55,14 @@ function Login(){
           onChange={handlepasswordchange}/>
         <br />
         <Button name="Login" onClick={handlelogin}/>
+        
+        <div style={{ marginTop: "15px" }}>
+          Don't have an account? <Link to="/signup">Sign up</Link>
+        </div>
+        <div style={{ marginTop: "10px" }}>
+          <Link to="/">Back to Home</Link>
+        </div>
         </div>
     )
 }
-export default Login
+export default Login
