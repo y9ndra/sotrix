@@ -3,6 +3,17 @@ export interface User {
   email: string;
 }
 
+export interface LoginRequest {
+  identifier: string;
+  password: string;
+}
+
+export interface SignupRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
 export interface AuthResponse {
   success: boolean;
   message: string;

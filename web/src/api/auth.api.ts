@@ -1,12 +1,13 @@
 import api from "./axios";
+import type { LoginRequest, SignupRequest } from "../types/auth.types";
 
-const login = async (identifier: string, password: string) =>{
-  return api.post("/auth/login",{identifier,password});
+const login = async (data: LoginRequest) =>{
+  return api.post("/auth/login", data);
 }    
 
 
-const signup = async (username: string, email: string, password: string) =>{
-  return api.post("/auth/signup",{username,email,password});
+const signup = async (data: SignupRequest) =>{
+  return api.post("/auth/signup", data);
 }    
 
 

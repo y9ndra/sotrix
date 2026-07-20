@@ -31,7 +31,7 @@ function Login({ onLogin }: LoginProps){
     }
     setLoading(true);
     try{
-      const response = await login(username,password);
+      const response = await login({ identifier: username, password });
       console.log(response);
       if (response.data && response.data.token) {
         onLogin(response.data.token);
