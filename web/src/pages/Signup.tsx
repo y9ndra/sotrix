@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import Button from "../components/Button"
 import Input from "../components/Input"
 import { signup } from "../api/auth.api";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Signup(){
       const [username, setUsername] = useState("");
@@ -11,6 +11,7 @@ function Signup(){
       const [email, setEmail] = useState("");
       const [error, setError] = useState("");
       const [success, setSuccess] = useState("");
+      const navigate = useNavigate();
 
       function handleusernamechange(event: React.ChangeEvent<HTMLInputElement>){
         setUsername(event.target.value);
@@ -38,11 +39,12 @@ function Signup(){
         try{
           const response = await signup(username,email,password);
           console.log(response);
-          setSuccess("Signup successful! You can now log in.");
+          setSuccess("Signup successful! Redirecting to login...");
           setUsername("");
           setEmail("");
           setPassword("");
           setConfirmPassword("");
+          navigate("/login");
         }
         catch(err: any){
           console.error(err);
@@ -90,6 +92,21 @@ function Signup(){
           Already have an account? <Link to="/login">Log in</Link>
         </div>
         <div style={{ marginTop: "10px" }}>
+          <button 
+            onClick={() => navigate(-1)} 
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: '#0066cc', 
+              textDecoration: 'underline', 
+              cursor: 'pointer', 
+              font: 'inherit', 
+              padding: 0 
+            }}
+          >
+            Back
+          </button>
+          {" | "}
           <Link to="/">Back to Home</Link>
         </div>
         </div>

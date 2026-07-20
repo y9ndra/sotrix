@@ -10,4 +10,8 @@ const signup = async (username: string, email: string, password: string) =>{
 }    
 
 
-export {login , signup }
+const getMe = async () => {
+  return api.get("/auth/me");
+}
+
+export {login , signup, getMe }
