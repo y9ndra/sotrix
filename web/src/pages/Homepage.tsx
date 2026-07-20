@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
@@ -16,27 +16,26 @@ function Homepage({ token, onLogout }: HomepageProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (token) {
-      setLoading(true);
-      setError("");
-      getMe()
-        .then((response) => {
-          if (response.data && response.data.user) {
-            setUser(response.data.user);
-          }
-        })
-        .catch((err: any) => {
-          console.error("Error fetching profile", err);
-          setError("Failed to load user profile");
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      setUser(null);
+  const fetchProfile = async () => {
+    const jwtToken = localStorage.getItem("token");
+    if (!jwtToken) {
+      setError("No token found. Please log in first.");
+      return;
     }
-  }, [token]);
+    setLoading(true);
+    setError("");
+    try {
+      const response = await getMe();
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
+      }
+    } catch (err: any) {
+      console.error("Error fetching profile context", err);
+      setError("Failed to fetch profile");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -50,7 +49,26 @@ function Homepage({ token, onLogout }: HomepageProps) {
             <p>Email: {user.email}</p>
           </div>
         ) : (
-          !loading && <p>Please log in to access all features.</p>
+          !loading && (
+            <div>
+              <p>Please log in to access all features.</p>
+              {token && (
+                <button 
+                  onClick={fetchProfile} 
+                  style={{ 
+                    padding: "8px 16px", 
+                    backgroundColor: "#0066cc", 
+                    color: "#fff", 
+                    border: "none", 
+                    borderRadius: "4px", 
+                    cursor: "pointer" 
+                  }}
+                >
+                  Load Profile Info
+                </button>
+              )}
+            </div>
+          )
         )}
       </div>
       <Hero />

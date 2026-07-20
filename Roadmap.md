@@ -37,14 +37,16 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - Authentication middleware and path protection
 
 ### Day 7 [CURRENT]
-- React Forms and inputs
+- React Forms and validation
 - Axios client setup (request/response interceptors)
-- Connecting React to Express APIs
+- React Router configuration and Client-side navigation
+- Browser history control (`navigate(-1)` for back buttons)
 - Prop Drilling and state lifting (avoiding React Context until Day 25)
 
 ### Day 8 [UPCOMING]
-- React Router configuration and Client-side navigation
-- Browser history control (`navigate(-1)` for back buttons)
+- React `useEffect` hook & component mounting lifecycle
+- Fetching data automatically on component mount
+- Handling loading and error states simply
 - Basic frontend route access restrictions (based on local storage tokens)
 
 ### Day 9 [UPCOMING]
@@ -67,8 +69,8 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - Relational mapping in MongoDB for user metadata
 
 ### Day 12
-- React `useEffect` hook & component mounting lifecycle
-- Fetching data on component mount, handling loading and error states simply
+- User Profile Page Integration (Connecting profiles API to simple React views)
+- Form submission for profile changes
 
 ### Day 13
 - Post schema design and CRUD APIs
