@@ -30,24 +30,30 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - Authentication vs. Authorization
 - Password hashing (bcrypt)
 - Data validation and environment variables
+- JWT (JSON Web Tokens) structure & signature
+- Authentication middleware and path protection on the backend
 
-### Day 6 [COMPLETED]
-- JWT (JSON Web Tokens) structure
-- Access tokens, token storage mechanisms
-- Authentication middleware and path protection
 
-### Day 7 [CURRENT]
-- React Forms and validation
+### Day 6 [CURRENT]
+- Frontend ↔ Backend Integration
 - Axios client setup (request/response interceptors)
-- React Router configuration and Client-side navigation
-- Browser history control (`navigate(-1)` for back buttons)
-- Prop Drilling and state lifting (avoiding React Context until Day 25)
+- Type-safe API Contracts & Client-side API layer
+- Login & Signup components integration with backend
+- JWT Token Storage (localStorage)
+- Loading & Error states during form submission
+
+### Day 7 [UPCOMING]
+- React Router Configuration
+- Client-side navigation & history control
+- Protected Routes & Route Guards (frontend)
+- Logout flow & cleanup
 
 ### Day 8 [UPCOMING]
-- React `useEffect` hook & component mounting lifecycle
-- Fetching data automatically on component mount
-- Handling loading and error states simply
-- Basic frontend route access restrictions (based on local storage tokens)
+- React Lifecycle & `useEffect` hook
+- Fetching APIs automatically on component mount
+- Loading and Error UI patterns for data fetching
+- Fetching current user details (GET `/auth/me`), posts, and profile
+
 
 ### Day 9 [UPCOMING]
 - Refactoring backend to MVC (Model-View-Controller) structure

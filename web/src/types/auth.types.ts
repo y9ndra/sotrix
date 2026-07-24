@@ -1,4 +1,5 @@
 export interface User {
+  id: string;
   username: string;
   email: string;
 }
@@ -14,13 +15,21 @@ export interface SignupRequest {
   password: string;
 }
 
-export interface AuthResponse {
+export interface LoginResponse {
   success: boolean;
   message: string;
-  token?: string;
+  token: string;
+}
+
+export interface SignupResponse {
+  message: string;
+  user: User;
 }
 
 export interface UserResponse {
   success: boolean;
   user: User;
 }
+
+
+

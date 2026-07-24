@@ -5,6 +5,7 @@ import Features from "../components/Features";
 import Footer from "../components/Footer";
 import { getMe } from "../api/auth.api";
 import type { User } from "../types/auth.types";
+import { getToken } from "../services/token.service";
 
 interface HomepageProps {
   token: string | null;
@@ -17,7 +18,7 @@ function Homepage({ token, onLogout }: HomepageProps) {
   const [error, setError] = useState("");
 
   const fetchProfile = async () => {
-    const jwtToken = localStorage.getItem("token");
+    const jwtToken = getToken();
     if (!jwtToken) {
       setError("No token found. Please log in first.");
       return;

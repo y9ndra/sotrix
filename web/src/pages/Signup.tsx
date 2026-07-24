@@ -11,6 +11,7 @@ function Signup(){
       const [email, setEmail] = useState("");
       const [error, setError] = useState("");
       const [success, setSuccess] = useState("");
+      const [loading, setLoading] = useState(false);
       const navigate = useNavigate();
 
       function handleusernamechange(event: React.ChangeEvent<HTMLInputElement>){
@@ -36,6 +37,7 @@ function Signup(){
           setError("Passwords do not match");
           return;
         }
+        setLoading(true);
         try{
           const response = await signup({ username, email, password });
           console.log(response);
@@ -44,12 +46,17 @@ function Signup(){
           setEmail("");
           setPassword("");
           setConfirmPassword("");
-          navigate("/login");
+          setTimeout(() => {
+            navigate("/login");
+          }, 1500);
         }
         catch(err: any){
           console.error(err);
           const errMsg = err.response?.data?.message || err.message || "Failed to sign up";
           setError(errMsg);
+        }
+        finally {
+          setLoading(false);
         }
       }
 
@@ -86,7 +93,7 @@ function Signup(){
           onChange={handleconfirmpasswordchange}/>
 
         <br />
-        <Button name="Signup" onClick={handlesignup}/>
+        <Button name={loading ? "Signing up..." : "Signup"} onClick={handlesignup} disabled={loading}/>
         
         <div style={{ marginTop: "15px" }}>
           Already have an account? <Link to="/login">Log in</Link>

@@ -1,18 +1,19 @@
 import api from "./axios";
-import type { LoginRequest, SignupRequest } from "../types/auth.types";
+import type { LoginRequest, SignupRequest, LoginResponse, SignupResponse, UserResponse } from "../types/auth.types";
 
-const login = async (data: LoginRequest) =>{
-  return api.post("/auth/login", data);
-}    
+const login = async (data: LoginRequest) => {
+  return api.post<LoginResponse>("/auth/login", data);
+};
 
-
-const signup = async (data: SignupRequest) =>{
-  return api.post("/auth/signup", data);
-}    
-
+const signup = async (data: SignupRequest) => {
+  return api.post<SignupResponse>("/auth/signup", data);
+};
 
 const getMe = async () => {
-  return api.get("/auth/me");
-}
+  return api.get<UserResponse>("/auth/me");
+};
 
-export {login , signup, getMe }
+export { login, signup, getMe };
+
+
+
