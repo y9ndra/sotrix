@@ -34,7 +34,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - Authentication middleware and path protection on the backend
 
 
-### Day 6 [CURRENT]
+### Day 6 [COMPLETED]
 - Frontend ↔ Backend Integration
 - Axios client setup (request/response interceptors)
 - Type-safe API Contracts & Client-side API layer
@@ -42,7 +42,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - JWT Token Storage (localStorage)
 - Loading & Error states during form submission
 
-### Day 7 [UPCOMING]
+### Day 7 [CURRENT]
 - React Router Configuration
 - Client-side navigation & history control
 - Protected Routes & Route Guards (frontend)

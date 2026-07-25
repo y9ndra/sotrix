@@ -5,6 +5,7 @@ import Homepage from './pages/Homepage'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import { getToken, saveToken, removeToken } from './services/token.service'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   const [token, setToken] = useState<string | null>(getToken());
@@ -23,7 +24,14 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Homepage token={token} onLogout={logoutUser} />} />
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute isAuthenticated={!!token}>
+            <Homepage token={token} onLogout={logoutUser} />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="/login" element={<Login onLogin={loginUser} />} />
       <Route path="/signup" element={<Signup />} />
     </Routes>
