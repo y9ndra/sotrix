@@ -3,7 +3,7 @@ import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
 import Footer from "../components/Footer";
-import { getMe } from "../api/auth.api";
+import { getMe, getCurrentUser } from "../api/auth.api";
 import type { User } from "../types/auth.types";
 import { getToken } from "../services/token.service";
 
@@ -38,6 +38,15 @@ function Homepage({ token, onLogout }: HomepageProps) {
     }
   };
 
+  const handleGetUser = async () => {
+    try {
+      const response = await getCurrentUser();
+      console.log("Current user response:", response.data);
+    } catch (err: any) {
+      console.error("Error with getCurrentUser:", err);
+    }
+  };
+
   return (
     <div>
       <Navbar isAuthenticated={!!token} onLogout={onLogout} />
@@ -54,19 +63,34 @@ function Homepage({ token, onLogout }: HomepageProps) {
             <div>
               <p>Please log in to access all features.</p>
               {token && (
-                <button 
-                  onClick={fetchProfile} 
-                  style={{ 
-                    padding: "8px 16px", 
-                    backgroundColor: "#0066cc", 
-                    color: "#fff", 
-                    border: "none", 
-                    borderRadius: "4px", 
-                    cursor: "pointer" 
-                  }}
-                >
-                  Load Profile Info
-                </button>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginTop: "10px" }}>
+                  <button 
+                    onClick={fetchProfile} 
+                    style={{ 
+                      padding: "8px 16px", 
+                      backgroundColor: "#0066cc", 
+                      color: "#fff", 
+                      border: "none", 
+                      borderRadius: "4px", 
+                      cursor: "pointer" 
+                    }}
+                  >
+                    Load Profile Info
+                  </button>
+                  <button 
+                    onClick={handleGetUser} 
+                    style={{ 
+                      padding: "8px 16px", 
+                      backgroundColor: "#4caf50", 
+                      color: "#fff", 
+                      border: "none", 
+                      borderRadius: "4px", 
+                      cursor: "pointer" 
+                    }}
+                  >
+                    Get Current User
+                  </button>
+                </div>
               )}
             </div>
           )

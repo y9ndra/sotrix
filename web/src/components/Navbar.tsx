@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface NavbarProps {
   isAuthenticated: boolean;
@@ -6,13 +6,6 @@ interface NavbarProps {
 }
 
 function Navbar({ isAuthenticated, onLogout }: NavbarProps){
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        onLogout();
-        navigate('/login');
-    };
-
     return(
         <nav>
             <h1>Sotrix</h1>
@@ -26,7 +19,7 @@ function Navbar({ isAuthenticated, onLogout }: NavbarProps){
                 ) : (
                     <li>
                         <button 
-                            onClick={handleLogout} 
+                            onClick={onLogout} 
                             style={{ 
                                 background: 'none', 
                                 border: 'none', 

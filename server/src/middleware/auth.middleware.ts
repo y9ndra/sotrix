@@ -15,7 +15,7 @@ export const authenticate = (
 
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET!);
 
-        (req as any).user = decodedToken;
+        req.user = decodedToken as { id: string };
 
         next();
     } catch (error: any) {

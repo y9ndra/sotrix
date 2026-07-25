@@ -86,7 +86,7 @@ const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<an
       message: "User logged in successfully",
       token,
     });
-    
+
   } catch (error: any) {
     return res.status(500).json({ message: error.message || "Internal server error" });
   }
@@ -94,7 +94,7 @@ const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<an
 
 const getMe = async (req: Request, res: Response): Promise<any> => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized: No user identifier in token" });
     }

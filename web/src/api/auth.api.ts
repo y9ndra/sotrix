@@ -13,7 +13,11 @@ const getMe = async () => {
   return api.get<UserResponse>("/auth/me");
 };
 
-export { login, signup, getMe };
+const getCurrentUser = async () => {
+  return api.get<UserResponse>("/auth/me");
+};
+
+export { login, signup, getMe, getCurrentUser };
 
 
 
