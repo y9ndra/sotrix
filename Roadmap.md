@@ -42,13 +42,13 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - JWT Token Storage (localStorage)
 - Loading & Error states during form submission
 
-### Day 7 [CURRENT]
+### Day 7 [COMPLETED]
 - React Router Configuration
 - Client-side navigation & history control
 - Protected Routes & Route Guards (frontend)
 - Logout flow & cleanup
 
-### Day 8 [UPCOMING]
+### Day 8 [CURRENT]
 - React Lifecycle & `useEffect` hook
 - Fetching APIs automatically on component mount
 - Loading and Error UI patterns for data fetching
