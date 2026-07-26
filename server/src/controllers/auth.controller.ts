@@ -65,7 +65,7 @@ export const login = async (
         error.message.includes("does not exist") ||
         error.message === "Invalid password"
       ) {
-        return res.status(400).json({ message: error.message });
+        return res.status(401).json({ message: error.message });
       }
     }
     return next(error);
