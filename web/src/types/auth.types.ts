@@ -1,8 +1,6 @@
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-}
+import type { User } from "./user.types";
+
+export type { User };
 
 export interface LoginRequest {
   identifier: string;
