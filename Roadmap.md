@@ -55,12 +55,12 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - Fetching current user details (GET `/auth/me`), posts, and profile
 
 
-### Day 9 [CURRENT]
+### Day 9 [COMPLETED]
 - Refactoring backend to MVC (Model-View-Controller) structure
 - Separate controllers, route handlers, database services, and config files
 - Clean code principles
 
-### Day 10 [UPCOMING]
+### Day 10 [CURRENT]
 - Automated API testing concepts
 - Comprehensive README documentation
 - Git branching strategies & milestone review

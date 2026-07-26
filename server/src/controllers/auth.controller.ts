@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
 
 interface SignupBody {
@@ -14,7 +14,8 @@ interface LoginBody {
 
 export const signup = async (
   req: Request<{}, {}, SignupBody>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<any> => {
   try {
     const { username, email, password } = req.body;
@@ -29,21 +30,20 @@ export const signup = async (
       message: "User registered successfully",
       user: result.user,
     });
-  } catch (error: any) {
-    const message = error.message || "Internal server error";
-    
-    // Map specific business validation errors to 400 status code
-    if (message.includes("already exists")) {
-      return res.status(400).json({ message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes("already exists")) {
+        return res.status(400).json({ message: error.message });
+      }
     }
-    
-    return res.status(500).json({ message });
+    return next(error);
   }
 };
 
 export const login = async (
   req: Request<{}, {}, LoginBody>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<any> => {
   try {
     const { identifier, password } = req.body;
@@ -59,23 +59,30 @@ export const login = async (
       message: "User logged in successfully",
       token: result.token,
     });
-  } catch (error: any) {
-    const message = error.message || "Internal server error";
-
-    // Map login credentials errors to 400 status code
-    if (message.includes("does not exist") || message === "Invalid password") {
-      return res.status(400).json({ message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (
+        error.message.includes("does not exist") ||
+        error.message === "Invalid password"
+      ) {
+        return res.status(400).json({ message: error.message });
+      }
     }
-
-    return res.status(500).json({ message });
+    return next(error);
   }
 };
 
-export const getMe = async (req: Request, res: Response): Promise<any> => {
+export const getMe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized: No user identifier in token" });
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: No user identifier in token" });
     }
 
     const userProfile = await authService.getUserProfile(userId);
@@ -84,13 +91,12 @@ export const getMe = async (req: Request, res: Response): Promise<any> => {
       success: true,
       user: userProfile,
     });
-  } catch (error: any) {
-    const message = error.message || "Internal server error";
-
-    if (message === "User not found") {
-      return res.status(404).json({ message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === "User not found") {
+        return res.status(404).json({ message: error.message });
+      }
     }
-
-    return res.status(500).json({ message });
+    return next(error);
   }
 };
