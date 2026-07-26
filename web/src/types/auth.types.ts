@@ -1,7 +1,5 @@
 import type { User } from "./user.types";
 
-export type { User };
-
 export interface LoginRequest {
   identifier: string;
   password: string;

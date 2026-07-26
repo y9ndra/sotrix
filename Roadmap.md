@@ -48,14 +48,14 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - Protected Routes & Route Guards (frontend)
 - Logout flow & cleanup
 
-### Day 8 [CURRENT]
+### Day 8 [COMPLETED]
 - React Lifecycle & `useEffect` hook
 - Fetching APIs automatically on component mount
 - Loading and Error UI patterns for data fetching
 - Fetching current user details (GET `/auth/me`), posts, and profile
 
 
-### Day 9 [UPCOMING]
+### Day 9 [CURRENT]
 - Refactoring backend to MVC (Model-View-Controller) structure
 - Separate controllers, route handlers, database services, and config files
 - Clean code principles
