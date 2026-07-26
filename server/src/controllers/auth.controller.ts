@@ -1,21 +1,21 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
-import User from "../models/user";
-
+import * as authService from "../services/auth.service";
 
 interface SignupBody {
-  username: string;
-  email: string;
-  password: string;
+  username?: string;
+  email?: string;
+  password?: string;
 }
 
 interface LoginBody {
-  identifier: string;
-  password: string;
+  identifier?: string;
+  password?: string;
 }
 
-const signup = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<any> => {
+export const signup = async (
+  req: Request<{}, {}, SignupBody>,
+  res: Response
+): Promise<any> => {
   try {
     const { username, email, password } = req.body;
 
@@ -23,37 +23,28 @@ const signup = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<
       return res.status(400).json({ message: "All fields are required" });
     }
 
-
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
-    });
-
-    if (existingUser) {
-      return res.status(400).json({ message: "User with this email or username already exists" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({
-      username,
-      email,
-      password: hashedPassword,
-    });
+    const result = await authService.signupUser({ username, email, password });
 
     return res.status(201).json({
       message: "User registered successfully",
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-      },
+      user: result.user,
     });
   } catch (error: any) {
-    return res.status(500).json({ message: error.message || "Internal server error" });
+    const message = error.message || "Internal server error";
+    
+    // Map specific business validation errors to 400 status code
+    if (message.includes("already exists")) {
+      return res.status(400).json({ message });
+    }
+    
+    return res.status(500).json({ message });
   }
 };
 
-const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<any> => {
+export const login = async (
+  req: Request<{}, {}, LoginBody>,
+  res: Response
+): Promise<any> => {
   try {
     const { identifier, password } = req.body;
 
@@ -61,60 +52,45 @@ const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<an
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const user = await User.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: "User with this email or username does not exist" });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password!);
-
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: "Invalid password" });
-    }
-    
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET!,
-      { expiresIn: "1h" }
-    );
+    const result = await authService.loginUser({ identifier, password });
 
     return res.status(200).json({
-      success:true,
+      success: true,
       message: "User logged in successfully",
-      token,
+      token: result.token,
     });
-
   } catch (error: any) {
-    return res.status(500).json({ message: error.message || "Internal server error" });
+    const message = error.message || "Internal server error";
+
+    // Map login credentials errors to 400 status code
+    if (message.includes("does not exist") || message === "Invalid password") {
+      return res.status(400).json({ message });
+    }
+
+    return res.status(500).json({ message });
   }
 };
 
-const getMe = async (req: Request, res: Response): Promise<any> => {
+export const getMe = async (req: Request, res: Response): Promise<any> => {
   try {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized: No user identifier in token" });
     }
 
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const userProfile = await authService.getUserProfile(userId);
 
     return res.status(200).json({
       success: true,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-      },
+      user: userProfile,
     });
   } catch (error: any) {
-    return res.status(500).json({ message: error.message || "Internal server error" });
+    const message = error.message || "Internal server error";
+
+    if (message === "User not found") {
+      return res.status(404).json({ message });
+    }
+
+    return res.status(500).json({ message });
   }
 };
-
-export { signup, login, getMe };
