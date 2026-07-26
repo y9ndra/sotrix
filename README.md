@@ -308,15 +308,3 @@ Fetches profile details of the currently authenticated user session.
 5. Server `authenticate` middleware intercepts requests, decodes token, populates `req.user = { id }`, and permits access to protected controllers.
 
 ---
-
-## 🚀 Future Features
-
-- **Phase 2 — Social Engine**: Posts CRUD, Likes, Comments system, Follow/Unfollow user feeds.
-- **Phase 3 — High-Performance Backend**: Redis response caching, BullMQ background queues, Rate limiting & Zod request validation.
-- **Phase 4 — Real-Time Infrastructure**: WebSockets / Socket.IO real-time notification engine & chat.
-- **Phase 5 — DevOps & Cloud**: Docker containerization, NGINX reverse proxy, CI/CD pipelines, and PostgreSQL migration.
-
----
-
-## 📄 License
-ISC
