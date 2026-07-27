@@ -70,15 +70,15 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ## 🟡 PHASE 2 — Social Engine API (Days 11–20)
 *Focus is on writing clean, REST-compliant endpoints on the backend and consuming them with simple React views.*
 
-### Day 11
+### Day 11 [COMPLETED]
 - User profiles API (Fetching, editing details)
 - Relational mapping in MongoDB for user metadata
 
-### Day 12
+### Day 12 [COMPLETED]
 - User Profile Page Integration (Connecting profiles API to simple React views)
 - Form submission for profile changes
 
-### Day 13
+### Day 13 [CURRENT]
 - Post schema design and CRUD APIs
 - Storing posts with user references
 
