@@ -2,9 +2,16 @@ import { Request, Response, NextFunction } from "express";
 import {
   createPost as createPostService,
   getPosts as getPostsService,
+  getPostById as getPostByIdService,
+  updatePost as updatePostService,
+  deletePost as deletePostService,
 } from "../services/post.service";
 
 interface CreatePostBody {
+  content?: string;
+}
+
+interface UpdatePostBody {
   content?: string;
 }
 
@@ -52,6 +59,97 @@ export const getPosts = async (
       data: posts,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getPostById = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { id } = req.params;
+
+    const post = await getPostByIdService(id);
+
+    return res.status(200).json({
+      success: true,
+      data: post,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Post not found") {
+      return res.status(404).json({ message: error.message });
+    }
+    next(error);
+  }
+};
+
+export const updatePost = async (
+  req: Request<{ id: string }, {}, UpdatePostBody>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: "Content is required" });
+    }
+
+    const updatedPost = await updatePostService(id, userId, content.trim());
+
+    return res.status(200).json({
+      success: true,
+      data: updatedPost,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === "Post not found") {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes("not authorized")) {
+        return res.status(403).json({ message: error.message });
+      }
+    }
+    next(error);
+  }
+};
+
+export const deletePost = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    await deletePostService(id, userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Post deleted successfully",
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === "Post not found") {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes("not authorized")) {
+        return res.status(403).json({ message: error.message });
+      }
+    }
     next(error);
   }
 };
