@@ -16,3 +16,11 @@ export const createPost = async ({
 
   return post;
 };
+
+export const getPosts = async (): Promise<IPost[]> => {
+  const posts = await Post.find()
+    .populate("author", "name username email")
+    .sort({ createdAt: -1 });
+
+  return posts;
+};

@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { createPost as createPostService } from "../services/post.service";
+import {
+  createPost as createPostService,
+  getPosts as getPostsService,
+} from "../services/post.service";
 
 interface CreatePostBody {
   content?: string;
@@ -30,6 +33,23 @@ export const createPost = async (
     return res.status(201).json({
       success: true,
       data: post,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPosts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const posts = await getPostsService();
+
+    return res.status(200).json({
+      success: true,
+      data: posts,
     });
   } catch (error) {
     next(error);
