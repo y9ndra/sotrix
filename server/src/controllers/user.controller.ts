@@ -50,6 +50,9 @@ export const updateMyProfile = async (
       if (error.message === "Invalid User ID format") {
         return res.status(400).json({ message: error.message });
       }
+      if (error.message === "Username is already taken") {
+        return res.status(400).json({ message: error.message });
+      }
       if (error.message === "User not found") {
         return res.status(404).json({ message: error.message });
       }

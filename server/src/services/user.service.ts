@@ -29,6 +29,16 @@ export const updateUserProfile = async (
     throw new Error("Invalid User ID format");
   }
 
+  if (updates.username) {
+    const existingUser = await User.findOne({
+      username: updates.username,
+      _id: { $ne: userId },
+    });
+    if (existingUser) {
+      throw new Error("Username is already taken");
+    }
+  }
+
   const user = await User.findByIdAndUpdate(userId, updates, {
     new: true,
     runValidators: true,

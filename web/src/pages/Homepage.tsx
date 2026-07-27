@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
@@ -114,7 +115,7 @@ function Homepage({ token, onLogout }: HomepageProps) {
             }}>
               {user.username.charAt(0).toUpperCase()}
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <h3 style={{ margin: "0 0 4px 0", color: "#111827", fontSize: "20px", fontWeight: 700 }}>
                 Welcome back, <span style={{ color: "#4f46e5" }}>{user.username}</span>!
               </h3>
@@ -125,6 +126,23 @@ function Homepage({ token, onLogout }: HomepageProps) {
                 {user.email}
               </p>
             </div>
+            {(user.id || user._id) && (
+              <Link
+                to={`/profile/${user.id || user._id}`}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  backgroundColor: "#4f46e5",
+                  color: "#ffffff",
+                  textDecoration: "none",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap"
+                }}
+              >
+                View Profile
+              </Link>
+            )}
           </div>
         )}
 

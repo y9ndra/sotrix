@@ -4,6 +4,7 @@ import './App.css'
 import Homepage from './pages/Homepage'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import Profile from './pages/Profile'
 import { getToken, saveToken, removeToken } from './services/token.service'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -34,6 +35,7 @@ function App() {
       />
       <Route path="/login" element={<Login onLogin={loginUser} />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/profile/:id" element={<Profile />} />
     </Routes>
   )
 }
