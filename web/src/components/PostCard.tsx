@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { Post } from "../types/post";
+import CommentList from "./CommentList";
+import { getCurrentUserId } from "../services/token.service";
 
 interface PostCardProps {
   post: Post;
@@ -13,6 +15,9 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
   const [editContent, setEditContent] = useState(post.content);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showComments, setShowComments] = useState(false);
+
+  const currentUserId = getCurrentUserId();
 
   const handleSaveEdit = async () => {
     if (!onEdit || !editContent.trim()) return;
@@ -148,9 +153,35 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
         <p style={{ color: "#dc2626", fontSize: "12px", margin: "4px 0" }}>{error}</p>
       )}
 
-      <small style={{ color: "#9ca3af", fontSize: "12px" }}>
-        {new Date(post.createdAt).toLocaleString()}
-      </small>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
+        <small style={{ color: "#9ca3af", fontSize: "12px" }}>
+          {new Date(post.createdAt).toLocaleString()}
+        </small>
+        <button
+          onClick={() => setShowComments(!showComments)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            background: "none",
+            border: "none",
+            color: showComments ? "#4f46e5" : "#6b7280",
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: "4px 8px",
+            borderRadius: "6px",
+            backgroundColor: showComments ? "#e0e7ff" : "transparent",
+            transition: "all 0.2s ease",
+          }}
+        >
+          💬 {showComments ? "Hide Comments" : "Comments"}
+        </button>
+      </div>
+
+      {showComments && (
+        <CommentList postId={post._id} currentUserId={currentUserId} />
+      )}
     </article>
   );
 };

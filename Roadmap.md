@@ -78,15 +78,15 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - User Profile Page Integration (Connecting profiles API to simple React views)
 - Form submission for profile changes
 
-### Day 13 [CURRENT]
+### Day 13 [COMPLETED]
 - Post schema design and CRUD APIs
 - Storing posts with user references
 
-### Day 14
+### Day 14 [COMPLETED]
 - Feed generation API
 - Cursor-based vs. offset-based pagination concepts
 
-### Day 15
+### Day 15 [CURRENT]
 - Comments system: schema design, nested paths, and relational APIs
 
 ### Day 16
