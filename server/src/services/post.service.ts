@@ -1,8 +1,17 @@
 import Post, { IPost } from "../models/post.model";
+import { decodeCursor, encodeCursor } from "../utils/cursor";
 
 interface CreatePostInput {
   content: string;
   author: string;
+}
+
+export interface PaginatedPostsResult {
+  data: IPost[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
 }
 
 export const createPost = async ({
@@ -17,12 +26,59 @@ export const createPost = async ({
   return post;
 };
 
-export const getPosts = async (): Promise<IPost[]> => {
-  const posts = await Post.find()
-    .populate("author", "name username email")
-    .sort({ createdAt: -1 });
+export const getPosts = async (
+  limit: number = 10,
+  cursor?: string
+): Promise<PaginatedPostsResult> => {
+  const query: any = {};
 
-  return posts;
+  if (cursor) {
+    const decoded = decodeCursor(cursor);
+    if (decoded) {
+      const cursorDate = new Date(decoded.createdAt);
+      query.$or = [
+        {
+          createdAt: {
+            $lt: cursorDate,
+          },
+        },
+        {
+          createdAt: cursorDate,
+          _id: {
+            $lt: decoded.id,
+          },
+        },
+      ];
+    }
+  }
+
+  const posts = await Post.find(query)
+    .populate("author", "name username email")
+    .sort({
+      createdAt: -1,
+      _id: -1,
+    })
+    .limit(limit + 1);
+
+  const hasMore = posts.length > limit;
+  const data = posts.slice(0, limit);
+
+  let nextCursor: string | null = null;
+  if (hasMore && data.length > 0) {
+    const lastPost = data[data.length - 1];
+    nextCursor = encodeCursor({
+      createdAt: (lastPost.createdAt as Date).toISOString(),
+      id: lastPost._id.toString(),
+    });
+  }
+
+  return {
+    data,
+    pagination: {
+      hasMore,
+      nextCursor,
+    },
+  };
 };
 
 export const getPostById = async (postId: string): Promise<IPost> => {

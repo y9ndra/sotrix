@@ -52,11 +52,18 @@ export const getPosts = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const posts = await getPostsService();
+    const limit = Math.min(
+      Math.max(Number(req.query.limit) || 10, 1),
+      50
+    );
+    const cursor =
+      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+
+    const result = await getPostsService(limit, cursor);
 
     return res.status(200).json({
       success: true,
-      data: posts,
+      ...result,
     });
   } catch (error) {
     next(error);
