@@ -17,9 +17,12 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
     throw new Error("Password is required");
   }
 
+  const normalizedUsername = username.trim().toLowerCase();
+  const normalizedEmail = email.trim().toLowerCase();
+
   // Check if username or email already exists
   const existingUser = await User.findOne({
-    $or: [{ email }, { username }],
+    $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
   });
 
   if (existingUser) {
@@ -29,8 +32,8 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const newUser = await User.create({
-    username,
-    email,
+    username: normalizedUsername,
+    email: normalizedEmail,
     password: hashedPassword,
   });
 
@@ -50,8 +53,10 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
     throw new Error("Password is required");
   }
 
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+
   const user = await User.findOne({
-    $or: [{ email: identifier }, { username: identifier }],
+    $or: [{ email: normalizedIdentifier }, { username: normalizedIdentifier }],
   });
 
   if (!user) {

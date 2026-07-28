@@ -29,9 +29,11 @@ export const updateUserProfile = async (
     throw new Error("Invalid User ID format");
   }
 
-  if (updates.username) {
+  const sanitizedUpdates = { ...updates };
+  if (sanitizedUpdates.username) {
+    sanitizedUpdates.username = sanitizedUpdates.username.trim().toLowerCase();
     const existingUser = await User.findOne({
-      username: updates.username,
+      username: sanitizedUpdates.username,
       _id: { $ne: userId },
     });
     if (existingUser) {
@@ -39,7 +41,7 @@ export const updateUserProfile = async (
     }
   }
 
-  const user = await User.findByIdAndUpdate(userId, updates, {
+  const user = await User.findByIdAndUpdate(userId, sanitizedUpdates, {
     new: true,
     runValidators: true,
   }).select("-password");
