@@ -13,6 +13,7 @@ interface PostCardProps {
 const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
+  const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
@@ -33,9 +34,8 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
     }
   };
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!onDelete) return;
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
     try {
       setLoading(true);
       setError(null);
@@ -43,6 +43,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to delete post");
       setLoading(false);
+      setIsDeletingConfirm(false);
     }
   };
 
@@ -76,35 +77,74 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
         </div>
 
         {isOwner && (
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              style={{
-                padding: "4px 10px",
-                fontSize: "12px",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                backgroundColor: "#f3f4f6",
-                cursor: "pointer",
-              }}
-            >
-              {isEditing ? "Cancel" : "Edit"}
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={loading}
-              style={{
-                padding: "4px 10px",
-                fontSize: "12px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#fef2f2",
-                color: "#dc2626",
-                cursor: "pointer",
-              }}
-            >
-              Delete
-            </button>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            {isDeletingConfirm ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "12px", color: "#dc2626", fontWeight: 500 }}>Delete post?</span>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={loading}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: "12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "#dc2626",
+                    color: "#ffffff",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  {loading ? "..." : "Yes"}
+                </button>
+                <button
+                  onClick={() => setIsDeletingConfirm(false)}
+                  disabled={loading}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: "12px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    backgroundColor: "#ffffff",
+                    color: "#374151",
+                    cursor: "pointer",
+                  }}
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: "12px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    backgroundColor: "#f3f4f6",
+                    cursor: "pointer",
+                  }}
+                >
+                  {isEditing ? "Cancel" : "Edit"}
+                </button>
+                <button
+                  onClick={() => setIsDeletingConfirm(true)}
+                  disabled={loading}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: "12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "#fef2f2",
+                    color: "#dc2626",
+                    cursor: "pointer",
+                  }}
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

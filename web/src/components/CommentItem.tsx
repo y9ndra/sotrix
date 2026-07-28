@@ -11,6 +11,7 @@ interface CommentItemProps {
 const CommentItem = ({ comment, currentUserId, onUpdateComment, onDeleteComment }: CommentItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
+  const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +31,7 @@ const CommentItem = ({ comment, currentUserId, onUpdateComment, onDeleteComment 
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+  const handleConfirmDelete = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -39,6 +39,7 @@ const CommentItem = ({ comment, currentUserId, onUpdateComment, onDeleteComment 
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to delete comment");
       setLoading(false);
+      setIsDeletingConfirm(false);
     }
   };
 
@@ -59,36 +60,75 @@ const CommentItem = ({ comment, currentUserId, onUpdateComment, onDeleteComment 
           </span>
         </span>
         {isOwner && (
-          <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              style={{
-                fontSize: "11px",
-                padding: "2px 6px",
-                border: "none",
-                background: "none",
-                color: "#4f46e5",
-                cursor: "pointer",
-                fontWeight: 500,
-              }}
-            >
-              {isEditing ? "Cancel" : "Edit"}
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={loading}
-              style={{
-                fontSize: "11px",
-                padding: "2px 6px",
-                border: "none",
-                background: "none",
-                color: "#dc2626",
-                cursor: "pointer",
-                fontWeight: 500,
-              }}
-            >
-              Delete
-            </button>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            {isDeletingConfirm ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "11px", color: "#dc2626", fontWeight: 500 }}>Confirm delete?</span>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={loading}
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    border: "none",
+                    backgroundColor: "#dc2626",
+                    color: "#ffffff",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  {loading ? "..." : "Yes"}
+                </button>
+                <button
+                  onClick={() => setIsDeletingConfirm(false)}
+                  disabled={loading}
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    border: "1px solid #d1d5db",
+                    backgroundColor: "#ffffff",
+                    color: "#374151",
+                    cursor: "pointer",
+                  }}
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 6px",
+                    border: "none",
+                    background: "none",
+                    color: "#4f46e5",
+                    cursor: "pointer",
+                    fontWeight: 500,
+                  }}
+                >
+                  {isEditing ? "Cancel" : "Edit"}
+                </button>
+                <button
+                  onClick={() => setIsDeletingConfirm(true)}
+                  disabled={loading}
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 6px",
+                    border: "none",
+                    background: "none",
+                    color: "#dc2626",
+                    cursor: "pointer",
+                    fontWeight: 500,
+                  }}
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -131,6 +171,10 @@ const CommentItem = ({ comment, currentUserId, onUpdateComment, onDeleteComment 
         <p style={{ margin: "4px 0", fontSize: "13px", color: "#374151" }}>
           {comment.content}
         </p>
+      )}
+
+      {error && !isEditing && (
+        <p style={{ color: "#dc2626", fontSize: "11px", margin: "4px 0 0 0" }}>{error}</p>
       )}
 
       <small style={{ color: "#9ca3af", fontSize: "11px" }}>
