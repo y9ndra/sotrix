@@ -23,6 +23,8 @@ export const createPost = async ({
     author,
   });
 
+  await post.populate("author", "name username email");
+
   return post;
 };
 
@@ -91,6 +93,62 @@ export const getPostById = async (postId: string): Promise<IPost> => {
   return post;
 };
 
+export const getMyPosts = async (
+  userId: string,
+  limit: number = 10,
+  cursor?: string
+): Promise<PaginatedPostsResult> => {
+  const query: any = { author: userId };
+
+  if (cursor) {
+    const decoded = decodeCursor(cursor);
+    if (decoded) {
+      const cursorDate = new Date(decoded.createdAt);
+      query.$or = [
+        {
+          createdAt: {
+            $lt: cursorDate,
+          },
+        },
+        {
+          createdAt: cursorDate,
+          _id: {
+            $lt: decoded.id,
+          },
+        },
+      ];
+    }
+  }
+
+  const posts = await Post.find(query)
+    .populate("author", "name username email")
+    .sort({
+      createdAt: -1,
+      _id: -1,
+    })
+    .limit(limit + 1);
+
+  const hasMore = posts.length > limit;
+  const data = posts.slice(0, limit);
+
+  let nextCursor: string | null = null;
+  if (hasMore && data.length > 0) {
+    const lastPost = data[data.length - 1];
+    nextCursor = encodeCursor({
+      createdAt: (lastPost.createdAt as Date).toISOString(),
+      id: lastPost._id.toString(),
+    });
+  }
+
+  return {
+    data,
+    pagination: {
+      hasMore,
+      nextCursor,
+    },
+  };
+};
+
 export const updatePost = async (
   postId: string,
   userId: string,
@@ -108,6 +166,7 @@ export const updatePost = async (
 
   post.content = content;
   await post.save();
+  await post.populate("author", "name username email");
 
   return post;
 };

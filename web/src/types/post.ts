@@ -20,3 +20,8 @@ export interface PostsResponse {
     nextCursor: string | null;
   };
 }
+
+export interface CreatePostResponse {
+  success: boolean;
+  data: Post;
+}

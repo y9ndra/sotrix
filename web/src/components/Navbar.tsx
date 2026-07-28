@@ -18,21 +18,24 @@ function Navbar({ isAuthenticated, onLogout }: NavbarProps){
                         <li><Link to="/signup">Signup</Link></li>
                     </>
                 ) : (
-                    <li>
-                        <button 
-                            onClick={onLogout} 
-                            style={{ 
-                                background: 'none', 
-                                border: 'none', 
-                                color: 'inherit', 
-                                cursor: 'pointer', 
-                                font: 'inherit', 
-                                padding: 0 
-                            }}
-                        >
-                            Logout
-                        </button>
-                    </li>
+                    <>
+                        <li><Link to="/my-posts">My Posts</Link></li>
+                        <li>
+                            <button 
+                                onClick={onLogout} 
+                                style={{ 
+                                    background: 'none', 
+                                    border: 'none', 
+                                    color: 'inherit', 
+                                    cursor: 'pointer', 
+                                    font: 'inherit', 
+                                    padding: 0 
+                                }}
+                            >
+                                Logout
+                            </button>
+                        </li>
+                    </>
                 )}
                 <li>About</li>
                 <li>Contact</li>

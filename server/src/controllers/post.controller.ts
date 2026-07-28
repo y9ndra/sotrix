@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   createPost as createPostService,
   getPosts as getPostsService,
+  getMyPosts as getMyPostsService,
   getPostById as getPostByIdService,
   updatePost as updatePostService,
   deletePost as deletePostService,
@@ -60,6 +61,35 @@ export const getPosts = async (
       typeof req.query.cursor === "string" ? req.query.cursor : undefined;
 
     const result = await getPostsService(limit, cursor);
+
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyPosts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const limit = Math.min(
+      Math.max(Number(req.query.limit) || 10, 1),
+      50
+    );
+    const cursor =
+      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+
+    const result = await getMyPostsService(userId, limit, cursor);
 
     return res.status(200).json({
       success: true,

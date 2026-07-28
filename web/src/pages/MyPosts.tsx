@@ -1,40 +1,42 @@
 import { useState, useEffect } from "react";
-import { getPosts } from "../services/post.service";
+import { getMyPosts, updatePost, deletePost } from "../services/post.service";
 import type { Post } from "../types/post";
 import PostCard from "../components/PostCard";
+import CreatePost from "../components/CreatePost";
 import Navbar from "../components/Navbar";
 
-interface FeedProps {
+interface MyPostsProps {
   isAuthenticated?: boolean;
   onLogout?: () => void;
 }
 
-const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
+const MyPosts = ({ isAuthenticated = true, onLogout = () => {} }: MyPostsProps) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const fetchPosts = async () => {
+  const fetchMyPosts = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await getPosts();
+      const response = await getMyPosts();
 
       setPosts(response.data);
       setNextCursor(response.pagination.nextCursor);
       setHasMore(response.pagination.hasMore);
     } catch (err) {
-      setError("Failed to load posts");
+      setError("Failed to load your posts");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPosts();
+    fetchMyPosts();
   }, []);
 
   const loadMorePosts = async () => {
@@ -46,7 +48,7 @@ const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
       setLoading(true);
       setError(null);
 
-      const response = await getPosts(nextCursor);
+      const response = await getMyPosts(nextCursor);
 
       setPosts((previousPosts) => [
         ...previousPosts,
@@ -61,15 +63,58 @@ const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
     }
   };
 
+  const handlePostCreated = (newPost: Post) => {
+    setPosts((previousPosts) => [newPost, ...previousPosts]);
+    setShowCreateForm(false);
+  };
+
+  const handleEditPost = async (postId: string, newContent: string) => {
+    const updatedResponse = await updatePost(postId, newContent);
+    setPosts((previousPosts) =>
+      previousPosts.map((p) => (p._id === postId ? updatedResponse.data : p))
+    );
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    await deletePost(postId);
+    setPosts((previousPosts) => previousPosts.filter((p) => p._id !== postId));
+  };
+
   return (
     <div>
       <Navbar isAuthenticated={isAuthenticated} onLogout={onLogout} />
 
       <div
-        className="feed-container"
+        className="my-posts-container"
         style={{ maxWidth: "600px", margin: "20px auto", padding: "16px" }}
       >
-        <h2 style={{ marginBottom: "20px", color: "#111827" }}>Feed</h2>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <h2 style={{ margin: 0, color: "#111827" }}>My Posts</h2>
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: showCreateForm ? "#e5e7eb" : "#4f46e5",
+              color: showCreateForm ? "#374151" : "#ffffff",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            {showCreateForm ? "Cancel" : "+ Create Post"}
+          </button>
+        </div>
+
+        {showCreateForm && <CreatePost onPostCreated={handlePostCreated} />}
 
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
@@ -78,13 +123,19 @@ const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
           style={{ display: "flex", flexDirection: "column", gap: "16px" }}
         >
           {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
+            <PostCard
+              key={post._id}
+              post={post}
+              isOwner={true}
+              onEdit={handleEditPost}
+              onDelete={handleDeletePost}
+            />
           ))}
         </div>
 
         {posts.length === 0 && !loading && !error && (
           <p style={{ color: "#6b7280", textAlign: "center", marginTop: "20px" }}>
-            No posts found in the feed.
+            You haven't created any posts yet.
           </p>
         )}
 
@@ -115,4 +166,4 @@ const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
   );
 };
 
-export default Feed;
+export default MyPosts;

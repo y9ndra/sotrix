@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/authenticate";
 import {
   createPost,
   getPosts,
+  getMyPosts,
   getPostById,
   updatePost,
   deletePost,
@@ -12,6 +13,9 @@ const router = Router();
 
 // Create post (Authenticated)
 router.post("/", authenticate, createPost);
+
+// Get authenticated user's posts (Authenticated)
+router.get("/me", authenticate, getMyPosts);
 
 // Get all posts (Public)
 router.get("/", getPosts);
