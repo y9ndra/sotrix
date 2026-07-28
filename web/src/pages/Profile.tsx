@@ -358,7 +358,7 @@ const Profile = () => {
                         {user.bio}
                       </p>
                     ) : (
-                      <p style={{ fontSize: "14px", color: "#9ca3af", italic: "true", marginTop: "12px" }}>
+                      <p style={{ fontSize: "14px", color: "#9ca3af", fontStyle: "italic", marginTop: "12px" }}>
                         No bio provided yet.
                       </p>
                     )}

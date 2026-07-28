@@ -11,6 +11,7 @@ function Navbar({ isAuthenticated, onLogout }: NavbarProps){
             <h1>Sotrix</h1>
             <ul>
                 <li><Link to="/">Home</Link></li>
+                <li><Link to="/feed">Feed</Link></li>
                 {!isAuthenticated ? (
                     <>
                         <li><Link to="/login">Login</Link></li>
