@@ -5,6 +5,6 @@ import { authenticate } from "../middleware/authenticate";
 const router = Router();
 
 router.patch("/me", authenticate, updateMyProfile);
-router.get("/:id", getUserProfile);
+router.get("/:id", authenticate, getUserProfile);
 
 export default router;

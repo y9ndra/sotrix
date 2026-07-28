@@ -35,7 +35,14 @@ function App() {
           </ProtectedRoute>
         } 
       />
-      <Route path="/feed" element={<Feed isAuthenticated={!!token} onLogout={logoutUser} />} />
+      <Route 
+        path="/feed" 
+        element={
+          <ProtectedRoute isAuthenticated={!!token}>
+            <Feed isAuthenticated={!!token} onLogout={logoutUser} />
+          </ProtectedRoute>
+        } 
+      />
       <Route 
         path="/my-posts" 
         element={
@@ -46,7 +53,14 @@ function App() {
       />
       <Route path="/login" element={<Login onLogin={loginUser} />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/profile/:id" element={<Profile />} />
+      <Route 
+        path="/profile/:id" 
+        element={
+          <ProtectedRoute isAuthenticated={!!token}>
+            <Profile isAuthenticated={!!token} onLogout={logoutUser} />
+          </ProtectedRoute>
+        } 
+      />
     </Routes>
   )
 }

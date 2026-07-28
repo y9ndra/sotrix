@@ -17,11 +17,11 @@ router.post("/", authenticate, createPost);
 // Get authenticated user's posts (Authenticated)
 router.get("/me", authenticate, getMyPosts);
 
-// Get all posts (Public)
-router.get("/", getPosts);
+// Get all posts (Authenticated)
+router.get("/", authenticate, getPosts);
 
-// Get single post by ID (Public)
-router.get("/:id", getPostById);
+// Get single post by ID (Authenticated)
+router.get("/:id", authenticate, getPostById);
 
 // Update own post (Authenticated + Authorized)
 router.patch("/:id", authenticate, updatePost);

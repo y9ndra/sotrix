@@ -3,7 +3,12 @@ import { useParams, Link } from "react-router-dom";
 import api from "../services/api";
 import Navbar from "../components/Navbar";
 
-const Profile = () => {
+interface ProfileProps {
+  isAuthenticated?: boolean;
+  onLogout?: () => void;
+}
+
+const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) => {
   const { id } = useParams();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -68,7 +73,7 @@ const Profile = () => {
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
-      <Navbar isAuthenticated={true} onLogout={() => {}} />
+      <Navbar isAuthenticated={isAuthenticated} onLogout={onLogout} />
 
       <div style={{ maxWidth: "700px", margin: "40px auto", padding: "0 20px" }}>
         <Link
