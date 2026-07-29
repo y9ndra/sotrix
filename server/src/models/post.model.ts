@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IPost extends Document {
   content: string;
   author: mongoose.Types.ObjectId;
+  likeCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +19,10 @@ const postSchema = new Schema<IPost>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+    likeCount: {
+      type: Number,
+      default: 0,
     },
   },
   {

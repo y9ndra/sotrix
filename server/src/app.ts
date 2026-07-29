@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import postRoutes from './routes/post.routes';
 import commentRoutes from './routes/comment.routes';
+import likeRoutes from './routes/like.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app: Application = express();
@@ -28,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api', commentRoutes);
+app.use('/api', likeRoutes);
 
 // Register centralized error handling middleware after all routes
 app.use(errorHandler);
