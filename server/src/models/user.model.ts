@@ -6,6 +6,8 @@ export interface IUser extends Document {
   email?: string;
   password?: string;
   bio?: string;
+  followersCount: number;
+  followingCount: number;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -15,6 +17,8 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     bio: { type: String, default: "" },
+    followersCount: { type: Number, default: 0 },
+    followingCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
