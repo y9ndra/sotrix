@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Post } from "../types/post";
 import CommentList from "./CommentList";
 import { getCurrentUserId } from "../services/token.service";
+import { toggleLike } from "../services/like.service";
 
 interface PostCardProps {
   post: Post;
@@ -18,7 +19,31 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
   const [error, setError] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
 
+  // Like state initialized from backend post data
+  const [liked, setLiked] = useState<boolean>(post.isLiked ?? false);
+  const [likeCount, setLikeCount] = useState<number>(post.likeCount ?? 0);
+  const [likeLoading, setLikeLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    setLiked(post.isLiked ?? false);
+    setLikeCount(post.likeCount ?? 0);
+  }, [post.isLiked, post.likeCount]);
+
   const currentUserId = getCurrentUserId();
+
+  const handleToggleLike = async () => {
+    if (likeLoading) return;
+    try {
+      setLikeLoading(true);
+      const res = await toggleLike(post._id);
+      setLiked(res.liked);
+      setLikeCount(res.likeCount);
+    } catch (err: any) {
+      console.error("Failed to toggle like:", err);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   const handleSaveEdit = async () => {
     if (!onEdit || !editContent.trim()) return;
@@ -197,26 +222,52 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
         <small style={{ color: "#9ca3af", fontSize: "12px" }}>
           {new Date(post.createdAt).toLocaleString()}
         </small>
-        <button
-          onClick={() => setShowComments(!showComments)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            background: "none",
-            border: "none",
-            color: showComments ? "#4f46e5" : "#6b7280",
-            fontSize: "13px",
-            fontWeight: 600,
-            cursor: "pointer",
-            padding: "4px 8px",
-            borderRadius: "6px",
-            backgroundColor: showComments ? "#e0e7ff" : "transparent",
-            transition: "all 0.2s ease",
-          }}
-        >
-          💬 {showComments ? "Hide Comments" : "Comments"}
-        </button>
+
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <button
+            onClick={handleToggleLike}
+            disabled={likeLoading}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "none",
+              border: "none",
+              color: liked ? "#ef4444" : "#6b7280",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: likeLoading ? "not-allowed" : "pointer",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              backgroundColor: liked ? "#fee2e2" : "transparent",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <span>{liked ? "❤️" : "♡"}</span>
+            <span>{likeCount}</span>
+          </button>
+
+          <button
+            onClick={() => setShowComments(!showComments)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "none",
+              border: "none",
+              color: showComments ? "#4f46e5" : "#6b7280",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              backgroundColor: showComments ? "#e0e7ff" : "transparent",
+              transition: "all 0.2s ease",
+            }}
+          >
+            💬 {showComments ? "Hide Comments" : "Comments"}
+          </button>
+        </div>
       </div>
 
       {showComments && (
