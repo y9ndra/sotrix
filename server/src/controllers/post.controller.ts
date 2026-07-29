@@ -59,8 +59,9 @@ export const getPosts = async (
     );
     const cursor =
       typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const currentUserId = req.user?.id;
 
-    const result = await getPostsService(limit, cursor);
+    const result = await getPostsService(limit, cursor, currentUserId);
 
     return res.status(200).json({
       success: true,
@@ -89,7 +90,7 @@ export const getMyPosts = async (
     const cursor =
       typeof req.query.cursor === "string" ? req.query.cursor : undefined;
 
-    const result = await getMyPostsService(userId, limit, cursor);
+    const result = await getMyPostsService(userId, limit, cursor, userId);
 
     return res.status(200).json({
       success: true,
@@ -107,8 +108,9 @@ export const getPostById = async (
 ): Promise<any> => {
   try {
     const { id } = req.params;
+    const currentUserId = req.user?.id;
 
-    const post = await getPostByIdService(id);
+    const post = await getPostByIdService(id, currentUserId);
 
     return res.status(200).json({
       success: true,

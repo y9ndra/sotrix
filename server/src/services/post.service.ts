@@ -1,4 +1,5 @@
 import Post, { IPost } from "../models/post.model";
+import Like from "../models/like.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
 
 interface CreatePostInput {
@@ -7,30 +8,63 @@ interface CreatePostInput {
 }
 
 export interface PaginatedPostsResult {
-  data: IPost[];
+  data: any[];
   pagination: {
     hasMore: boolean;
     nextCursor: string | null;
   };
 }
 
+const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
+  if (!posts.length) return [];
+
+  const likedPostIdsSet = new Set<string>();
+
+  if (currentUserId) {
+    const postIds = posts.map((post) => post._id);
+    const userLikes = await Like.find({
+      user: currentUserId,
+      post: { $in: postIds },
+    }).select("post");
+
+    userLikes.forEach((like) => {
+      likedPostIdsSet.add(like.post.toString());
+    });
+  }
+
+  return posts.map((post) => {
+    const postObj = post.toObject ? post.toObject() : post;
+    return {
+      ...postObj,
+      likeCount: postObj.likeCount || 0,
+      isLiked: currentUserId ? likedPostIdsSet.has(postObj._id.toString()) : false,
+    };
+  });
+};
+
 export const createPost = async ({
   content,
   author,
-}: CreatePostInput): Promise<IPost> => {
+}: CreatePostInput): Promise<any> => {
   const post = await Post.create({
     content,
     author,
   });
 
   await post.populate("author", "name username email");
+  const postObj = post.toObject();
 
-  return post;
+  return {
+    ...postObj,
+    likeCount: 0,
+    isLiked: false,
+  };
 };
 
 export const getPosts = async (
   limit: number = 10,
-  cursor?: string
+  cursor?: string,
+  currentUserId?: string
 ): Promise<PaginatedPostsResult> => {
   const query: any = {};
 
@@ -63,16 +97,18 @@ export const getPosts = async (
     .limit(limit + 1);
 
   const hasMore = posts.length > limit;
-  const data = posts.slice(0, limit);
+  const rawData = posts.slice(0, limit);
 
   let nextCursor: string | null = null;
-  if (hasMore && data.length > 0) {
-    const lastPost = data[data.length - 1];
+  if (hasMore && rawData.length > 0) {
+    const lastPost = rawData[rawData.length - 1];
     nextCursor = encodeCursor({
       createdAt: (lastPost.createdAt as Date).toISOString(),
       id: lastPost._id.toString(),
     });
   }
+
+  const data = await attachLikeStatus(rawData, currentUserId);
 
   return {
     data,
@@ -83,20 +119,25 @@ export const getPosts = async (
   };
 };
 
-export const getPostById = async (postId: string): Promise<IPost> => {
+export const getPostById = async (
+  postId: string,
+  currentUserId?: string
+): Promise<any> => {
   const post = await Post.findById(postId).populate("author", "name username email");
 
   if (!post) {
     throw new Error("Post not found");
   }
 
-  return post;
+  const [postWithLike] = await attachLikeStatus([post], currentUserId);
+  return postWithLike;
 };
 
 export const getMyPosts = async (
   userId: string,
   limit: number = 10,
-  cursor?: string
+  cursor?: string,
+  currentUserId?: string
 ): Promise<PaginatedPostsResult> => {
   const query: any = { author: userId };
 
@@ -129,16 +170,18 @@ export const getMyPosts = async (
     .limit(limit + 1);
 
   const hasMore = posts.length > limit;
-  const data = posts.slice(0, limit);
+  const rawData = posts.slice(0, limit);
 
   let nextCursor: string | null = null;
-  if (hasMore && data.length > 0) {
-    const lastPost = data[data.length - 1];
+  if (hasMore && rawData.length > 0) {
+    const lastPost = rawData[rawData.length - 1];
     nextCursor = encodeCursor({
       createdAt: (lastPost.createdAt as Date).toISOString(),
       id: lastPost._id.toString(),
     });
   }
+
+  const data = await attachLikeStatus(rawData, currentUserId);
 
   return {
     data,
@@ -153,7 +196,7 @@ export const updatePost = async (
   postId: string,
   userId: string,
   content: string
-): Promise<IPost> => {
+): Promise<any> => {
   const post = await Post.findById(postId);
 
   if (!post) {
@@ -168,7 +211,8 @@ export const updatePost = async (
   await post.save();
   await post.populate("author", "name username email");
 
-  return post;
+  const [postWithLike] = await attachLikeStatus([post], userId);
+  return postWithLike;
 };
 
 export const deletePost = async (

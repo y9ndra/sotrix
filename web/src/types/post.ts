@@ -8,6 +8,8 @@ export interface Post {
   _id: string;
   content: string;
   author: PostAuthor;
+  likeCount?: number;
+  isLiked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
