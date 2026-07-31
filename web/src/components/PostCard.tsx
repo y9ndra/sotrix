@@ -3,6 +3,7 @@ import type { Post } from "../types/post";
 import CommentList from "./CommentList";
 import { getCurrentUserId } from "../services/token.service";
 import { toggleLike } from "../services/like.service";
+import { toggleFollowUser } from "../services/follow.service";
 
 interface PostCardProps {
   post: Post;
@@ -24,12 +25,30 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
   const [likeCount, setLikeCount] = useState<number>(post.likeCount ?? 0);
   const [likeLoading, setLikeLoading] = useState<boolean>(false);
 
+  // Follow author state
+  const [isFollowing, setIsFollowing] = useState<boolean>(post.author?.isFollowing ?? false);
+  const [followLoading, setFollowLoading] = useState<boolean>(false);
+
   useEffect(() => {
     setLiked(post.isLiked ?? false);
     setLikeCount(post.likeCount ?? 0);
-  }, [post.isLiked, post.likeCount]);
+    setIsFollowing(post.author?.isFollowing ?? false);
+  }, [post.isLiked, post.likeCount, post.author?.isFollowing]);
 
   const currentUserId = getCurrentUserId();
+
+  const handleToggleFollow = async () => {
+    if (!post.author?._id || followLoading) return;
+    try {
+      setFollowLoading(true);
+      const res = await toggleFollowUser(post.author._id);
+      setIsFollowing(res.following);
+    } catch (err: any) {
+      console.error("Failed to toggle follow author:", err);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const handleToggleLike = async () => {
     if (likeLoading) return;
@@ -92,13 +111,36 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
           marginBottom: "10px",
         }}
       >
-        <div>
-          <h3 style={{ margin: 0, fontSize: "16px", color: "#111827" }}>
-            {post.author?.name || post.author?.username || "Unknown"}
-          </h3>
-          <p style={{ margin: "2px 0 0 0", fontSize: "13px", color: "#6b7280" }}>
-            @{post.author?.username || "unknown"}
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "16px", color: "#111827" }}>
+              {post.author?.name || post.author?.username || "Unknown"}
+            </h3>
+            <p style={{ margin: "2px 0 0 0", fontSize: "13px", color: "#6b7280" }}>
+              @{post.author?.username || "unknown"}
+            </p>
+          </div>
+
+          {!isOwner && post.author?._id && currentUserId !== post.author._id && (
+            <button
+              onClick={handleToggleFollow}
+              disabled={followLoading}
+              style={{
+                padding: "3px 10px",
+                fontSize: "12px",
+                borderRadius: "14px",
+                border: isFollowing ? "1px solid #d1d5db" : "none",
+                backgroundColor: isFollowing ? "#f3f4f6" : "#4f46e5",
+                color: isFollowing ? "#374151" : "#ffffff",
+                cursor: followLoading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                opacity: followLoading ? 0.6 : 1,
+              }}
+            >
+              {followLoading ? "..." : isFollowing ? "Following" : "Follow"}
+            </button>
+          )}
         </div>
 
         {isOwner && (

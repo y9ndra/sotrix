@@ -2,6 +2,7 @@ export interface PostAuthor {
   _id: string;
   name?: string;
   username: string;
+  isFollowing?: boolean;
 }
 
 export interface Post {
