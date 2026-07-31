@@ -20,23 +20,43 @@ const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
   if (!posts.length) return [];
 
   const likedPostIdsSet = new Set<string>();
+  const followedAuthorIdsSet = new Set<string>();
 
   if (currentUserId) {
     const postIds = posts.map((post) => post._id);
-    const userLikes = await Like.find({
-      user: currentUserId,
-      post: { $in: postIds },
-    }).select("post");
+    const authorIds = posts
+      .map((post) => post.author?._id || post.author)
+      .filter(Boolean);
+
+    const [userLikes, userFollows] = await Promise.all([
+      Like.find({ user: currentUserId, post: { $in: postIds } }).select("post"),
+      Follow.find({ follower: currentUserId, following: { $in: authorIds } }).select("following"),
+    ]);
 
     userLikes.forEach((like) => {
       likedPostIdsSet.add(like.post.toString());
+    });
+
+    userFollows.forEach((follow) => {
+      followedAuthorIdsSet.add(follow.following.toString());
     });
   }
 
   return posts.map((post) => {
     const postObj = post.toObject ? post.toObject() : post;
+    const authorObj =
+      typeof postObj.author === "object" && postObj.author !== null
+        ? {
+            ...postObj.author,
+            isFollowing: currentUserId && postObj.author._id
+              ? followedAuthorIdsSet.has(postObj.author._id.toString())
+              : false,
+          }
+        : postObj.author;
+
     return {
       ...postObj,
+      author: authorObj,
       likeCount: postObj.likeCount || 0,
       isLiked: currentUserId ? likedPostIdsSet.has(postObj._id.toString()) : false,
     };

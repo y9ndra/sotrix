@@ -12,6 +12,7 @@ function Navbar({ isAuthenticated, onLogout }: NavbarProps){
             <ul>
                 <li><Link to="/">Home</Link></li>
                 <li><Link to="/feed">Feed</Link></li>
+                {isAuthenticated && <li><Link to="/explore">Explore</Link></li>}
                 {!isAuthenticated ? (
                     <>
                         <li><Link to="/login">Login</Link></li>

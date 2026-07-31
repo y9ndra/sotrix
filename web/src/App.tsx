@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Profile from './pages/Profile'
 import Feed from './pages/Feed'
+import Explore from './pages/Explore'
 import MyPosts from './pages/MyPosts'
 import { getToken, saveToken, removeToken } from './services/token.service'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -40,6 +41,14 @@ function App() {
         element={
           <ProtectedRoute isAuthenticated={!!token}>
             <Feed isAuthenticated={!!token} onLogout={logoutUser} />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/explore" 
+        element={
+          <ProtectedRoute isAuthenticated={!!token}>
+            <Explore isAuthenticated={!!token} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
       />

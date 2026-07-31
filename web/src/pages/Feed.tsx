@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getPosts } from "../services/post.service";
+import { getHomeFeed } from "../services/feed.service";
 import type { Post } from "../types/post";
 import PostCard from "../components/PostCard";
 import Navbar from "../components/Navbar";
@@ -21,7 +21,7 @@ const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
       setLoading(true);
       setError(null);
 
-      const response = await getPosts();
+      const response = await getHomeFeed();
 
       setPosts(response.data);
       setNextCursor(response.pagination.nextCursor);
@@ -46,7 +46,7 @@ const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
       setLoading(true);
       setError(null);
 
-      const response = await getPosts(nextCursor);
+      const response = await getHomeFeed(nextCursor);
 
       setPosts((previousPosts) => [
         ...previousPosts,

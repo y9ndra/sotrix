@@ -5,6 +5,8 @@ import userRoutes from './routes/user.routes';
 import postRoutes from './routes/post.routes';
 import commentRoutes from './routes/comment.routes';
 import likeRoutes from './routes/like.routes';
+import feedRoutes from './routes/feed.routes';
+import exploreRoutes from './routes/explore.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app: Application = express();
@@ -28,6 +30,8 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/feed', feedRoutes);
+app.use('/api/explore', exploreRoutes);
 app.use('/api', commentRoutes);
 app.use('/api', likeRoutes);
 
