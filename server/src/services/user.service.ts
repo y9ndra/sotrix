@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import User from "../models/user.model";
+import Follow from "../models/follow.model";
 
 export interface UpdateProfileInput {
   name?: string;
@@ -7,7 +8,7 @@ export interface UpdateProfileInput {
   bio?: string;
 }
 
-export const getUserById = async (userId: string) => {
+export const getUserById = async (userId: string, currentUserId?: string) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error("Invalid User ID format");
   }
@@ -18,8 +19,23 @@ export const getUserById = async (userId: string) => {
     throw new Error("User not found");
   }
 
-  return user;
+  const userObj: any = user.toObject();
+  let isFollowing = false;
+
+  if (currentUserId && currentUserId !== userId) {
+    const existingFollow = await Follow.exists({
+      follower: currentUserId,
+      following: userId,
+    });
+    isFollowing = !!existingFollow;
+  }
+
+  return {
+    ...userObj,
+    isFollowing,
+  };
 };
+
 
 export const updateUserProfile = async (
   userId: string,

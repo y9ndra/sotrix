@@ -8,8 +8,9 @@ export const getUserProfile = async (
 ): Promise<any> => {
   try {
     const { id } = req.params;
+    const currentUserId = req.user?.id;
 
-    const user = await getUserById(id);
+    const user = await getUserById(id, currentUserId);
 
     return res.status(200).json({
       success: true,

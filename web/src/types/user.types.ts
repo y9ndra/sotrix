@@ -5,6 +5,9 @@ export interface User {
   email: string;
   name?: string;
   bio?: string;
+  followersCount?: number;
+  followingCount?: number;
+  isFollowing?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

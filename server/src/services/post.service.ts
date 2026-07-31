@@ -1,5 +1,6 @@
 import Post, { IPost } from "../models/post.model";
 import Like from "../models/like.model";
+import Follow from "../models/follow.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
 
 interface CreatePostInput {
@@ -67,6 +68,14 @@ export const getPosts = async (
   currentUserId?: string
 ): Promise<PaginatedPostsResult> => {
   const query: any = {};
+
+  if (currentUserId) {
+    const follows = await Follow.find({ follower: currentUserId }).select(
+      "following"
+    );
+    const followedUserIds = follows.map((f) => f.following);
+    query.author = { $in: [currentUserId, ...followedUserIds] };
+  }
 
   if (cursor) {
     const decoded = decodeCursor(cursor);

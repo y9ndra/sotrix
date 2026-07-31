@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../services/api";
 import Navbar from "../components/Navbar";
+import { toggleFollowUser } from "../services/follow.service";
+import { getCurrentUserId } from "../services/token.service";
 
 interface ProfileProps {
   isAuthenticated?: boolean;
@@ -13,12 +15,17 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [followLoading, setFollowLoading] = useState<boolean>(false);
 
   // Edit Profile State
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editForm, setEditForm] = useState({ name: "", username: "", bio: "" });
   const [saving, setSaving] = useState<boolean>(false);
   const [editError, setEditError] = useState<string>("");
+
+  const currentUserId = getCurrentUserId();
+  const isOwnProfile =
+    user && (user._id === currentUserId || user.id === currentUserId || id === currentUserId);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -55,13 +62,36 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
     setEditError("");
     try {
       const response = await api.patch("/users/me", editForm);
-      setUser(response.data.data);
+      setUser((prev: any) => ({
+        ...prev,
+        ...response.data.data,
+      }));
       setIsEditing(false);
     } catch (err: any) {
       console.error(err);
       setEditError(err.response?.data?.message || "Failed to update profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleFollow = async () => {
+    if (!user || followLoading) return;
+    const targetId = user._id || user.id || id;
+    if (!targetId) return;
+
+    setFollowLoading(true);
+    try {
+      const result = await toggleFollowUser(targetId);
+      setUser((prev: any) => ({
+        ...prev,
+        isFollowing: result.following,
+        followersCount: result.followersCount,
+      }));
+    } catch (err: any) {
+      console.error("Failed to toggle follow status", err);
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -134,30 +164,97 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
                 {user ? getInitial(user.name, user.username) : "?"}
               </div>
 
-              {/* Edit Profile Button */}
+              {/* Action Button: Edit Profile (for self) or Follow/Unfollow (for others) */}
               {user && !isEditing && (
-                <button
-                  onClick={handleStartEdit}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "10px",
-                    border: "1px solid #d1d5db",
-                    backgroundColor: "#ffffff",
-                    color: "#374151",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <svg style={{ width: "16px", height: "16px", stroke: "#4b5563" }} fill="none" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  Edit Profile
-                </button>
+                <div>
+                  {isOwnProfile ? (
+                    <button
+                      onClick={handleStartEdit}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "10px",
+                        border: "1px solid #d1d5db",
+                        backgroundColor: "#ffffff",
+                        color: "#374151",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <svg
+                        style={{ width: "16px", height: "16px", stroke: "#4b5563" }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                      Edit Profile
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleToggleFollow}
+                      disabled={followLoading}
+                      style={{
+                        padding: "8px 20px",
+                        borderRadius: "10px",
+                        border: user.isFollowing ? "1px solid #d1d5db" : "none",
+                        backgroundColor: user.isFollowing ? "#f3f4f6" : "#4f46e5",
+                        color: user.isFollowing ? "#374151" : "#ffffff",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        cursor: followLoading ? "not-allowed" : "pointer",
+                        transition: "all 0.2s ease",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        opacity: followLoading ? 0.7 : 1,
+                      }}
+                    >
+                      {user.isFollowing ? (
+                        <>
+                          <svg
+                            style={{ width: "16px", height: "16px", stroke: "#374151" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          Following
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            style={{ width: "16px", height: "16px", stroke: "#ffffff" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 4v16m8-8H4"
+                            />
+                          </svg>
+                          Follow
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -215,8 +312,23 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
             {user && !loading && !error && (
               <div style={{ marginTop: "16px" }}>
                 {isEditing ? (
-                  <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
-                    <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: 700, color: "#111827" }}>
+                  <form
+                    onSubmit={handleSave}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                      marginTop: "12px",
+                    }}
+                  >
+                    <h3
+                      style={{
+                        margin: "0 0 8px 0",
+                        fontSize: "18px",
+                        fontWeight: 700,
+                        color: "#111827",
+                      }}
+                    >
                       Edit Profile
                     </h3>
 
@@ -236,7 +348,9 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
                     )}
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Name</label>
+                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                        Name
+                      </label>
                       <input
                         type="text"
                         value={editForm.name}
@@ -253,7 +367,9 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Username</label>
+                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                        Username
+                      </label>
                       <input
                         type="text"
                         value={editForm.username}
@@ -270,7 +386,9 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Bio</label>
+                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                        Bio
+                      </label>
                       <textarea
                         rows={3}
                         value={editForm.bio}
@@ -288,7 +406,14 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
                       />
                     </div>
 
-                    <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        justifyContent: "flex-end",
+                        marginTop: "8px",
+                      }}
+                    >
                       <button
                         type="button"
                         onClick={() => setIsEditing(false)}
@@ -341,11 +466,49 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
                       style={{
                         fontSize: "14px",
                         color: "#6b7280",
-                        margin: "0 0 16px 0",
+                        margin: "0 0 12px 0",
                       }}
                     >
                       @{user.username}
                     </p>
+
+                    {/* Followers and Following Counters */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "24px",
+                        marginBottom: "16px",
+                        fontSize: "14px",
+                        color: "#4b5563",
+                      }}
+                    >
+                      <div>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: "#111827",
+                            fontSize: "16px",
+                            marginRight: "4px",
+                          }}
+                        >
+                          {user.followersCount ?? 0}
+                        </span>
+                        Followers
+                      </div>
+                      <div>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: "#111827",
+                            fontSize: "16px",
+                            marginRight: "4px",
+                          }}
+                        >
+                          {user.followingCount ?? 0}
+                        </span>
+                        Following
+                      </div>
+                    </div>
 
                     {user.bio ? (
                       <p
@@ -363,7 +526,14 @@ const Profile = ({ isAuthenticated = true, onLogout = () => {} }: ProfileProps) 
                         {user.bio}
                       </p>
                     ) : (
-                      <p style={{ fontSize: "14px", color: "#9ca3af", fontStyle: "italic", marginTop: "12px" }}>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#9ca3af",
+                          fontStyle: "italic",
+                          marginTop: "12px",
+                        }}
+                      >
                         No bio provided yet.
                       </p>
                     )}
