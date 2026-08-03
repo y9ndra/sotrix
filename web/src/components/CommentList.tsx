@@ -7,9 +7,10 @@ import CreateComment from "./CreateComment";
 interface CommentListProps {
   postId: string;
   currentUserId: string | null;
+  onCommentCountChange?: (change: number) => void;
 }
 
-const CommentList = ({ postId, currentUserId }: CommentListProps) => {
+const CommentList = ({ postId, currentUserId, onCommentCountChange }: CommentListProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +54,9 @@ const CommentList = ({ postId, currentUserId }: CommentListProps) => {
   const handleAddComment = async (content: string) => {
     const response = await createComment(postId, content);
     setComments((prev) => [response.data, ...prev]);
+    if (onCommentCountChange) {
+      onCommentCountChange(1);
+    }
   };
 
   const handleUpdateComment = async (commentId: string, newContent: string) => {
@@ -65,6 +69,9 @@ const CommentList = ({ postId, currentUserId }: CommentListProps) => {
   const handleDeleteComment = async (commentId: string) => {
     await deleteComment(commentId);
     setComments((prev) => prev.filter((c) => c._id !== commentId));
+    if (onCommentCountChange) {
+      onCommentCountChange(-1);
+    }
   };
 
   return (

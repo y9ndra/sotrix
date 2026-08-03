@@ -1,6 +1,7 @@
 import Post from "../models/post.model";
 import Like from "../models/like.model";
 import Follow from "../models/follow.model";
+import Comment from "../models/comment.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
 
 export interface PaginatedFeedResult {
@@ -17,25 +18,40 @@ const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
   const likedPostIdsSet = new Set<string>();
   const followedAuthorIdsSet = new Set<string>();
 
+  const postIds = posts.map((post) => post._id);
+
+  const queries: Promise<any>[] = [
+    Comment.aggregate([
+      { $match: { post: { $in: postIds } } },
+      { $group: { _id: "$post", count: { $sum: 1 } } },
+    ])
+  ];
+
   if (currentUserId) {
-    const postIds = posts.map((post) => post._id);
     const authorIds = posts
       .map((post) => post.author?._id || post.author)
       .filter(Boolean);
 
-    const [userLikes, userFollows] = await Promise.all([
+    queries.push(
       Like.find({ user: currentUserId, post: { $in: postIds } }).select("post"),
-      Follow.find({ follower: currentUserId, following: { $in: authorIds } }).select("following"),
-    ]);
-
-    userLikes.forEach((like) => {
-      likedPostIdsSet.add(like.post.toString());
-    });
-
-    userFollows.forEach((follow) => {
-      followedAuthorIdsSet.add(follow.following.toString());
-    });
+      Follow.find({ follower: currentUserId, following: { $in: authorIds } }).select("following")
+    );
   }
+
+  const [commentCounts, userLikes = [], userFollows = []] = await Promise.all(queries);
+
+  const commentCountsMap = new Map<string, number>();
+  commentCounts.forEach((c: any) => {
+    commentCountsMap.set(c._id.toString(), c.count);
+  });
+
+  userLikes.forEach((like: any) => {
+    likedPostIdsSet.add(like.post.toString());
+  });
+
+  userFollows.forEach((follow: any) => {
+    followedAuthorIdsSet.add(follow.following.toString());
+  });
 
   return posts.map((post) => {
     const postObj = post.toObject ? post.toObject() : post;
@@ -53,6 +69,7 @@ const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
       ...postObj,
       author: authorObj,
       likeCount: postObj.likeCount || 0,
+      commentCount: commentCountsMap.get(postObj._id.toString()) || 0,
       isLiked: currentUserId ? likedPostIdsSet.has(postObj._id.toString()) : false,
     };
   });

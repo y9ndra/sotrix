@@ -10,6 +10,7 @@ export interface Post {
   content: string;
   author: PostAuthor;
   likeCount?: number;
+  commentCount?: number;
   isLiked?: boolean;
   createdAt: string;
   updatedAt: string;

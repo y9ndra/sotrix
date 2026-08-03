@@ -10,9 +10,10 @@ interface PostCardProps {
   isOwner?: boolean;
   onEdit?: (postId: string, newContent: string) => Promise<void>;
   onDelete?: (postId: string) => Promise<void>;
+  onFollowToggle?: (authorId: string, isFollowing: boolean) => void;
 }
 
-const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) => {
+const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: PostCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
@@ -25,6 +26,9 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
   const [likeCount, setLikeCount] = useState<number>(post.likeCount ?? 0);
   const [likeLoading, setLikeLoading] = useState<boolean>(false);
 
+  // Comment count state initialized from backend post data
+  const [commentCount, setCommentCount] = useState<number>(post.commentCount ?? 0);
+
   // Follow author state
   const [isFollowing, setIsFollowing] = useState<boolean>(post.author?.isFollowing ?? false);
   const [followLoading, setFollowLoading] = useState<boolean>(false);
@@ -33,7 +37,8 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
     setLiked(post.isLiked ?? false);
     setLikeCount(post.likeCount ?? 0);
     setIsFollowing(post.author?.isFollowing ?? false);
-  }, [post.isLiked, post.likeCount, post.author?.isFollowing]);
+    setCommentCount(post.commentCount ?? 0);
+  }, [post.isLiked, post.likeCount, post.author?.isFollowing, post.commentCount]);
 
   const currentUserId = getCurrentUserId();
 
@@ -43,6 +48,9 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
       setFollowLoading(true);
       const res = await toggleFollowUser(post.author._id);
       setIsFollowing(res.following);
+      if (onFollowToggle) {
+        onFollowToggle(post.author._id, res.following);
+      }
     } catch (err: any) {
       console.error("Failed to toggle follow author:", err);
     } finally {
@@ -307,13 +315,17 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete }: PostCardProps) =>
               transition: "all 0.2s ease",
             }}
           >
-            💬 {showComments ? "Hide Comments" : "Comments"}
+            💬 {commentCount} {showComments ? "Hide Comments" : "Comments"}
           </button>
         </div>
       </div>
 
       {showComments && (
-        <CommentList postId={post._id} currentUserId={currentUserId} />
+        <CommentList
+          postId={post._id}
+          currentUserId={currentUserId}
+          onCommentCountChange={(change) => setCommentCount((prev) => Math.max(0, prev + change))}
+        />
       )}
     </article>
   );

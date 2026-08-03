@@ -105,6 +105,8 @@ const Explore = ({
     if (isFollowing) {
       // Filter out user from suggested users list once followed
       setUsers((prev) => prev.filter((u) => u._id !== userId));
+      // Also filter out their posts from discover feed
+      setPosts((prev) => prev.filter((p) => p.author?._id !== userId));
     }
   };
 
@@ -172,7 +174,16 @@ const Explore = ({
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {posts.map((post) => (
-                <PostCard key={post._id} post={post} />
+                <PostCard
+                  key={post._id}
+                  post={post}
+                  onFollowToggle={(authorId, isFollowing) => {
+                    if (isFollowing) {
+                      setPosts((prev) => prev.filter((p) => p.author?._id !== authorId));
+                      setUsers((prev) => prev.filter((u) => u._id !== authorId));
+                    }
+                  }}
+                />
               ))}
             </div>
 
