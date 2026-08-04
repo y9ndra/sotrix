@@ -8,6 +8,7 @@ import {
 } from "../services/explore.service";
 import type { SuggestedUser } from "../services/explore.service";
 import type { Post } from "../types/post";
+import { searchUsers } from "../services/user.service";
 
 interface ExploreProps {
   isAuthenticated?: boolean;
@@ -33,6 +34,13 @@ const Explore = ({
   const [usersError, setUsersError] = useState<string | null>(null);
   const [usersNextCursor, setUsersNextCursor] = useState<string | null>(null);
   const [usersHasMore, setUsersHasMore] = useState(true);
+
+  // State for Searching Users
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SuggestedUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSearched, setIsSearched] = useState(false);
 
   const fetchExplorePosts = async () => {
     try {
@@ -94,6 +102,30 @@ const Explore = ({
     } finally {
       setUsersLoading(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    try {
+      setSearchLoading(true);
+      setSearchError(null);
+      setIsSearched(true);
+      const response = await searchUsers(searchQuery);
+      setSearchResults(response.data);
+    } catch (err) {
+      setSearchError("Failed to search users. Please try again.");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchError(null);
+    setIsSearched(false);
   };
 
   useEffect(() => {
@@ -221,46 +253,181 @@ const Explore = ({
 
         {activeTab === "users" && (
           <div>
-            {usersError && <p style={{ color: "#dc2626" }}>{usersError}</p>}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {users.map((user) => (
-                <UserCard
-                  key={user._id}
-                  user={user}
-                  onFollowStateChange={handleUserFollowChange}
+            {/* Search Input Form */}
+            <form
+              onSubmit={handleSearch}
+              style={{
+                display: "flex",
+                gap: "10px",
+                marginBottom: "20px",
+                position: "relative",
+              }}
+            >
+              <div style={{ position: "relative", flex: 1 }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                    fontSize: "18px",
+                    pointerEvents: "none",
+                  }}
+                >
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search users by name or username..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 42px",
+                    borderRadius: "24px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "15px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#4f46e5";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(79, 70, 229, 0.15)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
+                  }}
                 />
-              ))}
-            </div>
-
-            {users.length === 0 && !usersLoading && !usersError && (
-              <p style={{ color: "#6b7280", textAlign: "center", marginTop: "32px" }}>
-                You're already following everyone available or no suggested users match!
-              </p>
-            )}
-
-            {usersLoading && <p style={{ marginTop: "16px", color: "#6b7280" }}>Loading users...</p>}
-
-            {users.length > 0 && usersHasMore && (
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    style={{
+                      position: "absolute",
+                      right: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      color: "#9ca3af",
+                      cursor: "pointer",
+                      fontSize: "16px",
+                      padding: "4px",
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
               <button
-                onClick={loadMoreSuggestedUsers}
-                disabled={usersLoading}
+                type="submit"
+                disabled={searchLoading}
                 style={{
-                  marginTop: "24px",
-                  padding: "10px 20px",
-                  fontSize: "15px",
-                  cursor: usersLoading ? "not-allowed" : "pointer",
+                  padding: "12px 24px",
+                  borderRadius: "24px",
                   backgroundColor: "#4f46e5",
                   color: "#ffffff",
                   border: "none",
-                  borderRadius: "8px",
+                  fontSize: "15px",
                   fontWeight: 600,
-                  opacity: usersLoading ? 0.6 : 1,
-                  width: "100%",
+                  cursor: searchLoading ? "not-allowed" : "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 2px 4px rgba(79, 70, 229, 0.2)",
+                  opacity: searchLoading ? 0.7 : 1,
                 }}
               >
-                {usersLoading ? "Loading..." : "Load More Users"}
+                {searchLoading ? "Searching..." : "Search"}
               </button>
+            </form>
+
+            {isSearched ? (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: "#374151" }}>
+                    Search Results
+                  </h3>
+                  <button
+                    onClick={handleClearSearch}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#4f46e5",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Clear search
+                  </button>
+                </div>
+
+                {searchError && <p style={{ color: "#dc2626" }}>{searchError}</p>}
+                {searchLoading && <p style={{ color: "#6b7280" }}>Searching users...</p>}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {searchResults.map((user) => (
+                    <UserCard
+                      key={user._id}
+                      user={user}
+                      onFollowStateChange={handleUserFollowChange}
+                    />
+                  ))}
+                </div>
+
+                {searchResults.length === 0 && !searchLoading && !searchError && (
+                  <p style={{ color: "#6b7280", textAlign: "center", marginTop: "32px" }}>
+                    No users found matching "{searchQuery}"
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                {usersError && <p style={{ color: "#dc2626" }}>{usersError}</p>}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {users.map((user) => (
+                    <UserCard
+                      key={user._id}
+                      user={user}
+                      onFollowStateChange={handleUserFollowChange}
+                    />
+                  ))}
+                </div>
+
+                {users.length === 0 && !usersLoading && !usersError && (
+                  <p style={{ color: "#6b7280", textAlign: "center", marginTop: "32px" }}>
+                    You're already following everyone available or no suggested users match!
+                  </p>
+                )}
+
+                {usersLoading && <p style={{ marginTop: "16px", color: "#6b7280" }}>Loading users...</p>}
+
+                {users.length > 0 && usersHasMore && (
+                  <button
+                    onClick={loadMoreSuggestedUsers}
+                    disabled={usersLoading}
+                    style={{
+                      marginTop: "24px",
+                      padding: "10px 20px",
+                      fontSize: "15px",
+                      cursor: usersLoading ? "not-allowed" : "pointer",
+                      backgroundColor: "#4f46e5",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      opacity: usersLoading ? 0.6 : 1,
+                      width: "100%",
+                    }}
+                  >
+                    {usersLoading ? "Loading..." : "Load More Users"}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}

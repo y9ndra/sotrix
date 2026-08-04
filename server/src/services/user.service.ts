@@ -68,3 +68,42 @@ export const updateUserProfile = async (
 
   return user;
 };
+
+export const searchUsers = async (search: string, currentUserId?: string) => {
+  const users = await User.find({
+    $or: [
+      {
+        username: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+      {
+        name: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+    ],
+  })
+    .select("_id name username followersCount bio")
+    .limit(10);
+
+  const userIds = users.map((u) => u._id);
+  const followedIds = new Set<string>();
+
+  if (currentUserId && userIds.length > 0) {
+    const follows = await Follow.find({
+      follower: currentUserId,
+      following: { $in: userIds },
+    }).select("following");
+    
+    follows.forEach((f) => followedIds.add(f.following.toString()));
+  }
+
+  return users.map((u) => ({
+    ...u.toObject(),
+    isFollowing: followedIds.has(u._id.toString()),
+  }));
+};
+

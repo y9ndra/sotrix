@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getUserById, updateUserProfile } from "../services/user.service";
+import { getUserById, updateUserProfile, searchUsers } from "../services/user.service";
 
 export const getUserProfile = async (
   req: Request,
@@ -61,3 +61,29 @@ export const updateMyProfile = async (
     return next(error);
   }
 };
+
+export const searchUsersController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const q = req.query.q;
+    if (typeof q !== "string" || !q.trim()) {
+      return res.status(400).json({ message: "Search query 'q' is required and cannot be empty" });
+    }
+
+    const trimmedQuery = q.trim();
+    const currentUserId = req.user?.id;
+
+    const results = await searchUsers(trimmedQuery, currentUserId);
+
+    return res.status(200).json({
+      success: true,
+      data: results,
+    });
+  } catch (error: unknown) {
+    return next(error);
+  }
+};
+
