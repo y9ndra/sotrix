@@ -69,19 +69,27 @@ export const updateUserProfile = async (
   return user;
 };
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export const searchUsers = async (search: string, currentUserId?: string) => {
+  const cleanSearch = escapeRegex(search.trim().toLowerCase());
+
+  if (!cleanSearch) {
+    return [];
+  }
+
   const users = await User.find({
     $or: [
       {
-        username: {
-          $regex: search,
-          $options: "i",
+        usernameLower: {
+          $regex: `^${cleanSearch}`,
         },
       },
       {
-        name: {
-          $regex: search,
-          $options: "i",
+        nameLower: {
+          $regex: `^${cleanSearch}`,
         },
       },
     ],
