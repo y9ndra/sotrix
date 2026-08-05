@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getUserById, updateUserProfile, searchUsers } from "../services/user.service";
+import { getUserById, updateUserProfile, searchUsersService } from "../services/user.service";
 
 export const getUserProfile = async (
   req: Request,
@@ -62,28 +62,40 @@ export const updateMyProfile = async (
   }
 };
 
-export const searchUsersController = async (
+export const searchUsers = async (
   req: Request,
-  res: Response,
-  next: NextFunction
+  res: Response
 ): Promise<any> => {
   try {
-    const q = req.query.q;
-    if (typeof q !== "string" || !q.trim()) {
-      return res.status(400).json({ message: "Search query 'q' is required and cannot be empty" });
+    const query = req.query.q;
+
+    if (typeof query !== "string" || !query.trim()) {
+      return res.status(400).json({
+        message: "Search query is required",
+      });
     }
 
-    const trimmedQuery = q.trim();
     const currentUserId = req.user?.id;
+    if (!currentUserId) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
 
-    const results = await searchUsers(trimmedQuery, currentUserId);
+    const users = await searchUsersService(
+      query.trim(),
+      currentUserId
+    );
 
     return res.status(200).json({
+      users,
       success: true,
-      data: results,
+      data: users,
     });
-  } catch (error: unknown) {
-    return next(error);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to search users",
+    });
   }
 };
 

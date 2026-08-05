@@ -69,49 +69,30 @@ export const updateUserProfile = async (
   return user;
 };
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export const searchUsers = async (search: string, currentUserId?: string) => {
-  const cleanSearch = escapeRegex(search.trim().toLowerCase());
-
-  if (!cleanSearch) {
-    return [];
-  }
+export const searchUsersService = async (
+  query: string,
+  currentUserId: string
+) => {
+  const search = query.trim().toLowerCase();
+  const escapedSearch = search.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+  const regex = new RegExp(
+    `^${escapedSearch}`,
+    "i"
+  );
 
   const users = await User.find({
+    _id: { $ne: currentUserId },
     $or: [
-      {
-        usernameLower: {
-          $regex: `^${cleanSearch}`,
-        },
-      },
-      {
-        nameLower: {
-          $regex: `^${cleanSearch}`,
-        },
-      },
-    ],
+      { username: regex },
+      { name: regex }
+    ]
   })
-    .select("_id name username followersCount bio")
+    .select("_id username name followersCount")
     .limit(10);
 
-  const userIds = users.map((u) => u._id);
-  const followedIds = new Set<string>();
-
-  if (currentUserId && userIds.length > 0) {
-    const follows = await Follow.find({
-      follower: currentUserId,
-      following: { $in: userIds },
-    }).select("following");
-    
-    follows.forEach((f) => followedIds.add(f.following.toString()));
-  }
-
-  return users.map((u) => ({
-    ...u.toObject(),
-    isFollowing: followedIds.has(u._id.toString()),
-  }));
+  return users;
 };
 
