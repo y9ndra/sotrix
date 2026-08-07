@@ -1,5 +1,5 @@
 import api from "./api";
-import type { PostsResponse, CreatePostResponse } from "../types/post";
+import type { PostsResponse, CreatePostResponse, Post } from "../types/post";
 
 export const getPosts = async (
   cursor?: string
@@ -46,5 +46,19 @@ export const deletePost = async (
   postId: string
 ): Promise<{ success: boolean; message: string }> => {
   const response = await api.delete(`/posts/${postId}`);
+  return response.data;
+};
+
+export interface SearchPostsResponse {
+  success: boolean;
+  data: Post[];
+}
+
+export const searchPosts = async (query: string): Promise<SearchPostsResponse> => {
+  const response = await api.get("/posts/search", {
+    params: {
+      q: query,
+    },
+  });
   return response.data;
 };

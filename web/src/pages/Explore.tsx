@@ -9,6 +9,7 @@ import {
 import type { SuggestedUser } from "../services/explore.service";
 import type { Post } from "../types/post";
 import { searchUsers } from "../services/user.service";
+import { searchPosts } from "../services/post.service";
 
 interface ExploreProps {
   isAuthenticated?: boolean;
@@ -41,6 +42,13 @@ const Explore = ({
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearched, setIsSearched] = useState(false);
+
+  // State for Searching Posts
+  const [postSearchQuery, setPostSearchQuery] = useState("");
+  const [postSearchResults, setPostSearchResults] = useState<Post[]>([]);
+  const [postSearchLoading, setPostSearchLoading] = useState(false);
+  const [postSearchError, setPostSearchError] = useState<string | null>(null);
+  const [isPostSearched, setIsPostSearched] = useState(false);
 
   const fetchExplorePosts = async () => {
     try {
@@ -128,6 +136,30 @@ const Explore = ({
     setIsSearched(false);
   };
 
+  const handlePostSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!postSearchQuery.trim()) return;
+
+    try {
+      setPostSearchLoading(true);
+      setPostSearchError(null);
+      setIsPostSearched(true);
+      const response = await searchPosts(postSearchQuery);
+      setPostSearchResults(response.data);
+    } catch (err) {
+      setPostSearchError("Failed to search posts. Please try again.");
+    } finally {
+      setPostSearchLoading(false);
+    }
+  };
+
+  const handleClearPostSearch = () => {
+    setPostSearchQuery("");
+    setPostSearchResults([]);
+    setPostSearchError(null);
+    setIsPostSearched(false);
+  };
+
   useEffect(() => {
     fetchExplorePosts();
     fetchSuggestedUsers();
@@ -202,51 +234,192 @@ const Explore = ({
 
         {activeTab === "posts" && (
           <div>
-            {postsError && <p style={{ color: "#dc2626" }}>{postsError}</p>}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {posts.map((post) => (
-                <PostCard
-                  key={post._id}
-                  post={post}
-                  onFollowToggle={(authorId, isFollowing) => {
-                    if (isFollowing) {
-                      setPosts((prev) => prev.filter((p) => p.author?._id !== authorId));
-                      setUsers((prev) => prev.filter((u) => u._id !== authorId));
-                    }
+            {/* Search Input Form for Posts */}
+            <form
+              onSubmit={handlePostSearch}
+              style={{
+                display: "flex",
+                gap: "10px",
+                marginBottom: "20px",
+                position: "relative",
+              }}
+            >
+              <div style={{ position: "relative", flex: 1 }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                    fontSize: "18px",
+                    pointerEvents: "none",
+                  }}
+                >
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search posts by content..."
+                  value={postSearchQuery}
+                  onChange={(e) => setPostSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 42px",
+                    borderRadius: "24px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "15px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#4f46e5";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(79, 70, 229, 0.15)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                    e.target.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)";
                   }}
                 />
-              ))}
-            </div>
-
-            {posts.length === 0 && !postsLoading && !postsError && (
-              <p style={{ color: "#6b7280", textAlign: "center", marginTop: "32px" }}>
-                No new posts to discover right now. Check back soon!
-              </p>
-            )}
-
-            {postsLoading && <p style={{ marginTop: "16px", color: "#6b7280" }}>Loading posts...</p>}
-
-            {posts.length > 0 && postsHasMore && (
+                {postSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={handleClearPostSearch}
+                    style={{
+                      position: "absolute",
+                      right: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      color: "#9ca3af",
+                      cursor: "pointer",
+                      fontSize: "16px",
+                      padding: "4px",
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
               <button
-                onClick={loadMoreExplorePosts}
-                disabled={postsLoading}
+                type="submit"
+                disabled={postSearchLoading}
                 style={{
-                  marginTop: "24px",
-                  padding: "10px 20px",
-                  fontSize: "15px",
-                  cursor: postsLoading ? "not-allowed" : "pointer",
+                  padding: "12px 24px",
+                  borderRadius: "24px",
                   backgroundColor: "#4f46e5",
                   color: "#ffffff",
                   border: "none",
-                  borderRadius: "8px",
+                  fontSize: "15px",
                   fontWeight: 600,
-                  opacity: postsLoading ? 0.6 : 1,
-                  width: "100%",
+                  cursor: postSearchLoading ? "not-allowed" : "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 2px 4px rgba(79, 70, 229, 0.2)",
+                  opacity: postSearchLoading ? 0.7 : 1,
                 }}
               >
-                {postsLoading ? "Loading..." : "Load More Posts"}
+                {postSearchLoading ? "Searching..." : "Search"}
               </button>
+            </form>
+
+            {isPostSearched ? (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: "#374151" }}>
+                    Search Results
+                  </h3>
+                  <button
+                    onClick={handleClearPostSearch}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#4f46e5",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Clear search
+                  </button>
+                </div>
+
+                {postSearchError && <p style={{ color: "#dc2626" }}>{postSearchError}</p>}
+                {postSearchLoading && <p style={{ color: "#6b7280" }}>Searching posts...</p>}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {postSearchResults.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      onFollowToggle={(authorId, isFollowing) => {
+                        if (isFollowing) {
+                          setPostSearchResults((prev) => prev.filter((p) => p.author?._id !== authorId));
+                          setPosts((prev) => prev.filter((p) => p.author?._id !== authorId));
+                          setUsers((prev) => prev.filter((u) => u._id !== authorId));
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {postSearchResults.length === 0 && !postSearchLoading && !postSearchError && (
+                  <p style={{ color: "#6b7280", textAlign: "center", marginTop: "32px" }}>
+                    No posts found matching "{postSearchQuery}"
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                {postsError && <p style={{ color: "#dc2626" }}>{postsError}</p>}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {posts.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      onFollowToggle={(authorId, isFollowing) => {
+                        if (isFollowing) {
+                          setPosts((prev) => prev.filter((p) => p.author?._id !== authorId));
+                          setUsers((prev) => prev.filter((u) => u._id !== authorId));
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {posts.length === 0 && !postsLoading && !postsError && (
+                  <p style={{ color: "#6b7280", textAlign: "center", marginTop: "32px" }}>
+                    No new posts to discover right now. Check back soon!
+                  </p>
+                )}
+
+                {postsLoading && <p style={{ marginTop: "16px", color: "#6b7280" }}>Loading posts...</p>}
+
+                {posts.length > 0 && postsHasMore && (
+                  <button
+                    onClick={loadMoreExplorePosts}
+                    disabled={postsLoading}
+                    style={{
+                      marginTop: "24px",
+                      padding: "10px 20px",
+                      fontSize: "15px",
+                      cursor: postsLoading ? "not-allowed" : "pointer",
+                      backgroundColor: "#4f46e5",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      opacity: postsLoading ? 0.6 : 1,
+                      width: "100%",
+                    }}
+                  >
+                    {postsLoading ? "Loading..." : "Load More Posts"}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
