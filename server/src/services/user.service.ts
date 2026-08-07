@@ -93,6 +93,21 @@ export const searchUsersService = async (
     .select("_id username name followersCount")
     .limit(10);
 
-  return users;
+  const followedUsers = await Follow.find({
+    follower: currentUserId,
+    following: { $in: users.map((u) => u._id) },
+  }).select("following");
+
+  const followedSet = new Set(
+    followedUsers.map((f) => f.following.toString())
+  );
+
+  return users.map((u) => {
+    const userObj = u.toObject();
+    return {
+      ...userObj,
+      isFollowing: followedSet.has(u._id.toString()),
+    };
+  });
 };
 

@@ -35,6 +35,11 @@ postSchema.index({
   _id: -1,
 });
 
+postSchema.index(
+  { content: "text" },
+  { default_language: "none" }
+);
+
 const Post = mongoose.model<IPost>("Post", postSchema);
 
 export default Post;

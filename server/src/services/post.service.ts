@@ -280,3 +280,26 @@ export const deletePost = async (
 
   return post;
 };
+
+export const searchPostsService = async (
+  query: string,
+  currentUserId?: string
+): Promise<any[]> => {
+  const posts = await Post.find(
+    {
+      $text: {
+        $search: query,
+      },
+    },
+    {
+      score: { $meta: "textScore" },
+    }
+  )
+    .populate("author", "name username email")
+    .sort({
+      score: { $meta: "textScore" },
+    })
+    .limit(10);
+
+  return attachLikeStatus(posts, currentUserId);
+};

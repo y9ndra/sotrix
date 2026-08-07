@@ -23,6 +23,8 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+UserSchema.index({ name: 1 });
+
 const User = mongoose.model<IUser>("User", UserSchema);
 
 export default User;

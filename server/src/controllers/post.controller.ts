@@ -6,6 +6,7 @@ import {
   getPostById as getPostByIdService,
   updatePost as updatePostService,
   deletePost as deletePostService,
+  searchPostsService,
 } from "../services/post.service";
 
 interface CreatePostBody {
@@ -189,6 +190,36 @@ export const deletePost = async (
         return res.status(403).json({ message: error.message });
       }
     }
+    next(error);
+  }
+};
+
+export const searchPosts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const query = req.query.q;
+
+    if (typeof query !== "string" || !query.trim()) {
+      return res.status(400).json({
+        message: "Search query is required",
+      });
+    }
+
+    const currentUserId = req.user?.id;
+
+    const posts = await searchPostsService(
+      query.trim(),
+      currentUserId
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: posts,
+    });
+  } catch (error) {
     next(error);
   }
 };

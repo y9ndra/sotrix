@@ -7,6 +7,7 @@ import {
   getPostById,
   updatePost,
   deletePost,
+  searchPosts,
 } from "../controllers/post.controller";
 
 const router = Router();
@@ -19,6 +20,9 @@ router.get("/me", authenticate, getMyPosts);
 
 // Get all posts (Authenticated)
 router.get("/", authenticate, getPosts);
+
+// Search posts (Authenticated)
+router.get("/search", authenticate, searchPosts);
 
 // Get single post by ID (Authenticated)
 router.get("/:id", authenticate, getPostById);
