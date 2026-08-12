@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { uploadImage } from "../services/cloudinary.service";
+import { uploadImage, deleteFromCloudinary } from "../services/cloudinary.service";
 import {
   createPost as createPostService,
   getPosts as getPostsService,
@@ -23,24 +23,24 @@ export const createPost = async (
   res: Response,
   next: NextFunction
 ): Promise<any> => {
-  try {
-    const { content } = req.body;
-    const author = req.user?.id;
-    let imageUrl: string | undefined;
-    let imagePublicId: string | undefined;
+  const { content } = req.body;
+  const author = req.user?.id;
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
 
+  if (!author) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ message: "Post content is required" });
+  }
+
+  try {
     if (req.file) {
       const uploadResult = await uploadImage(req.file.buffer);
       imageUrl = uploadResult.secure_url;
       imagePublicId = uploadResult.public_id;
-    }
-
-    if (!author) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    if (!content || !content.trim()) {
-      return res.status(400).json({ message: "Post content is required" });
     }
 
     const post = await createPostService({
@@ -55,6 +55,13 @@ export const createPost = async (
       data: post,
     });
   } catch (error) {
+    if (imagePublicId) {
+      try {
+        await deleteFromCloudinary(imagePublicId);
+      } catch (cloudinaryError) {
+        console.error("Failed to delete orphaned image from Cloudinary:", cloudinaryError);
+      }
+    }
     next(error);
   }
 };

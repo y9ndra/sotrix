@@ -3,6 +3,7 @@ import Like from "../models/like.model";
 import Follow from "../models/follow.model";
 import Comment from "../models/comment.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
+import { deleteFromCloudinary } from "./cloudinary.service";
 
 interface CreatePostInput {
   content: string;
@@ -280,6 +281,14 @@ export const deletePost = async (
 
   if (post.author.toString() !== userId) {
     throw new Error("You are not authorized to delete this post");
+  }
+
+  if (post.imagePublicId) {
+    try {
+      await deleteFromCloudinary(post.imagePublicId);
+    } catch (cloudinaryError) {
+      console.error("Failed to delete image from Cloudinary during post deletion:", cloudinaryError);
+    }
   }
 
   await Post.findByIdAndDelete(postId);

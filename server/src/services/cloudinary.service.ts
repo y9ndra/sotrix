@@ -34,3 +34,9 @@ export const uploadImage = (
         Readable.from(buffer).pipe(uploadStream);
     });
 };
+
+export const deleteFromCloudinary = async (
+    publicId: string
+): Promise<void> => {
+    await cloudinary.uploader.destroy(publicId);
+};
