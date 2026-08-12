@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { uploadImage } from "../services/cloudinary.service";
 import {
   createPost as createPostService,
   getPosts as getPostsService,
@@ -25,7 +26,14 @@ export const createPost = async (
   try {
     const { content } = req.body;
     const author = req.user?.id;
-    const imageUrl = req.file?.path ? req.file.path.replace(/\\/g, "/") : undefined;
+    let imageUrl: string | undefined;
+    let imagePublicId: string | undefined;
+
+    if (req.file) {
+      const uploadResult = await uploadImage(req.file.buffer);
+      imageUrl = uploadResult.secure_url;
+      imagePublicId = uploadResult.public_id;
+    }
 
     if (!author) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -39,6 +47,7 @@ export const createPost = async (
       content: content.trim(),
       author,
       imageUrl,
+      imagePublicId,
     });
 
     return res.status(201).json({

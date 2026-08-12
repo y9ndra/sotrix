@@ -8,6 +8,7 @@ interface CreatePostInput {
   content: string;
   author: string;
   imageUrl?: string;
+  imagePublicId?: string;
 }
 
 export interface PaginatedPostsResult {
@@ -85,11 +86,13 @@ export const createPost = async ({
   content,
   author,
   imageUrl,
+  imagePublicId,
 }: CreatePostInput): Promise<any> => {
   const post = await Post.create({
     content,
     author,
     imageUrl,
+    imagePublicId,
   });
 
   await post.populate("author", "name username email");
