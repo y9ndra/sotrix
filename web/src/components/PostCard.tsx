@@ -259,9 +259,20 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
           </div>
         </div>
       ) : (
-        <p style={{ margin: "8px 0", fontSize: "14px", color: "#374151" }}>
-          {post.content}
-        </p>
+        <>
+          <p style={{ margin: "8px 0", fontSize: "14px", color: "#374151" }}>
+            {post.content}
+          </p>
+          {post.imageUrl && (
+            <div style={{ marginTop: "12px", borderRadius: "8px", overflow: "hidden", border: "1px solid #e5e7eb" }}>
+              <img
+                src={post.imageUrl}
+                alt="Post attachment"
+                style={{ width: "100%", maxHeight: "400px", objectFit: "cover", display: "block" }}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {error && !isEditing && (

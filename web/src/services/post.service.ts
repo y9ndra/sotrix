@@ -15,9 +15,15 @@ export const getPosts = async (
 };
 
 export const createPost = async (
-  content: string
+  content: string,
+  image?: File | null
 ): Promise<CreatePostResponse> => {
-  const response = await api.post("/posts", { content });
+  const formData = new FormData();
+  formData.append("content", content);
+  if (image) {
+    formData.append("image", image);
+  }
+  const response = await api.post("/posts", formData);
   return response.data;
 };
 

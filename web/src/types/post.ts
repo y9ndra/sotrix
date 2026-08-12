@@ -12,6 +12,8 @@ export interface Post {
   likeCount?: number;
   commentCount?: number;
   isLiked?: boolean;
+  imageUrl?: string;
+  imagePublicId?: string;
   createdAt: string;
   updatedAt: string;
 }
