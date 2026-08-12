@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
+import upload from "../middleware/upload.middleware";
 import {
   createPost,
   getPosts,
@@ -13,7 +14,7 @@ import {
 const router = Router();
 
 // Create post (Authenticated)
-router.post("/", authenticate, createPost);
+router.post("/", authenticate, upload.single("image"), createPost);
 
 // Get authenticated user's posts (Authenticated)
 router.get("/me", authenticate, getMyPosts);

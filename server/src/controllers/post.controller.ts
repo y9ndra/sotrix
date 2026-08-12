@@ -25,6 +25,7 @@ export const createPost = async (
   try {
     const { content } = req.body;
     const author = req.user?.id;
+    const imageUrl = req.file?.path ? req.file.path.replace(/\\/g, "/") : undefined;
 
     if (!author) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -37,6 +38,7 @@ export const createPost = async (
     const post = await createPostService({
       content: content.trim(),
       author,
+      imageUrl,
     });
 
     return res.status(201).json({

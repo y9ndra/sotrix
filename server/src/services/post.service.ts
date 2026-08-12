@@ -7,6 +7,7 @@ import { decodeCursor, encodeCursor } from "../utils/cursor";
 interface CreatePostInput {
   content: string;
   author: string;
+  imageUrl?: string;
 }
 
 export interface PaginatedPostsResult {
@@ -83,10 +84,12 @@ const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
 export const createPost = async ({
   content,
   author,
+  imageUrl,
 }: CreatePostInput): Promise<any> => {
   const post = await Post.create({
     content,
     author,
+    imageUrl,
   });
 
   await post.populate("author", "name username email");
