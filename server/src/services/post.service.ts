@@ -300,19 +300,17 @@ export const searchPostsService = async (
   query: string,
   currentUserId?: string
 ): Promise<any[]> => {
-  const posts = await Post.find(
-    {
-      $text: {
-        $search: query,
-      },
-    },
-    {
-      score: { $meta: "textScore" },
-    }
-  )
+  const search = query.trim();
+  const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escapedSearch, "i");
+
+  const posts = await Post.find({
+    content: regex,
+  })
     .populate("author", "name username email")
     .sort({
-      score: { $meta: "textScore" },
+      createdAt: -1,
+      _id: -1,
     })
     .limit(10);
 
