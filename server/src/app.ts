@@ -9,6 +9,8 @@ import feedRoutes from './routes/feed.routes';
 import exploreRoutes from './routes/explore.routes';
 import uploadRoutes from './routes/upload.routes';
 import { errorHandler } from './middleware/errorHandler';
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 
 const app: Application = express();
 
@@ -39,5 +41,7 @@ app.use('/api', uploadRoutes);
 
 // Register centralized error handling middleware after all routes
 app.use(errorHandler);
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 export default app;
