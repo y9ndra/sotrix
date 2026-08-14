@@ -1,10 +1,11 @@
 import dotenv from 'dotenv';
+// Load environment variables
+dotenv.config();
+
 import app from './app';
 import {connectDB} from "./config/db";
 import {connectRedis} from "./config/redis";
 
-// Load environment variables
-dotenv.config();
 
 async function startserver(){
   try{
