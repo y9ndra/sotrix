@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
+import { validate } from "../middleware/validate";
+import { createCommentSchema, updateCommentSchema } from "../schemas/comment.schema";
+import { idParamSchema, postIdParamSchema, paginationQuerySchema } from "../schemas/common.schema";
 import {
   createComment,
   getCommentsForPost,
@@ -10,15 +13,15 @@ import {
 const router = Router();
 
 // Create comment for a post (Authenticated)
-router.post("/posts/:postId/comments", authenticate, createComment);
+router.post("/posts/:postId/comments", authenticate, validate(postIdParamSchema, "params"), validate(createCommentSchema, "body"), createComment);
 
 // Get comments for a post
-router.get("/posts/:postId/comments", getCommentsForPost);
+router.get("/posts/:postId/comments", validate(postIdParamSchema, "params"), validate(paginationQuerySchema, "query"), getCommentsForPost);
 
 // Update comment (Authenticated + Authorized)
-router.patch("/comments/:id", authenticate, updateComment);
+router.patch("/comments/:id", authenticate, validate(idParamSchema, "params"), validate(updateCommentSchema, "body"), updateComment);
 
 // Delete comment (Authenticated + Authorized)
-router.delete("/comments/:id", authenticate, deleteComment);
+router.delete("/comments/:id", authenticate, validate(idParamSchema, "params"), deleteComment);
 
 export default router;

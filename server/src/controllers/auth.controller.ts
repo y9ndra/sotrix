@@ -1,11 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
-
-interface SignupBody {
-  username?: string;
-  email?: string;
-  password?: string;
-}
+import { SignupInput } from "../schemas/auth.schema";
 
 interface LoginBody {
   identifier?: string;
@@ -13,16 +8,12 @@ interface LoginBody {
 }
 
 export const signup = async (
-  req: Request<{}, {}, SignupBody>,
+  req: Request<{}, {}, SignupInput>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
   try {
     const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
 
     const result = await authService.signupUser({ username, email, password });
 
