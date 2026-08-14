@@ -32,8 +32,10 @@ export const getUserById = async (userId: string, currentUserId?: string) => {
 
     userObj = user.toObject();
 
-    await redisClient.set(key, JSON.stringify(userObj));
-    console.log("USER CACHED:", key);
+    await redisClient.set(key, JSON.stringify(userObj), {
+      EX: 300,
+    });
+    console.log("USER CACHED (TTL 300s):", key);
   }
 
   let isFollowing = false;
@@ -81,6 +83,10 @@ export const updateUserProfile = async (
   if (!user) {
     throw new Error("User not found");
   }
+
+  const key = `user:${userId}`;
+  await redisClient.del(key);
+  console.log("CACHE DELETED (INVALIDATED):", key);
 
   return user;
 };
