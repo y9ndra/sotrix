@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import app from './app';
 import {connectDB} from "./config/db";
+import {connectRedis} from "./config/redis";
 
 // Load environment variables
 dotenv.config();
@@ -8,6 +9,7 @@ dotenv.config();
 async function startserver(){
   try{
     await connectDB();
+    await connectRedis();
     const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
