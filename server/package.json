@@ -20,7 +20,8 @@
     "mongoose": "^9.7.4",
     "multer": "^2.2.0",
     "redis": "^6.2.1",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
