@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import User from "../models/user.model";
 import Follow from "../models/follow.model";
+import redisClient from "../config/redis";
 
 export interface UpdateProfileInput {
   name?: string;
@@ -13,13 +14,28 @@ export const getUserById = async (userId: string, currentUserId?: string) => {
     throw new Error("Invalid User ID format");
   }
 
-  const user = await User.findById(userId).select("-password");
+  const key = `user:${userId}`;
+  let userObj: any;
 
-  if (!user) {
-    throw new Error("User not found");
+  const cachedUser = await redisClient.get(key);
+
+  if (cachedUser) {
+    console.log("CACHE HIT:", key);
+    userObj = JSON.parse(cachedUser);
+  } else {
+    console.log("CACHE MISS:", key);
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    userObj = user.toObject();
+
+    await redisClient.set(key, JSON.stringify(userObj));
+    console.log("USER CACHED:", key);
   }
 
-  const userObj: any = user.toObject();
   let isFollowing = false;
 
   if (currentUserId && currentUserId !== userId) {
