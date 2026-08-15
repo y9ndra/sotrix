@@ -5,17 +5,11 @@ import {
   updateComment as updateCommentService,
   deleteComment as deleteCommentService,
 } from "../services/comment.service";
-
-interface CreateCommentBody {
-  content?: string;
-}
-
-interface UpdateCommentBody {
-  content?: string;
-}
+import { CreateCommentInput, UpdateCommentInput } from "../schemas/comment.schema";
+import { IdParam, PostIdParam, PaginationQuery } from "../schemas/common.schema";
 
 export const createComment = async (
-  req: Request<{ postId: string }, {}, CreateCommentBody>,
+  req: Request<PostIdParam, {}, CreateCommentInput>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -28,12 +22,8 @@ export const createComment = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    if (!content || !content.trim()) {
-      return res.status(400).json({ message: "Comment content is required" });
-    }
-
     const comment = await createCommentService({
-      content: content.trim(),
+      content,
       author,
       post: postId,
     });
@@ -51,18 +41,13 @@ export const createComment = async (
 };
 
 export const getCommentsForPost = async (
-  req: Request<{ postId: string }>,
+  req: Request<PostIdParam, {}, {}, any>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
   try {
     const { postId } = req.params;
-    const limit = Math.min(
-      Math.max(Number(req.query.limit) || 10, 1),
-      50
-    );
-    const cursor =
-      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const { limit, cursor } = req.query as PaginationQuery;
 
     const result = await getCommentsForPostService(postId, limit, cursor);
 
@@ -79,7 +64,7 @@ export const getCommentsForPost = async (
 };
 
 export const updateComment = async (
-  req: Request<{ id: string }, {}, UpdateCommentBody>,
+  req: Request<IdParam, {}, UpdateCommentInput>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -92,11 +77,11 @@ export const updateComment = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    if (!content || !content.trim()) {
+    if (!content) {
       return res.status(400).json({ message: "Comment content is required" });
     }
 
-    const updatedComment = await updateCommentService(id, userId, content.trim());
+    const updatedComment = await updateCommentService(id, userId, content);
 
     return res.status(200).json({
       success: true,
@@ -116,7 +101,7 @@ export const updateComment = async (
 };
 
 export const deleteComment = async (
-  req: Request<{ id: string }>,
+  req: Request<IdParam>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {

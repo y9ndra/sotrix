@@ -2,9 +2,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
 import { config } from "../config/env";
+import { SignupInput, LoginInput } from "../schemas/auth.schema";
 import {
-  SignupInput,
-  LoginInput,
   LoginServiceResult,
   SignupServiceResult,
   AuthUser,

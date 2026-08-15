@@ -3,9 +3,10 @@ import {
   getExplorePosts as getExplorePostsService,
   getSuggestedUsers as getSuggestedUsersService,
 } from "../services/explore.service";
+import { PaginationQuery } from "../schemas/common.schema";
 
 export const getExplorePosts = async (
-  req: Request,
+  req: Request<{}, {}, {}, any>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -16,12 +17,7 @@ export const getExplorePosts = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const limit = Math.min(
-      Math.max(Number(req.query.limit) || 10, 1),
-      50
-    );
-    const cursor =
-      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const { limit, cursor } = req.query as PaginationQuery;
 
     const result = await getExplorePostsService(currentUserId, limit, cursor);
 
@@ -35,7 +31,7 @@ export const getExplorePosts = async (
 };
 
 export const getSuggestedUsers = async (
-  req: Request,
+  req: Request<{}, {}, {}, any>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -46,12 +42,7 @@ export const getSuggestedUsers = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const limit = Math.min(
-      Math.max(Number(req.query.limit) || 10, 1),
-      50
-    );
-    const cursor =
-      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const { limit, cursor } = req.query as PaginationQuery;
 
     const result = await getSuggestedUsersService(currentUserId, limit, cursor);
 

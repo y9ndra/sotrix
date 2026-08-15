@@ -1,11 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
-import { SignupInput } from "../schemas/auth.schema";
-
-interface LoginBody {
-  identifier?: string;
-  password?: string;
-}
+import { SignupInput, LoginInput } from "../schemas/auth.schema";
 
 export const signup = async (
   req: Request<{}, {}, SignupInput>,
@@ -32,7 +27,7 @@ export const signup = async (
 };
 
 export const login = async (
-  req: Request<{}, {}, LoginBody>,
+  req: Request<{}, {}, LoginInput>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {

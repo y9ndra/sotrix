@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { getHomeFeed as getHomeFeedService } from "../services/feed.service";
+import { PaginationQuery } from "../schemas/common.schema";
 
 export const getHomeFeed = async (
-  req: Request,
+  req: Request<{}, {}, {}, any>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -13,12 +14,7 @@ export const getHomeFeed = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const limit = Math.min(
-      Math.max(Number(req.query.limit) || 10, 1),
-      50
-    );
-    const cursor =
-      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const { limit, cursor } = req.query as PaginationQuery;
 
     const result = await getHomeFeedService(currentUserId, limit, cursor);
 

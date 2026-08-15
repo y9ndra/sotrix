@@ -34,3 +34,10 @@ export const searchQuerySchema = z.object({
     .min(1, "Search query cannot be empty")
     .max(50, "Search query is too long"),
 });
+
+export type IdParam = z.infer<typeof idParamSchema>;
+export type PostIdParam = z.infer<typeof postIdParamSchema>;
+export type CommentIdParam = z.infer<typeof commentIdParamSchema>;
+export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+export type SearchQuery = z.infer<typeof searchQuerySchema>;
+

@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { toggleLike as toggleLikeService } from "../services/like.service";
+import { PostIdParam } from "../schemas/common.schema";
 
 export const toggleLike = async (
-  req: Request<{ postId: string }>,
+  req: Request<PostIdParam>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {

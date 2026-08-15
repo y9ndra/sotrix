@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { getUserById, updateUserProfile, searchUsersService } from "../services/user.service";
+import { UpdateProfileInput } from "../schemas/user.schema";
+import { IdParam, SearchQuery } from "../schemas/common.schema";
 
 export const getUserProfile = async (
-  req: Request,
+  req: Request<IdParam>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -30,7 +32,7 @@ export const getUserProfile = async (
 };
 
 export const updateMyProfile = async (
-  req: Request,
+  req: Request<{}, {}, UpdateProfileInput>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -63,18 +65,11 @@ export const updateMyProfile = async (
 };
 
 export const searchUsers = async (
-  req: Request,
+  req: Request<{}, {}, {}, SearchQuery>,
   res: Response
 ): Promise<any> => {
   try {
-    const query = req.query.q;
-
-    if (typeof query !== "string" || !query.trim()) {
-      return res.status(400).json({
-        message: "Search query is required",
-      });
-    }
-
+    const { q } = req.query;
     const currentUserId = req.user?.id;
     if (!currentUserId) {
       return res.status(401).json({
@@ -83,7 +78,7 @@ export const searchUsers = async (
     }
 
     const users = await searchUsersService(
-      query.trim(),
+      q,
       currentUserId
     );
 

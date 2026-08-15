@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { toggleFollow as toggleFollowService } from "../services/follow.service";
+import { IdParam } from "../schemas/common.schema";
 
 export const toggleFollow = async (
-  req: Request<{ id?: string; userId?: string }>,
+  req: Request<IdParam>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
   try {
-    const targetUserId = req.params.id || req.params.userId;
+    const targetUserId = req.params.id;
     const followerId = req.user?.id;
 
     if (!followerId) {

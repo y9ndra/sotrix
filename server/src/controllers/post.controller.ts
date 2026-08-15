@@ -9,17 +9,11 @@ import {
   deletePost as deletePostService,
   searchPostsService,
 } from "../services/post.service";
-
-interface CreatePostBody {
-  content?: string;
-}
-
-interface UpdatePostBody {
-  content?: string;
-}
+import { CreatePostInput, UpdatePostInput } from "../schemas/post.schema";
+import { IdParam, PaginationQuery, SearchQuery } from "../schemas/common.schema";
 
 export const createPost = async (
-  req: Request<{}, {}, CreatePostBody>,
+  req: Request<{}, {}, CreatePostInput>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -32,10 +26,6 @@ export const createPost = async (
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  if (!content || !content.trim()) {
-    return res.status(400).json({ message: "Post content is required" });
-  }
-
   try {
     if (req.file) {
       const uploadResult = await uploadImage(req.file.buffer);
@@ -44,7 +34,7 @@ export const createPost = async (
     }
 
     const post = await createPostService({
-      content: content.trim(),
+      content,
       author,
       imageUrl,
       imagePublicId,
@@ -67,17 +57,12 @@ export const createPost = async (
 };
 
 export const getPosts = async (
-  req: Request,
+  req: Request<{}, {}, {}, any>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
   try {
-    const limit = Math.min(
-      Math.max(Number(req.query.limit) || 10, 1),
-      50
-    );
-    const cursor =
-      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const { limit, cursor } = req.query as PaginationQuery;
     const currentUserId = req.user?.id;
 
     const result = await getPostsService(limit, cursor, currentUserId);
@@ -92,7 +77,7 @@ export const getPosts = async (
 };
 
 export const getMyPosts = async (
-  req: Request,
+  req: Request<{}, {}, {}, any>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -102,12 +87,7 @@ export const getMyPosts = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const limit = Math.min(
-      Math.max(Number(req.query.limit) || 10, 1),
-      50
-    );
-    const cursor =
-      typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const { limit, cursor } = req.query as PaginationQuery;
 
     const result = await getMyPostsService(userId, limit, cursor, userId);
 
@@ -121,7 +101,7 @@ export const getMyPosts = async (
 };
 
 export const getPostById = async (
-  req: Request<{ id: string }>,
+  req: Request<IdParam>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -144,7 +124,7 @@ export const getPostById = async (
 };
 
 export const updatePost = async (
-  req: Request<{ id: string }, {}, UpdatePostBody>,
+  req: Request<IdParam, {}, UpdatePostInput>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -157,11 +137,11 @@ export const updatePost = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    if (!content || !content.trim()) {
+    if (!content) {
       return res.status(400).json({ message: "Content is required" });
     }
 
-    const updatedPost = await updatePostService(id, userId, content.trim());
+    const updatedPost = await updatePostService(id, userId, content);
 
     return res.status(200).json({
       success: true,
@@ -181,7 +161,7 @@ export const updatePost = async (
 };
 
 export const deletePost = async (
-  req: Request<{ id: string }>,
+  req: Request<IdParam>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
@@ -213,23 +193,16 @@ export const deletePost = async (
 };
 
 export const searchPosts = async (
-  req: Request,
+  req: Request<{}, {}, {}, SearchQuery>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
   try {
-    const query = req.query.q;
-
-    if (typeof query !== "string" || !query.trim()) {
-      return res.status(400).json({
-        message: "Search query is required",
-      });
-    }
-
+    const { q } = req.query;
     const currentUserId = req.user?.id;
 
     const posts = await searchPostsService(
-      query.trim(),
+      q,
       currentUserId
     );
 
