@@ -1,51 +1,16 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
 import Footer from "../components/Footer";
-import { getMe } from "../api/auth.api";
-import type { User } from "../types/user.types";
-import { getToken } from "../services/token.service";
+import { useAuthStore } from "../store/authStore";
 
-interface HomepageProps {
-  token: string | null;
-  onLogout: () => void;
-}
-
-function Homepage({ token, onLogout }: HomepageProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const fetchProfile = async () => {
-    const jwtToken = getToken();
-    if (!jwtToken) {
-      setError("No token found. Please log in first.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const response = await getMe();
-      if (response.data && response.data.user) {
-        setUser(response.data.user);
-      }
-    } catch (err: any) {
-      console.error("Error fetching profile context", err);
-      setError("Failed to fetch profile");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+function Homepage() {
+  const user = useAuthStore((state) => state.user);
 
   return (
     <div>
-      <Navbar isAuthenticated={!!token} onLogout={onLogout} />
+      <Navbar />
       
       <div style={{
         maxWidth: "600px",
@@ -57,48 +22,7 @@ function Homepage({ token, onLogout }: HomepageProps) {
         border: "1px solid rgba(229, 231, 235, 1)",
         fontFamily: "'Inter', sans-serif"
       }}>
-        {loading && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "20px" }}>
-            <div style={{
-              width: "40px",
-              height: "40px",
-              border: "3px solid #e5e7eb",
-              borderTop: "3px solid #4f46e5",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite"
-            }} />
-            <style>{`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}</style>
-            <p style={{ color: "#4b5563", fontSize: "15px", fontWeight: 500, margin: 0 }}>
-              Loading user profile...
-            </p>
-          </div>
-        )}
-
-        {error && !loading && (
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "10px",
-            backgroundColor: "#fef2f2",
-            border: "1px solid #fee2e2",
-            borderRadius: "12px",
-            padding: "16px",
-            color: "#991b1b"
-          }}>
-            <svg style={{ width: "24px", height: "24px", stroke: "#dc2626" }} fill="none" viewBox="0 0 24 24" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span style={{ fontSize: "14px", fontWeight: 600 }}>{error}</span>
-          </div>
-        )}
-
-        {user && !loading && !error && (
+        {user ? (
           <div style={{ display: "flex", alignItems: "center", gap: "20px", textAlign: "left" }}>
             <div style={{
               width: "60px",
@@ -144,9 +68,7 @@ function Homepage({ token, onLogout }: HomepageProps) {
               </Link>
             )}
           </div>
-        )}
-
-        {!user && !loading && !error && (
+        ) : (
           <div style={{ padding: "10px" }}>
             <p style={{ color: "#4b5563", fontSize: "15px", margin: 0 }}>
               Please log in to access all features.

@@ -5,12 +5,7 @@ import PostCard from "../components/PostCard";
 import CreatePost from "../components/CreatePost";
 import Navbar from "../components/Navbar";
 
-interface MyPostsProps {
-  isAuthenticated?: boolean;
-  onLogout?: () => void;
-}
-
-const MyPosts = ({ isAuthenticated = true, onLogout = () => {} }: MyPostsProps) => {
+const MyPosts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +77,7 @@ const MyPosts = ({ isAuthenticated = true, onLogout = () => {} }: MyPostsProps) 
 
   return (
     <div>
-      <Navbar isAuthenticated={isAuthenticated} onLogout={onLogout} />
+      <Navbar />
 
       <div
         className="my-posts-container"

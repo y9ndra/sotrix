@@ -4,12 +4,7 @@ import type { Post } from "../types/post";
 import PostCard from "../components/PostCard";
 import Navbar from "../components/Navbar";
 
-interface FeedProps {
-  isAuthenticated?: boolean;
-  onLogout?: () => void;
-}
-
-const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
+const Feed = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +58,7 @@ const Feed = ({ isAuthenticated = false, onLogout = () => {} }: FeedProps) => {
 
   return (
     <div>
-      <Navbar isAuthenticated={isAuthenticated} onLogout={onLogout} />
+      <Navbar />
 
       <div
         className="feed-container"

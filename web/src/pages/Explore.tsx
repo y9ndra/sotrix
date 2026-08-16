@@ -11,15 +11,7 @@ import type { Post } from "../types/post";
 import { searchUsers } from "../services/user.service";
 import { searchPosts } from "../services/post.service";
 
-interface ExploreProps {
-  isAuthenticated?: boolean;
-  onLogout?: () => void;
-}
-
-const Explore = ({
-  isAuthenticated = false,
-  onLogout = () => {},
-}: ExploreProps) => {
+const Explore = () => {
   const [activeTab, setActiveTab] = useState<"posts" | "users">("posts");
 
   // State for Explore Posts
@@ -176,7 +168,7 @@ const Explore = ({
 
   return (
     <div style={{ backgroundColor: "#f9fafb", minHeight: "100vh" }}>
-      <Navbar isAuthenticated={isAuthenticated} onLogout={onLogout} />
+      <Navbar />
 
       <div
         style={{

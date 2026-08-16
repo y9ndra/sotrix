@@ -1,12 +1,19 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { removeToken } from '../services/token.service';
 
-interface NavbarProps {
-  isAuthenticated: boolean;
-  onLogout: () => void;
-}
+function Navbar() {
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const clearUser = useAuthStore((state) => state.clearUser);
+    const navigate = useNavigate();
 
-function Navbar({ isAuthenticated, onLogout }: NavbarProps){
-    return(
+    const handleLogout = () => {
+        removeToken();
+        clearUser();
+        navigate('/login');
+    };
+
+    return (
         <nav>
             <h1>Sotrix</h1>
             <ul>
@@ -23,7 +30,7 @@ function Navbar({ isAuthenticated, onLogout }: NavbarProps){
                         <li><Link to="/my-posts">My Posts</Link></li>
                         <li>
                             <button 
-                                onClick={onLogout} 
+                                onClick={handleLogout} 
                                 style={{ 
                                     background: 'none', 
                                     border: 'none', 
