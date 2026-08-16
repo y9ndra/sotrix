@@ -10,6 +10,7 @@ import Explore from './pages/Explore'
 import MyPosts from './pages/MyPosts'
 import { getToken, saveToken, removeToken } from './services/token.service'
 import ProtectedRoute from './components/ProtectedRoute'
+import AuthInitializer from './components/AuthInitializer'
 
 function App() {
   const [token, setToken] = useState<string | null>(getToken());
@@ -27,11 +28,13 @@ function App() {
   };
 
   return (
-    <Routes>
+    <>
+      <AuthInitializer />
+      <Routes>
       <Route 
         path="/" 
         element={
-          <ProtectedRoute isAuthenticated={!!token}>
+          <ProtectedRoute>
             <Homepage token={token} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
@@ -39,7 +42,7 @@ function App() {
       <Route 
         path="/feed" 
         element={
-          <ProtectedRoute isAuthenticated={!!token}>
+          <ProtectedRoute>
             <Feed isAuthenticated={!!token} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
@@ -47,7 +50,7 @@ function App() {
       <Route 
         path="/explore" 
         element={
-          <ProtectedRoute isAuthenticated={!!token}>
+          <ProtectedRoute>
             <Explore isAuthenticated={!!token} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
@@ -55,7 +58,7 @@ function App() {
       <Route 
         path="/my-posts" 
         element={
-          <ProtectedRoute isAuthenticated={!!token}>
+          <ProtectedRoute>
             <MyPosts isAuthenticated={!!token} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
@@ -65,12 +68,13 @@ function App() {
       <Route 
         path="/profile/:id" 
         element={
-          <ProtectedRoute isAuthenticated={!!token}>
+          <ProtectedRoute>
             <Profile isAuthenticated={!!token} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
       />
     </Routes>
+    </>
   )
 }
 
