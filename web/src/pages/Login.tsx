@@ -1,14 +1,13 @@
-import { login } from "../api/auth.api"
+import { login, getMe } from "../api/auth.api"
 import React, { useState } from "react";   
 import Button from "../components/Button"
 import Input from "../components/Input"
 import { Link, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import { saveToken } from "../services/token.service";
 
-interface LoginProps {
-  onLogin: (token: string) => void;
-}
-
-function Login({ onLogin }: LoginProps){
+function Login(){
+  const setUser = useAuthStore((state) => state.setUser);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -34,11 +33,19 @@ function Login({ onLogin }: LoginProps){
       const response = await login({ identifier: username, password });
       console.log(response);
       if (response.data && response.data.token) {
-        onLogin(response.data.token);
-        setSuccess("Logged in successfully!");
-        setUsername("");
-        setPassword("");
-        navigate("/");
+        saveToken(response.data.token);
+        
+        // Fetch user data after login to populate the Zustand store
+        const userResponse = await getMe();
+        if (userResponse.data && userResponse.data.user) {
+          setUser(userResponse.data.user);
+          setSuccess("Logged in successfully!");
+          setUsername("");
+          setPassword("");
+          navigate("/");
+        } else {
+          setError("Failed to fetch user profile after authentication");
+        }
       } else {
         setError("Failed to obtain authentication token");
       }

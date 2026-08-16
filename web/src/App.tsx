@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import './App.css'
 import Homepage from './pages/Homepage'
@@ -8,22 +7,19 @@ import Profile from './pages/Profile'
 import Feed from './pages/Feed'
 import Explore from './pages/Explore'
 import MyPosts from './pages/MyPosts'
-import { getToken, saveToken, removeToken } from './services/token.service'
+import { getToken, removeToken } from './services/token.service'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthInitializer from './components/AuthInitializer'
+import { useAuthStore } from './store/authStore'
 
 function App() {
-  const [token, setToken] = useState<string | null>(getToken());
   const navigate = useNavigate();
-
-  const loginUser = (newToken: string) => {
-    saveToken(newToken);
-    setToken(newToken);
-  };
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const clearUser = useAuthStore((state) => state.clearUser);
 
   const logoutUser = () => {
     removeToken();
-    setToken(null);
+    clearUser();
     navigate('/login');
   };
 
@@ -35,7 +31,7 @@ function App() {
         path="/" 
         element={
           <ProtectedRoute>
-            <Homepage token={token} onLogout={logoutUser} />
+            <Homepage token={getToken()} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
       />
@@ -43,7 +39,7 @@ function App() {
         path="/feed" 
         element={
           <ProtectedRoute>
-            <Feed isAuthenticated={!!token} onLogout={logoutUser} />
+            <Feed isAuthenticated={isAuthenticated} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
       />
@@ -51,7 +47,7 @@ function App() {
         path="/explore" 
         element={
           <ProtectedRoute>
-            <Explore isAuthenticated={!!token} onLogout={logoutUser} />
+            <Explore isAuthenticated={isAuthenticated} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
       />
@@ -59,17 +55,17 @@ function App() {
         path="/my-posts" 
         element={
           <ProtectedRoute>
-            <MyPosts isAuthenticated={!!token} onLogout={logoutUser} />
+            <MyPosts isAuthenticated={isAuthenticated} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
       />
-      <Route path="/login" element={<Login onLogin={loginUser} />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route 
         path="/profile/:id" 
         element={
           <ProtectedRoute>
-            <Profile isAuthenticated={!!token} onLogout={logoutUser} />
+            <Profile isAuthenticated={isAuthenticated} onLogout={logoutUser} />
           </ProtectedRoute>
         } 
       />
