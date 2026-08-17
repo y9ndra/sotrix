@@ -1,14 +1,17 @@
 import { useState } from "react";
 import type { Comment } from "../types/comment";
+import { useAuthStore } from "../store/authStore";
 
 interface CommentItemProps {
   comment: Comment;
-  currentUserId: string | null;
   onUpdateComment: (commentId: string, newContent: string) => Promise<void>;
   onDeleteComment: (commentId: string) => Promise<void>;
 }
 
-const CommentItem = ({ comment, currentUserId, onUpdateComment, onDeleteComment }: CommentItemProps) => {
+const CommentItem = ({ comment, onUpdateComment, onDeleteComment }: CommentItemProps) => {
+  const currentUser = useAuthStore((state) => state.user);
+  const currentUserId = currentUser?._id || currentUser?.id || null;
+
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);

@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import api from "../services/api";
 import Navbar from "../components/Navbar";
 import { toggleFollowUser } from "../services/follow.service";
-import { getCurrentUserId } from "../services/token.service";
+import { useAuthStore } from "../store/authStore";
 
 const Profile = () => {
   const { id } = useParams();
@@ -18,7 +18,8 @@ const Profile = () => {
   const [saving, setSaving] = useState<boolean>(false);
   const [editError, setEditError] = useState<string>("");
 
-  const currentUserId = getCurrentUserId();
+  const currentUser = useAuthStore((state) => state.user);
+  const currentUserId = currentUser?._id || currentUser?.id || null;
   const isOwnProfile =
     user && (user._id === currentUserId || user.id === currentUserId || id === currentUserId);
 

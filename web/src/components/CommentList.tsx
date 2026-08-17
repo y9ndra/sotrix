@@ -6,11 +6,10 @@ import CreateComment from "./CreateComment";
 
 interface CommentListProps {
   postId: string;
-  currentUserId: string | null;
   onCommentCountChange?: (change: number) => void;
 }
 
-const CommentList = ({ postId, currentUserId, onCommentCountChange }: CommentListProps) => {
+const CommentList = ({ postId, onCommentCountChange }: CommentListProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +88,6 @@ const CommentList = ({ postId, currentUserId, onCommentCountChange }: CommentLis
           <CommentItem
             key={comment._id}
             comment={comment}
-            currentUserId={currentUserId}
             onUpdateComment={handleUpdateComment}
             onDeleteComment={handleDeleteComment}
           />

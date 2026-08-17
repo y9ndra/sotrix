@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Post } from "../types/post";
 import CommentList from "./CommentList";
-import { getCurrentUserId } from "../services/token.service";
+import { useAuthStore } from "../store/authStore";
 import { toggleLike } from "../services/like.service";
 import { toggleFollowUser } from "../services/follow.service";
 
@@ -40,7 +40,8 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
     setCommentCount(post.commentCount ?? 0);
   }, [post.isLiked, post.likeCount, post.author?.isFollowing, post.commentCount]);
 
-  const currentUserId = getCurrentUserId();
+  const currentUser = useAuthStore((state) => state.user);
+  const currentUserId = currentUser?._id || currentUser?.id || null;
 
   const handleToggleFollow = async () => {
     if (!post.author?._id || followLoading) return;
@@ -334,7 +335,6 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
       {showComments && (
         <CommentList
           postId={post._id}
-          currentUserId={currentUserId}
           onCommentCountChange={(change) => setCommentCount((prev) => Math.max(0, prev + change))}
         />
       )}
