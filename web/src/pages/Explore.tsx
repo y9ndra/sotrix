@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
 import Navbar from "../components/Navbar";
 import PostCard from "../components/PostCard";
 import UserCard from "../components/UserCard";
@@ -7,19 +9,31 @@ import {
   getSuggestedUsers,
 } from "../services/explore.service";
 import type { SuggestedUser } from "../services/explore.service";
-import type { Post } from "../types/post";
+import type { Post, PostsResponse } from "../types/post";
 import { searchUsers } from "../services/user.service";
 import { searchPosts } from "../services/post.service";
 
 const Explore = () => {
   const [activeTab, setActiveTab] = useState<"posts" | "users">("posts");
 
-  // State for Explore Posts
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [postsLoading, setPostsLoading] = useState(false);
-  const [postsError, setPostsError] = useState<string | null>(null);
-  const [postsNextCursor, setPostsNextCursor] = useState<string | null>(null);
-  const [postsHasMore, setPostsHasMore] = useState(true);
+  const queryClient = useQueryClient();
+
+  // Query for Explore Posts
+  const {
+    data: postsData,
+    isLoading: postsLoading,
+    error: postsError,
+    fetchNextPage: loadMoreExplorePosts,
+    hasNextPage: postsHasMore,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["explore", "posts"],
+    queryFn: ({ pageParam }) => getExplorePosts(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
+  });
+
+  const posts = postsData?.pages.flatMap((page) => page.data) ?? [];
 
   // State for Suggested Users
   const [users, setUsers] = useState<SuggestedUser[]>([]);
@@ -42,36 +56,7 @@ const Explore = () => {
   const [postSearchError, setPostSearchError] = useState<string | null>(null);
   const [isPostSearched, setIsPostSearched] = useState(false);
 
-  const fetchExplorePosts = async () => {
-    try {
-      setPostsLoading(true);
-      setPostsError(null);
-      const response = await getExplorePosts();
-      setPosts(response.data);
-      setPostsNextCursor(response.pagination.nextCursor);
-      setPostsHasMore(response.pagination.hasMore);
-    } catch (err) {
-      setPostsError("Failed to load explore posts");
-    } finally {
-      setPostsLoading(false);
-    }
-  };
 
-  const loadMoreExplorePosts = async () => {
-    if (!postsNextCursor || !postsHasMore) return;
-    try {
-      setPostsLoading(true);
-      setPostsError(null);
-      const response = await getExplorePosts(postsNextCursor);
-      setPosts((prev) => [...prev, ...response.data]);
-      setPostsNextCursor(response.pagination.nextCursor);
-      setPostsHasMore(response.pagination.hasMore);
-    } catch (err) {
-      setPostsError("Failed to load more posts");
-    } finally {
-      setPostsLoading(false);
-    }
-  };
 
   const fetchSuggestedUsers = async () => {
     try {
@@ -153,16 +138,28 @@ const Explore = () => {
   };
 
   useEffect(() => {
-    fetchExplorePosts();
     fetchSuggestedUsers();
   }, []);
+
+  const handleFollowToggleInCache = (authorId: string) => {
+    queryClient.setQueryData<InfiniteData<PostsResponse>>(["explore", "posts"], (oldData) => {
+      if (!oldData) return oldData;
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page) => ({
+          ...page,
+          data: page.data.filter((p) => p.author?._id !== authorId),
+        })),
+      };
+    });
+  };
 
   const handleUserFollowChange = (userId: string, isFollowing: boolean) => {
     if (isFollowing) {
       // Filter out user from suggested users list once followed
       setUsers((prev) => prev.filter((u) => u._id !== userId));
       // Also filter out their posts from discover feed
-      setPosts((prev) => prev.filter((p) => p.author?._id !== userId));
+      handleFollowToggleInCache(userId);
     }
   };
 
@@ -349,7 +346,7 @@ const Explore = () => {
                       onFollowToggle={(authorId, isFollowing) => {
                         if (isFollowing) {
                           setPostSearchResults((prev) => prev.filter((p) => p.author?._id !== authorId));
-                          setPosts((prev) => prev.filter((p) => p.author?._id !== authorId));
+                          handleFollowToggleInCache(authorId);
                           setUsers((prev) => prev.filter((u) => u._id !== authorId));
                         }
                       }}
@@ -365,7 +362,7 @@ const Explore = () => {
               </div>
             ) : (
               <div>
-                {postsError && <p style={{ color: "#dc2626" }}>{postsError}</p>}
+                {postsError && <p style={{ color: "#dc2626" }}>{postsError.message}</p>}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   {posts.map((post) => (
@@ -374,7 +371,7 @@ const Explore = () => {
                       post={post}
                       onFollowToggle={(authorId, isFollowing) => {
                         if (isFollowing) {
-                          setPosts((prev) => prev.filter((p) => p.author?._id !== authorId));
+                          handleFollowToggleInCache(authorId);
                           setUsers((prev) => prev.filter((u) => u._id !== authorId));
                         }
                       }}
@@ -388,27 +385,27 @@ const Explore = () => {
                   </p>
                 )}
 
-                {postsLoading && <p style={{ marginTop: "16px", color: "#6b7280" }}>Loading posts...</p>}
+                {postsLoading && !isFetchingNextPage && <p style={{ marginTop: "16px", color: "#6b7280" }}>Loading posts...</p>}
 
                 {posts.length > 0 && postsHasMore && (
                   <button
-                    onClick={loadMoreExplorePosts}
-                    disabled={postsLoading}
+                    onClick={() => loadMoreExplorePosts()}
+                    disabled={postsLoading || isFetchingNextPage}
                     style={{
                       marginTop: "24px",
                       padding: "10px 20px",
                       fontSize: "15px",
-                      cursor: postsLoading ? "not-allowed" : "pointer",
+                      cursor: postsLoading || isFetchingNextPage ? "not-allowed" : "pointer",
                       backgroundColor: "#4f46e5",
                       color: "#ffffff",
                       border: "none",
                       borderRadius: "8px",
                       fontWeight: 600,
-                      opacity: postsLoading ? 0.6 : 1,
+                      opacity: postsLoading || isFetchingNextPage ? 0.6 : 1,
                       width: "100%",
                     }}
                   >
-                    {postsLoading ? "Loading..." : "Load More Posts"}
+                    {postsLoading || isFetchingNextPage ? "Loading..." : "Load More Posts"}
                   </button>
                 )}
               </div>
