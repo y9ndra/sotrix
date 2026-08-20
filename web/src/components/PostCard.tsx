@@ -7,6 +7,7 @@ import { useAuthStore } from "../store/authStore";
 import { toggleLike } from "../services/like.service";
 import { toggleFollowUser } from "../services/follow.service";
 import { queryKeys } from "../lib/queryKeys";
+import { updatePostInInfiniteCache } from "../lib/queryCache";
 
 interface PostCardProps {
   post: Post;
@@ -56,26 +57,16 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
       const previousExploreData = queryClient.getQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore);
 
       // Optimistically update the explore posts cache
-      queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore, (oldData) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => ({
-            ...page,
-            data: page.data.map((p) => {
-              if (p._id === postId) {
-                const wasLiked = p.isLiked ?? false;
-                return {
-                  ...p,
-                  isLiked: !wasLiked,
-                  likeCount: Math.max(0, (p.likeCount ?? 0) + (wasLiked ? -1 : 1)),
-                };
-              }
-              return p;
-            }),
-          })),
-        };
-      });
+      updatePostInInfiniteCache(
+        queryClient,
+        queryKeys.posts.explore,
+        postId,
+        (oldPost) => ({
+          ...oldPost,
+          isLiked: !oldPost.isLiked,
+          likeCount: Math.max(0, (oldPost.likeCount ?? 0) + (oldPost.isLiked ? -1 : 1)),
+        })
+      );
 
       // Optimistically update local states for fallback
       setLiked((prev) => !prev);
@@ -139,7 +130,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
         };
       });
 
-      // Optimistically update local state fallback
+      // Optimistically update local follow state
       setIsFollowing((prev) => !prev);
 
       return { previousExploreData };
@@ -150,7 +141,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
         queryClient.setQueryData(queryKeys.posts.explore, context.previousExploreData);
       }
 
-      // Rollback local state
+      // Rollback local follow state
       setIsFollowing(post.author?.isFollowing ?? false);
 
       console.error("Failed to toggle follow author, rolled back:", err);
