@@ -207,3 +207,37 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 
 ### Day 50
 - Final code audit, security vulnerability scanning, and project completion
+
+---
+
+## 🎨 UI Design Checklist
+*We will tackle these components and pages one by one, checking them off (`[x]`) as we proceed.*
+
+### 🧱 Global & Design System Foundations
+- [ ] Global CSS Tokens & Themes
+- [ ] Global Layout Shell & Resets
+
+### 📄 Pages
+- [ ] Homepage
+- [ ] Login Page
+- [ ] Signup Page
+- [ ] Feed Page
+- [ ] Explore Page
+- [ ] Profile Page
+- [ ] My Posts Page
+
+### 🧩 Components
+- [ ] Navbar
+- [ ] Hero Section
+- [ ] Features Section
+- [ ] Footer
+- [ ] Button
+- [ ] Input
+- [ ] PostCard
+- [ ] CreatePost
+- [ ] CommentList
+- [ ] CommentItem
+- [ ] CreateComment
+- [ ] UserCard
+- [ ] ProtectedRoute UI
+- [ ] AuthInitializer UI
