@@ -12,6 +12,7 @@ import type { SuggestedUser } from "../services/explore.service";
 import type { Post, PostsResponse } from "../types/post";
 import { searchUsers } from "../services/user.service";
 import { searchPosts } from "../services/post.service";
+import { queryKeys } from "../lib/queryKeys";
 
 const Explore = () => {
   const [activeTab, setActiveTab] = useState<"posts" | "users">("posts");
@@ -27,7 +28,7 @@ const Explore = () => {
     hasNextPage: postsHasMore,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["explore", "posts"],
+    queryKey: queryKeys.posts.explore,
     queryFn: ({ pageParam }) => getExplorePosts(pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
@@ -142,7 +143,7 @@ const Explore = () => {
   }, []);
 
   const handleFollowToggleInCache = (authorId: string) => {
-    queryClient.setQueryData<InfiniteData<PostsResponse>>(["explore", "posts"], (oldData) => {
+    queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore, (oldData) => {
       if (!oldData) return oldData;
       return {
         ...oldData,

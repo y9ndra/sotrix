@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import type { Post } from "../types/post";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
+import type { Post, PostsResponse } from "../types/post";
 import CommentList from "./CommentList";
 import { useAuthStore } from "../store/authStore";
 import { toggleLike } from "../services/like.service";
 import { toggleFollowUser } from "../services/follow.service";
+import { queryKeys } from "../lib/queryKeys";
 
 interface PostCardProps {
   post: Post;
@@ -24,14 +27,12 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
   // Like state initialized from backend post data
   const [liked, setLiked] = useState<boolean>(post.isLiked ?? false);
   const [likeCount, setLikeCount] = useState<number>(post.likeCount ?? 0);
-  const [likeLoading, setLikeLoading] = useState<boolean>(false);
 
   // Comment count state initialized from backend post data
   const [commentCount, setCommentCount] = useState<number>(post.commentCount ?? 0);
 
   // Follow author state
   const [isFollowing, setIsFollowing] = useState<boolean>(post.author?.isFollowing ?? false);
-  const [followLoading, setFollowLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setLiked(post.isLiked ?? false);
@@ -43,34 +44,135 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
   const currentUser = useAuthStore((state) => state.user);
   const currentUserId = currentUser?._id || currentUser?.id || null;
 
-  const handleToggleFollow = async () => {
-    if (!post.author?._id || followLoading) return;
-    try {
-      setFollowLoading(true);
-      const res = await toggleFollowUser(post.author._id);
-      setIsFollowing(res.following);
-      if (onFollowToggle) {
-        onFollowToggle(post.author._id, res.following);
+  const queryClient = useQueryClient();
+
+  const likeMutation = useMutation({
+    mutationFn: toggleLike,
+    onMutate: async (postId) => {
+      // Cancel outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
+
+      // Snapshot the previous cache value
+      const previousExploreData = queryClient.getQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore);
+
+      // Optimistically update the explore posts cache
+      queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore, (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            data: page.data.map((p) => {
+              if (p._id === postId) {
+                const wasLiked = p.isLiked ?? false;
+                return {
+                  ...p,
+                  isLiked: !wasLiked,
+                  likeCount: Math.max(0, (p.likeCount ?? 0) + (wasLiked ? -1 : 1)),
+                };
+              }
+              return p;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update local states for fallback
+      setLiked((prev) => !prev);
+      setLikeCount((prev) => Math.max(0, prev + (liked ? -1 : 1)));
+
+      return { previousExploreData };
+    },
+    onError: (err: any, _postId, context) => {
+      // Rollback cache to the snapshot
+      if (context?.previousExploreData) {
+        queryClient.setQueryData(queryKeys.posts.explore, context.previousExploreData);
       }
-    } catch (err: any) {
-      console.error("Failed to toggle follow author:", err);
-    } finally {
-      setFollowLoading(false);
-    }
+
+      // Rollback local states
+      setLiked(post.isLiked ?? false);
+      setLikeCount(post.likeCount ?? 0);
+
+      console.error("Failed to toggle like, rolled back:", err);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.all,
+      });
+    },
+  });
+
+  const handleToggleLike = () => {
+    if (likeMutation.isPending) return;
+    likeMutation.mutate(post._id);
   };
 
-  const handleToggleLike = async () => {
-    if (likeLoading) return;
-    try {
-      setLikeLoading(true);
-      const res = await toggleLike(post._id);
-      setLiked(res.liked);
-      setLikeCount(res.likeCount);
-    } catch (err: any) {
-      console.error("Failed to toggle like:", err);
-    } finally {
-      setLikeLoading(false);
-    }
+  const followMutation = useMutation({
+    mutationFn: toggleFollowUser,
+    onMutate: async (authorId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
+
+      // Snapshot the previous cache value
+      const previousExploreData = queryClient.getQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore);
+
+      // Optimistically update follow status for all posts of this author in the explore feed
+      queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore, (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            data: page.data.map((p) => {
+              if (p.author?._id === authorId) {
+                return {
+                  ...p,
+                  author: {
+                    ...p.author,
+                    isFollowing: !isFollowing,
+                  },
+                };
+              }
+              return p;
+            }),
+          })),
+        };
+      });
+
+      // Optimistically update local state fallback
+      setIsFollowing((prev) => !prev);
+
+      return { previousExploreData };
+    },
+    onError: (err: any, _authorId, context) => {
+      // Rollback cache
+      if (context?.previousExploreData) {
+        queryClient.setQueryData(queryKeys.posts.explore, context.previousExploreData);
+      }
+
+      // Rollback local state
+      setIsFollowing(post.author?.isFollowing ?? false);
+
+      console.error("Failed to toggle follow author, rolled back:", err);
+    },
+    onSuccess: (res, authorId) => {
+      if (onFollowToggle) {
+        onFollowToggle(authorId, res.following);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.users.suggested,
+      });
+    },
+  });
+
+  const handleToggleFollow = () => {
+    if (!post.author?._id || followMutation.isPending) return;
+    followMutation.mutate(post.author._id);
   };
 
   const handleSaveEdit = async () => {
@@ -133,7 +235,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
           {!isOwner && post.author?._id && currentUserId !== post.author._id && (
             <button
               onClick={handleToggleFollow}
-              disabled={followLoading}
+              disabled={followMutation.isPending}
               style={{
                 padding: "3px 10px",
                 fontSize: "12px",
@@ -141,13 +243,13 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
                 border: isFollowing ? "1px solid #d1d5db" : "none",
                 backgroundColor: isFollowing ? "#f3f4f6" : "#4f46e5",
                 color: isFollowing ? "#374151" : "#ffffff",
-                cursor: followLoading ? "not-allowed" : "pointer",
+                cursor: followMutation.isPending ? "not-allowed" : "pointer",
                 fontWeight: 600,
                 transition: "all 0.2s ease",
-                opacity: followLoading ? 0.6 : 1,
+                opacity: followMutation.isPending ? 0.6 : 1,
               }}
             >
-              {followLoading ? "..." : isFollowing ? "Following" : "Follow"}
+              {followMutation.isPending ? "..." : isFollowing ? "Following" : "Follow"}
             </button>
           )}
         </div>
@@ -288,7 +390,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <button
             onClick={handleToggleLike}
-            disabled={likeLoading}
+            disabled={likeMutation.isPending}
             style={{
               display: "flex",
               alignItems: "center",
@@ -298,7 +400,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
               color: liked ? "#ef4444" : "#6b7280",
               fontSize: "13px",
               fontWeight: 600,
-              cursor: likeLoading ? "not-allowed" : "pointer",
+              cursor: likeMutation.isPending ? "not-allowed" : "pointer",
               padding: "4px 8px",
               borderRadius: "6px",
               backgroundColor: liked ? "#fee2e2" : "transparent",
