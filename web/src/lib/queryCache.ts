@@ -1,5 +1,5 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
-import type { Post, PostsResponse } from "../types/post";
+import type { Post, PostAuthor, PostsResponse } from "../types/post";
 import { queryKeys } from "./queryKeys";
 
 /**
@@ -59,6 +59,43 @@ export const updatePostInAllInfiniteCaches = (
             ? updater(post)
             : post
         ),
+      })),
+    });
+  });
+};
+
+/**
+ * Updates a specific author's follow status across ALL active infinite post query caches matching queryKeys.posts.all prefix
+ */
+export const updateAuthorInAllInfiniteCaches = (
+  queryClient: QueryClient,
+  authorId: string,
+  updater: (author: PostAuthor) => PostAuthor
+) => {
+  const queries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+    queryKey: queryKeys.posts.all,
+  });
+
+  queries.forEach(([queryKey, oldData]) => {
+    if (!oldData) return;
+
+    queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKey, {
+      ...oldData,
+
+      pages: oldData.pages.map((page) => ({
+        ...page,
+
+        data: page.data.map((post) => {
+          if (post.author._id !== authorId) {
+            return post;
+          }
+
+          return {
+            ...post,
+
+            author: updater(post.author),
+          };
+        }),
       })),
     });
   });

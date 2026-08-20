@@ -7,7 +7,10 @@ import { useAuthStore } from "../store/authStore";
 import { toggleLike } from "../services/like.service";
 import { toggleFollowUser } from "../services/follow.service";
 import { queryKeys } from "../lib/queryKeys";
-import { updatePostInAllInfiniteCaches } from "../lib/queryCache";
+import {
+  updatePostInAllInfiniteCaches,
+  updateAuthorInAllInfiniteCaches,
+} from "../lib/queryCache";
 
 interface PostCardProps {
   post: Post;
@@ -105,41 +108,28 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
 
-      // Snapshot the previous cache value
-      const previousExploreData = queryClient.getQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore);
-
-      // Optimistically update follow status for all posts of this author in the explore feed
-      queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore, (oldData) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => ({
-            ...page,
-            data: page.data.map((p) => {
-              if (p.author?._id === authorId) {
-                return {
-                  ...p,
-                  author: {
-                    ...p.author,
-                    isFollowing: !isFollowing,
-                  },
-                };
-              }
-              return p;
-            }),
-          })),
-        };
+      // Save all matching caches for rollback
+      const previousQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+        queryKey: queryKeys.posts.all,
       });
+
+      // Optimistically update follow status for all posts of this author across all infinite caches
+      updateAuthorInAllInfiniteCaches(queryClient, authorId, (author) => ({
+        ...author,
+        isFollowing: !author.isFollowing,
+      }));
 
       // Optimistically update local follow state
       setIsFollowing((prev) => !prev);
 
-      return { previousExploreData };
+      return { previousQueries };
     },
     onError: (err: any, _authorId, context) => {
-      // Rollback cache
-      if (context?.previousExploreData) {
-        queryClient.setQueryData(queryKeys.posts.explore, context.previousExploreData);
+      // Rollback all caches to their snapshots
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, oldData]) => {
+          queryClient.setQueryData(queryKey, oldData);
+        });
       }
 
       // Rollback local follow state
