@@ -60,63 +60,64 @@ function Signup(){
         }
       }
 
-    return(
-        <div style={{ margin: "20px 0", padding: "20px", border: "1px solid #ccc", borderRadius: "5px" }}>
-        <h2>Sign Up</h2>
-        {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
-        {success && <div style={{ color: "green", marginBottom: "10px" }}>{success}</div>}
-        
-        <Input 
-          label="Username"
-          placeholder="Enter your username"
-          value={username}
-          onChange={handleusernamechange}/>
+    return (
+      <div className="auth-container">
+        <div className="auth-card signup-card">
+          <span className="auth-header-tag">Account Signup</span>
+          <h2 className="auth-title">Sign Up</h2>
+          
+          {error && <div className="alert-error">{error}</div>}
+          {success && <div className="alert-success">{success}</div>}
+          
+          <Input 
+            label="Username"
+            placeholder="Pick a handle"
+            value={username}
+            onChange={handleusernamechange}
+          />
 
-        <Input 
-          label="Email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={handleemailchange}/>
+          <Input 
+            label="Email"
+            placeholder="name@domain.com"
+            value={email}
+            onChange={handleemailchange}
+          />
 
-        <Input
-          label="Password"
-          placeholder="Enter your password"
-          value={password}
-          type="password"
-          onChange={handlepasswordchange}/>
+          <Input
+            label="Password"
+            placeholder="••••••••"
+            value={password}
+            type="password"
+            onChange={handlepasswordchange}
+          />
 
-        <Input 
-          label="Confirm Password"
-          placeholder="Confirm your password"
-          value={confirmPassword}
-          type="password"
-          onChange={handleconfirmpasswordchange}/>
+          <Input 
+            label="Confirm Password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            type="password"
+            onChange={handleconfirmpasswordchange}
+          />
 
-        <br />
-        <Button name={loading ? "Signing up..." : "Signup"} onClick={handlesignup} disabled={loading}/>
-        
-        <div style={{ marginTop: "15px" }}>
-          Already have an account? <Link to="/login">Log in</Link>
+          <Button 
+            name={loading ? "Signing up..." : "Sign Up"} 
+            onClick={handlesignup} 
+            disabled={loading}
+          />
+          
+          <div className="auth-link-group">
+            Already have an account? <Link to="/login">Log In</Link>
+          </div>
+          
+          <div className="auth-back-container">
+            <button onClick={() => navigate(-1)} className="auth-back-button">
+              Back
+            </button>
+            <span>|</span>
+            <Link to="/">Back to Home</Link>
+          </div>
         </div>
-        <div style={{ marginTop: "10px" }}>
-          <button 
-            onClick={() => navigate(-1)} 
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: '#0066cc', 
-              textDecoration: 'underline', 
-              cursor: 'pointer', 
-              font: 'inherit', 
-              padding: 0 
-            }}
-          >
-            Back
-          </button>
-          {" | "}
-          <Link to="/">Back to Home</Link>
-        </div>
-        </div>
-    )
+      </div>
+    );
 }
-export default Signup
+export default Signup;

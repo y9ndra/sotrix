@@ -214,13 +214,13 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 *We will tackle these components and pages one by one, checking them off (`[x]`) as we proceed.*
 
 ### 🧱 Global & Design System Foundations
-- [ ] Global CSS Tokens & Themes
-- [ ] Global Layout Shell & Resets
+- [x] Global CSS Tokens & Themes
+- [x] Global Layout Shell & Resets
 
 ### 📄 Pages
 - [ ] Homepage
-- [ ] Login Page
-- [ ] Signup Page
+- [x] Login Page
+- [x] Signup Page
 - [ ] Feed Page
 - [ ] Explore Page
 - [ ] Profile Page
@@ -231,8 +231,8 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - [ ] Hero Section
 - [ ] Features Section
 - [ ] Footer
-- [ ] Button
-- [ ] Input
+- [x] Button
+- [x] Input
 - [ ] PostCard
 - [ ] CreatePost
 - [ ] CommentList

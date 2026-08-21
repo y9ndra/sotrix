@@ -6,14 +6,20 @@ interface InputProps {
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
+  className?: string;
 }
 
-function Input({ label, placeholder, value, onChange, type = "text" }: InputProps) {
+function Input({ label, placeholder, value, onChange, type = "text", className = "" }: InputProps) {
   return (
-    <div>
-      <label>{label}</label>
-      <br />
-      <input type={type} placeholder={placeholder} value={value} onChange={onChange}/>
+    <div className={`input-group ${className}`}>
+      <label className="input-label">{label}</label>
+      <input 
+        type={type} 
+        placeholder={placeholder} 
+        value={value} 
+        onChange={onChange}
+        className="input-field"
+      />
     </div>
   );
 }
