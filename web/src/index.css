@@ -331,3 +331,86 @@ button, input, textarea, select {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+/* Welcome Card Layout (Homepage) */
+.welcome-card-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.welcome-card {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  padding: 32px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+@media (max-width: 600px) {
+  .welcome-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+  }
+}
+
+.welcome-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  border: 1px solid var(--border-default);
+}
+
+.welcome-info {
+  flex: 1;
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .welcome-info {
+    text-align: center;
+  }
+}
+
+.welcome-title {
+  font-size: 20px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.welcome-highlight {
+  color: var(--accent-matrix);
+}
+
+.welcome-email {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.welcome-email-icon {
+  width: 16px;
+  height: 16px;
+  stroke: var(--text-muted);
+}
+
+.welcome-btn {
+  width: auto;
+  min-width: 120px;
+}

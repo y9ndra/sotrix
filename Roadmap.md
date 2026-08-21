@@ -218,7 +218,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - [x] Global Layout Shell & Resets
 
 ### 📄 Pages
-- [ ] Homepage
+- [x] Homepage
 - [x] Login Page
 - [x] Signup Page
 - [ ] Feed Page
@@ -229,7 +229,6 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ### 🧩 Components
 - [ ] Navbar
 - [ ] Hero Section
-- [ ] Features Section
 - [ ] Footer
 - [x] Button
 - [x] Input
