@@ -1,0 +1,107 @@
+import Notification, { INotification } from "../models/notification.model";
+import { decodeCursor, encodeCursor } from "../utils/cursor";
+
+export interface PaginatedNotificationsResult {
+  data: INotification[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+}
+
+export const getNotifications = async (
+  userId: string,
+  limit: number = 10,
+  cursor?: string
+): Promise<PaginatedNotificationsResult> => {
+  const query: any = { recipient: userId };
+
+  if (cursor) {
+    const decoded = decodeCursor(cursor);
+    if (decoded) {
+      const cursorDate = new Date(decoded.createdAt);
+      query.$or = [
+        {
+          createdAt: {
+            $lt: cursorDate,
+          },
+        },
+        {
+          createdAt: cursorDate,
+          _id: {
+            $lt: decoded.id,
+          },
+        },
+      ];
+    }
+  }
+
+  const notifications = await Notification.find(query)
+    .populate("actor", "name username email")
+    .sort({
+      createdAt: -1,
+      _id: -1,
+    })
+    .limit(limit + 1);
+
+  const hasMore = notifications.length > limit;
+  const data = notifications.slice(0, limit);
+
+  let nextCursor: string | null = null;
+  if (hasMore && data.length > 0) {
+    const lastNotification = data[data.length - 1];
+    nextCursor = encodeCursor({
+      createdAt: (lastNotification.createdAt as Date).toISOString(),
+      id: lastNotification._id.toString(),
+    });
+  }
+
+  return {
+    data,
+    pagination: {
+      hasMore,
+      nextCursor,
+    },
+  };
+};
+
+export const getUnreadCount = async (userId: string): Promise<number> => {
+  return Notification.countDocuments({
+    recipient: userId,
+    read: false,
+  });
+};
+
+export const markNotificationAsRead = async (
+  notificationId: string,
+  userId: string
+): Promise<INotification | null> => {
+  const notification = await Notification.findOneAndUpdate(
+    {
+      _id: notificationId,
+      recipient: userId,
+    },
+    {
+      $set: { read: true },
+    },
+    {
+      new: true,
+    }
+  );
+
+  return notification;
+};
+
+export const markAllNotificationsAsRead = async (
+  userId: string
+): Promise<void> => {
+  await Notification.updateMany(
+    {
+      recipient: userId,
+      read: false,
+    },
+    {
+      $set: { read: true },
+    }
+  );
+};

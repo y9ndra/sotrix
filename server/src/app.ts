@@ -10,6 +10,7 @@ import likeRoutes from './routes/like.routes';
 import feedRoutes from './routes/feed.routes';
 import exploreRoutes from './routes/explore.routes';
 import uploadRoutes from './routes/upload.routes';
+import notificationRoutes from './routes/notification.routes';
 import { errorHandler } from './middleware/errorHandler';
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
@@ -63,6 +64,7 @@ app.use('/api/explore', exploreRoutes);
 app.use('/api', commentRoutes);
 app.use('/api', likeRoutes);
 app.use('/api', uploadRoutes);
+app.use('/api', notificationRoutes);
 
 // Register centralized error handling middleware after all routes
 app.use(errorHandler);
