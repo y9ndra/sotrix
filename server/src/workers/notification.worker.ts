@@ -1,19 +1,32 @@
 import "dotenv/config";
+import { connectDB } from "../config/db";
 import { Worker } from "bullmq";
 import { bullMQConnection } from "../config/bullmq-redis";
+import Notification from "../models/notification.model";
 import type { NotificationJobData } from "../queues/notification.queue";
 
-const notificationWorker = new Worker<NotificationJobData>(
+// Connect to MongoDB
+connectDB().catch((err) => {
+  console.error("Failed to connect to MongoDB in worker process:", err);
+  process.exit(1);
+});
+
+export const notificationWorker = new Worker<NotificationJobData>(
   "notifications",
   async (job) => {
     console.log("Processing job:", job.id);
+    const { recipientId, actorId, type, postId } = job.data;
 
-    console.log("Notification data:", job.data);
+    const notification = await Notification.create({
+      recipient: recipientId,
+      actor: actorId,
+      type,
+      post: postId,
+    });
 
-    // Simulate background work
-    console.log(
-      `Sending ${job.data.type} notification to ${job.data.recipientId}`
-    );
+    console.log(`Notification created: ${notification._id}`);
+
+    return notification;
   },
   {
     connection: bullMQConnection,
@@ -26,10 +39,7 @@ notificationWorker.on("completed", (job) => {
 });
 
 notificationWorker.on("failed", (job, error) => {
-  console.error(
-    `Job ${job?.id} failed ❌`,
-    error
-  );
+  console.error(`Job ${job?.id} failed ❌`, error);
 });
 
 console.log("Notification worker started 🚀");
