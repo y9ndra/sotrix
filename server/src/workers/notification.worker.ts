@@ -17,6 +17,7 @@ const notificationWorker = new Worker<NotificationJobData>(
   },
   {
     connection: bullMQConnection,
+    concurrency: 5,
   }
 );
 

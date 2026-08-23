@@ -12,5 +12,18 @@ export const notificationQueue = new Queue<NotificationJobData>(
   "notifications",
   {
     connection: bullMQConnection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+      removeOnComplete: {
+        count: 1000,
+      },
+      removeOnFail: {
+        count: 5000,
+      },
+    },
   }
 );

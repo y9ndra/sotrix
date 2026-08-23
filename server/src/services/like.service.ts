@@ -5,6 +5,7 @@ import Post from "../models/post.model";
 export interface ToggleLikeResult {
   liked: boolean;
   likeCount: number;
+  postAuthorId: string;
 }
 
 const toggleLikeWithoutTransaction = async (
@@ -31,6 +32,7 @@ const toggleLikeWithoutTransaction = async (
     return {
       liked: false,
       likeCount: updatedPost ? Math.max(0, updatedPost.likeCount) : 0,
+      postAuthorId: post.author.toString(),
     };
   } else {
     await Like.create({
@@ -45,6 +47,7 @@ const toggleLikeWithoutTransaction = async (
     return {
       liked: true,
       likeCount: updatedPost ? Math.max(0, updatedPost.likeCount) : 0,
+      postAuthorId: post.author.toString(),
     };
   }
 };
@@ -112,6 +115,7 @@ export const toggleLike = async (
       return {
         liked,
         likeCount: updatedPost ? Math.max(0, updatedPost.likeCount) : 0,
+        postAuthorId: post.author.toString(),
       };
     } catch (error: any) {
       if (session) {
