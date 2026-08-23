@@ -9,6 +9,7 @@ import Explore from './pages/Explore'
 import MyPosts from './pages/MyPosts'
 import ProtectedRoute from './components/ProtectedRoute'
 import AuthInitializer from './components/AuthInitializer'
+import Notifications from './pages/Notifications'
 
 function App() {
   return (
@@ -44,6 +45,14 @@ function App() {
         element={
           <ProtectedRoute>
             <MyPosts />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/notifications" 
+        element={
+          <ProtectedRoute>
+            <Notifications />
           </ProtectedRoute>
         } 
       />

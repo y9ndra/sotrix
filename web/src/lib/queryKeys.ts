@@ -20,4 +20,9 @@ export const queryKeys = {
       ["users", userId] as const,
     suggested: ["users", "suggested"] as const,
   },
+
+  notifications: {
+    all: ["notifications"] as const,
+    unreadCount: ["notifications", "unreadCount"] as const,
+  },
 };

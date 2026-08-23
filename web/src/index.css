@@ -414,3 +414,265 @@ button, input, textarea, select {
   width: auto;
   min-width: 120px;
 }
+
+/* ==========================================================================
+   Navigation Bar Styling (Premium Dark Mode)
+   ========================================================================== */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+nav h1 {
+  font-size: 18px;
+  color: var(--accent-matrix);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+nav ul {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+nav ul li {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+nav ul li a {
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+}
+
+nav ul li a:hover {
+  color: var(--text-primary);
+}
+
+nav ul li button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+nav ul li button:hover {
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   Notifications UI & Badge
+   ========================================================================== */
+.notifications-container {
+  max-width: var(--max-width-content);
+  margin: 40px auto;
+  padding: 16px;
+}
+
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: 16px;
+}
+
+.notifications-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  border-color: var(--border-active);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notification-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 2px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  position: relative;
+}
+
+.notification-item::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 4px;
+  height: 4px;
+  border-color: var(--text-muted);
+  border-style: solid;
+  border-width: 1px 0 0 1px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.notification-item:hover {
+  border-color: var(--border-active);
+  background-color: var(--bg-hover);
+}
+
+.notification-item:hover::before {
+  opacity: 1;
+}
+
+.notification-item.unread {
+  border-left: 2px solid var(--accent-matrix);
+}
+
+.notification-item.read {
+  opacity: 0.55;
+  background-color: rgba(10, 10, 10, 0.4);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.notification-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #030303;
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-matrix);
+  flex-shrink: 0;
+}
+
+.notification-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-text {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.notification-actor {
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.notification-actor:hover {
+  text-decoration: underline;
+}
+
+.notification-action-text {
+  color: var(--text-secondary);
+}
+
+.notification-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 4px;
+}
+
+.notification-status {
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+}
+
+.notification-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--accent-matrix);
+  border-radius: 50%;
+}
+
+.notification-badge {
+  background-color: var(--accent-matrix);
+  color: #000000;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.notifications-empty {
+  text-align: center;
+  padding: 48px 16px;
+  border: 1px dashed var(--border-default);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background-color: rgba(10, 10, 10, 0.2);
+}
