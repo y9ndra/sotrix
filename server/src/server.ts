@@ -5,6 +5,7 @@ dotenv.config();
 import app from './app';
 import {connectDB} from "./config/db";
 import {connectRedis} from "./config/redis";
+import { startCleanupJob } from "./jobs/cron/cleanup.job";
 
 
 async function startserver(){
@@ -15,6 +16,7 @@ async function startserver(){
 
 app.listen(PORT, () => {
   console.log(`Server is running in development mode on port ${PORT}`);
+  startCleanupJob();
 });
 
   }
