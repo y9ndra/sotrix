@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { toggleLike as toggleLikeService } from "../services/like.service";
 import { PostIdParam } from "../schemas/common.schema";
-import { notificationQueue } from "../queues/notification.queue";
+import { addNotificationJob } from "../jobs/notification.job";
 
 export const toggleLike = async (
   req: Request<PostIdParam>,
@@ -22,15 +22,12 @@ export const toggleLike = async (
       result.liked &&
       result.postAuthorId !== userId
     ) {
-      await notificationQueue.add(
-        "send-notification",
-        {
-          recipientId: result.postAuthorId,
-          actorId: userId,
-          type: "like",
-          postId,
-        }
-      );
+      await addNotificationJob({
+        recipientId: result.postAuthorId,
+        actorId: userId,
+        type: "like",
+        postId,
+      });
     }
 
     return res.status(200).json({

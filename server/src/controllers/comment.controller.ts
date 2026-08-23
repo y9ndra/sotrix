@@ -5,6 +5,7 @@ import {
   updateComment as updateCommentService,
   deleteComment as deleteCommentService,
 } from "../services/comment.service";
+import { addNotificationJob } from "../jobs/notification.job";
 import { CreateCommentInput, UpdateCommentInput } from "../schemas/comment.schema";
 import { IdParam, PostIdParam, PaginationQuery } from "../schemas/common.schema";
 
@@ -22,11 +23,20 @@ export const createComment = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const comment = await createCommentService({
+    const { comment, postAuthorId } = await createCommentService({
       content,
       author,
       post: postId,
     });
+
+    if (postAuthorId !== author) {
+      await addNotificationJob({
+        recipientId: postAuthorId,
+        actorId: author,
+        type: "comment",
+        postId,
+      });
+    }
 
     return res.status(201).json({
       success: true,

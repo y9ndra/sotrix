@@ -16,11 +16,16 @@ export interface PaginatedCommentsResult {
   };
 }
 
+export interface CreateCommentResult {
+  comment: IComment;
+  postAuthorId: string;
+}
+
 export const createComment = async ({
   content,
   author,
   post,
-}: CreateCommentInput): Promise<IComment> => {
+}: CreateCommentInput): Promise<CreateCommentResult> => {
   const existingPost = await Post.findById(post);
   if (!existingPost) {
     throw new Error("Post not found");
@@ -34,7 +39,10 @@ export const createComment = async ({
 
   await comment.populate("author", "name username email");
 
-  return comment;
+  return {
+    comment,
+    postAuthorId: existingPost.author.toString(),
+  };
 };
 
 export const getCommentsForPost = async (
