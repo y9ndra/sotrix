@@ -1,16 +1,26 @@
 import cron from "node-cron";
-import { cleanupOldNotifications } from "../../services/cleanup.service";
+import { maintenanceQueue } from "../../queues/maintenance.queue";
 
 export const startCleanupJob = () => {
   cron.schedule(
     "0 2 * * *",
     async () => {
       try {
-        console.log("[CRON] Starting notification cleanup...");
-        const deletedCount = await cleanupOldNotifications();
-        console.log(`[CRON] Deleted ${deletedCount} old notifications`);
+        await maintenanceQueue.add(
+          "cleanup-notifications",
+          {
+            type: "cleanup-notifications",
+          }
+        );
+
+        console.log(
+          "[CRON] Notification cleanup job queued"
+        );
       } catch (error) {
-        console.error("[CRON] Notification cleanup failed:", error);
+        console.error(
+          "[CRON] Failed to queue cleanup job:",
+          error
+        );
       }
     },
     {
@@ -18,5 +28,7 @@ export const startCleanupJob = () => {
     }
   );
 
-  console.log("[CRON] Notification cleanup job scheduled");
+  console.log(
+    "[CRON] Notification cleanup scheduler started"
+  );
 };
