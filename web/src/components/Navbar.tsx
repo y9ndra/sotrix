@@ -64,11 +64,6 @@ function Navbar() {
                         </li>
                     </>
                 )}
-                <li>About</li>
-                <li>Contact</li>
-                <li>Help</li>
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
             </ul>
         </nav>
     );
