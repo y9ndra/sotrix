@@ -86,23 +86,23 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - Feed generation API
 - Cursor-based vs. offset-based pagination concepts
 
-### Day 15 [CURRENT]
+### Day 15 [COMPLETED]
 - Comments system: schema design, nested paths, and relational APIs
 
-### Day 16
+### Day 16 [COMPLETED]
 - Likes system: toggle APIs & optimizing backend performance for simple operations
 
-### Day 17
+### Day 17 [COMPLETED]
 - Follow/Unfollow relational schema and follower-following endpoints
 - Generating personalized feeds based on followed users
 
-### Day 18
+### Day 18 [COMPLETED]
 - MongoDB search optimization: text indexes, regex search patterns
 
-### Day 19
+### Day 19 [COMPLETED]
 - Uploading files: multipart/form-data, Multer middleware, and storing media assets locally or on Cloudinary
 
-### Day 20
+### Day 20 [COMPLETED]
 - Clean refactor, API documentation (Swagger/Postman collections), and Phase 2 review
 
 ---
@@ -110,31 +110,31 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ## 🟠 PHASE 3 — Production Backend Architecture (Days 21–30)
 *This is the core backend specialization phase. You will build high-scale, robust backend features.*
 
-### Day 21
+### Day 21 [COMPLETED]
 - Redis integration for caching API responses (User profiles, static configurations)
 
-### Day 22
+### Day 22 [COMPLETED]
 - Cache invalidation strategies, TTL (Time-To-Live) management, and cache-aside patterns
 
-### Day 23
+### Day 23 [COMPLETED]
 - API security: rate limiting, CORS configuration, and security headers (Helmet)
 
-### Day 24
+### Day 24 [COMPLETED]
 - Request payload schema validation on the backend using Zod (validating body, params, and query strings)
 
-### Day 25
+### Day 25 [COMPLETED]
 - React State Optimization: understanding prop-drilling pain, introducing React Context or Zustand for clean, global auth token state management
 
-### Day 26
+### Day 26 [COMPLETED]
 - TanStack Query (React Query) for simple, declarative data fetching, automatic caching, and cache sync on the frontend
 
-### Day 27
+### Day 27 [COMPLETED]
 - Background job processing with BullMQ and Redis (Email queues, notifications)
 
-### Day 28
+### Day 28 [COMPLETED]
 - Cron jobs and scheduled background scripts (database pruning, recalculating analytics)
 
-### Day 29
+### Day 29 [CURRENT]
 - Advanced Production Auth: refresh token rotation, token blacklist, sliding sessions
 
 ### Day 30
