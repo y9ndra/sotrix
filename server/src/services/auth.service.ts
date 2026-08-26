@@ -128,6 +128,7 @@ export const refreshAccessToken = async (
 
   const incomingTokenHash = hashToken(refreshToken);
 
+  // 1. Find the session to check its existence and expiration first
   const session = await Session.findOne({
     _id: payload.sessionId,
     user: payload.userId,
@@ -139,40 +140,51 @@ export const refreshAccessToken = async (
 
   if (session.expiresAt <= new Date()) {
     await Session.findByIdAndDelete(session._id);
-
     throw new Error("Refresh session expired");
   }
 
-  // Check reuse of a previously rotated token
-  if (session.previousRefreshTokenHash === incomingTokenHash) {
-    // Suspected token theft or duplicate reuse -> Revoke/delete the entire session
-    await Session.findByIdAndDelete(session._id);
-    throw new Error("Refresh token reuse detected");
-  }
-
-  // Check if incoming matches the current active token
-  if (session.refreshTokenHash !== incomingTokenHash) {
-    throw new Error("Invalid refresh token");
-  }
-
-  /*
-    Generate a NEW refresh token.
-    This is refresh token rotation.
-  */
+  // Generate new token & hash for potential rotation
   const newRefreshToken = generateRefreshToken(
     payload.userId,
     session._id.toString()
   );
-
   const newRefreshTokenHash = hashToken(newRefreshToken);
 
-  /*
-    Replace the old hash and save the previous one to allow reuse detection.
-  */
-  session.previousRefreshTokenHash = session.refreshTokenHash;
-  session.refreshTokenHash = newRefreshTokenHash;
+  // 2. Perform atomic compare-and-swap
+  const updatedSession = await Session.findOneAndUpdate(
+    {
+      _id: payload.sessionId,
+      user: payload.userId,
+      refreshTokenHash: incomingTokenHash, // Only update if current hash matches incoming
+    },
+    {
+      $set: {
+        refreshTokenHash: newRefreshTokenHash,
+        previousRefreshTokenHash: incomingTokenHash,
+      },
+    },
+    {
+      new: true,
+    }
+  );
 
-  await session.save();
+  // 3. Handle failure (potential concurrent request or reuse)
+  if (!updatedSession) {
+    const latestSession = await Session.findOne({
+      _id: payload.sessionId,
+      user: payload.userId,
+    });
+
+    if (!latestSession) {
+      throw new Error("Invalid refresh token");
+    }
+
+    if (latestSession.previousRefreshTokenHash === incomingTokenHash) {
+      throw new Error("Refresh token already used");
+    }
+
+    throw new Error("Invalid refresh token");
+  }
 
   const accessToken = generateAccessToken(payload.userId);
 
