@@ -17,7 +17,11 @@ const getCurrentUser = async () => {
   return api.get<UserResponse>("/auth/me");
 };
 
-export { login, signup, getMe, getCurrentUser };
+const logout = async () => {
+  return api.post("/auth/logout");
+};
+
+export { login, signup, getMe, getCurrentUser, logout };
 
 
 

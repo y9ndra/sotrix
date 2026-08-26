@@ -8,6 +8,7 @@ const refreshTokenCookieOptions = {
   secure: config.NODE_ENV === "production",
   sameSite: "lax" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/api/auth",
 };
 
 export const signup = async (
@@ -143,6 +144,34 @@ export const refresh = async (
       }
     }
 
+    return next(error);
+  }
+};
+
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (refreshToken) {
+      await authService.logoutUser(refreshToken);
+    }
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: config.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/api/auth",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
     return next(error);
   }
 };

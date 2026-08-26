@@ -193,3 +193,23 @@ export const refreshAccessToken = async (
     refreshToken: newRefreshToken,
   };
 };
+
+export const logoutUser = async (
+  refreshToken: string
+): Promise<void> => {
+  try {
+    const payload = verifyRefreshToken(refreshToken);
+
+    await Session.findOneAndDelete({
+      _id: payload.sessionId,
+      user: payload.userId,
+    });
+  } catch {
+    /*
+      Logout should be idempotent.
+      Even if the refresh token is already
+      invalid/expired, we still consider the
+      user logged out.
+    */
+  }
+};

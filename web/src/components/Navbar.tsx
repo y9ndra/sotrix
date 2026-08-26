@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
 import { getUnreadCount } from '../services/notification.service';
 
+import { logout } from '../api/auth.api';
+
 function Navbar() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const clearUser = useAuthStore((state) => state.clearUser);
@@ -18,10 +20,16 @@ function Navbar() {
     });
     const unreadCount = unreadData?.data?.unreadCount || 0;
 
-    const handleLogout = () => {
-        removeToken();
-        clearUser();
-        navigate('/login');
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (err) {
+            console.error("Server logout error:", err);
+        } finally {
+            removeToken();
+            clearUser();
+            navigate('/login');
+        }
     };
 
     return (
