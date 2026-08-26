@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useAuthStore } from "../store/authStore";
 import { getMe } from "../api/auth.api";
-import { getToken, removeToken } from "../services/token.service";
+import { setToken, removeToken } from "../services/token.service";
+import { refreshSession } from "../api/axios";
 
 const AuthInitializer = () => {
   const setUser = useAuthStore((state) => state.setUser);
@@ -9,14 +10,10 @@ const AuthInitializer = () => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = getToken();
-
-      if (!token) {
-        clearUser();
-        return;
-      }
-
       try {
+        const newAccessToken = await refreshSession();
+        setToken(newAccessToken);
+
         const response = await getMe();
         if (response.data && response.data.user) {
           setUser(response.data.user);

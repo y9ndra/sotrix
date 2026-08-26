@@ -1,25 +1,31 @@
-const TOKEN_KEY = "token";
+let accessToken: string | null = null;
 
 export const saveToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token);
+  accessToken = token;
 };
 
+export const setToken = saveToken;
+
 export const getToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
+  return accessToken;
 };
 
 export const removeToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY);
+  accessToken = null;
 };
 
 export const getCurrentUserId = (): string | null => {
   const token = getToken();
+
   if (!token) return null;
+
   try {
     const payloadBase64 = token.split(".")[1];
+
     const decoded = JSON.parse(atob(payloadBase64));
+
     return decoded.id || decoded.userId || decoded._id || null;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
