@@ -126,12 +126,11 @@ export const refreshAccessToken = async (
 ): Promise<RefreshServiceResult> => {
   const payload = verifyRefreshToken(refreshToken);
 
-  const refreshTokenHash = hashToken(refreshToken);
+  const incomingTokenHash = hashToken(refreshToken);
 
   const session = await Session.findOne({
     _id: payload.sessionId,
     user: payload.userId,
-    refreshTokenHash,
   });
 
   if (!session) {
@@ -142,6 +141,18 @@ export const refreshAccessToken = async (
     await Session.findByIdAndDelete(session._id);
 
     throw new Error("Refresh session expired");
+  }
+
+  // Check reuse of a previously rotated token
+  if (session.previousRefreshTokenHash === incomingTokenHash) {
+    // Suspected token theft or duplicate reuse -> Revoke/delete the entire session
+    await Session.findByIdAndDelete(session._id);
+    throw new Error("Refresh token reuse detected");
+  }
+
+  // Check if incoming matches the current active token
+  if (session.refreshTokenHash !== incomingTokenHash) {
+    throw new Error("Invalid refresh token");
   }
 
   /*
@@ -156,9 +167,9 @@ export const refreshAccessToken = async (
   const newRefreshTokenHash = hashToken(newRefreshToken);
 
   /*
-    Replace the old hash.
-    The old refresh token is now invalid.
+    Replace the old hash and save the previous one to allow reuse detection.
   */
+  session.previousRefreshTokenHash = session.refreshTokenHash;
   session.refreshTokenHash = newRefreshTokenHash;
 
   await session.save();

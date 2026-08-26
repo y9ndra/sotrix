@@ -133,7 +133,8 @@ export const refresh = async (
     if (error instanceof Error) {
       if (
         error.message === "Invalid refresh token" ||
-        error.message === "Refresh session expired"
+        error.message === "Refresh session expired" ||
+        error.message === "Refresh token reuse detected"
       ) {
         return res
           .status(401)
