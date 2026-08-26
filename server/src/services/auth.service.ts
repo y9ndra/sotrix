@@ -1,6 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import User from "../models/user.model";
+import Session from "../models/session.model";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  hashToken,
+} from "../utils/token";
 import { config } from "../config/env";
 import { SignupInput, LoginInput } from "../schemas/auth.schema";
 import {
@@ -68,16 +75,26 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
     throw new Error("Invalid password");
   }
 
-  const token = jwt.sign(
-    { id: (user._id as any).toString() },
-    config.jwtSecret,
-    { expiresIn: "1h" }
-  );
+  const userId = (user._id as any).toString();
+  const sessionId = new mongoose.Types.ObjectId();
+
+  const refreshToken = generateRefreshToken(userId, sessionId.toString());
+  const refreshTokenHash = hashToken(refreshToken);
+
+  await Session.create({
+    _id: sessionId,
+    user: user._id,
+    refreshTokenHash,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+
+  const accessToken = generateAccessToken(userId);
 
   return {
-    token,
+    token: accessToken,
+    refreshToken,
     user: {
-      id: (user._id as any).toString(),
+      id: userId,
       username: user.username,
       email: user.email,
     },

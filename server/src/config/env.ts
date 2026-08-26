@@ -11,6 +11,7 @@ export const config = {
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 5000,
   mongoUrl: process.env.DATABASE_URL || "mongodb://localhost:27017/sotrix",
   jwtSecret: jwtSecret,
+  NODE_ENV: process.env.NODE_ENV || "development",
 };
 
 // Validate that important database URL exists

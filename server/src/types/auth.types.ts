@@ -6,6 +6,7 @@ export interface AuthUser {
 
 export interface LoginServiceResult {
   token: string;
+  refreshToken: string;
   user: AuthUser;
 }
 

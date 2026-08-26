@@ -1,6 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
 import { SignupInput, LoginInput } from "../schemas/auth.schema";
+import { config } from "../config/env";
+
+const refreshTokenCookieOptions = {
+  httpOnly: true,
+  secure: config.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 export const signup = async (
   req: Request<{}, {}, SignupInput>,
@@ -40,10 +48,17 @@ export const login = async (
 
     const result = await authService.loginUser({ identifier, password });
 
+    res.cookie(
+      "refreshToken",
+      result.refreshToken,
+      refreshTokenCookieOptions
+    );
+
     return res.status(200).json({
       success: true,
       message: "User logged in successfully",
       token: result.token,
+      user: result.user,
     });
   } catch (error: unknown) {
     if (error instanceof Error) {
