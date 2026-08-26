@@ -5,6 +5,7 @@ export interface ISession extends Document {
   refreshTokenHash: string;
   previousRefreshTokenHash?: string | null;
   expiresAt: Date;
+  absoluteExpiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +31,10 @@ const sessionSchema = new Schema<ISession>(
       type: Date,
       required: true,
       expires: 0,
+    },
+    absoluteExpiresAt: {
+      type: Date,
+      required: true,
     },
   },
   {

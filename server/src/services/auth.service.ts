@@ -87,6 +87,7 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
     user: user._id,
     refreshTokenHash,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    absoluteExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days absolute lifetime
   });
 
   const accessToken = generateAccessToken(userId);
@@ -150,6 +151,14 @@ export const refreshAccessToken = async (
   );
   const newRefreshTokenHash = hashToken(newRefreshToken);
 
+  // Compute sliding expiration: +7 days, capped at absoluteExpiresAt
+  const newExpiresAt = new Date(
+    Math.min(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+      session.absoluteExpiresAt.getTime()
+    )
+  );
+
   // 2. Perform atomic compare-and-swap
   const updatedSession = await Session.findOneAndUpdate(
     {
@@ -161,6 +170,7 @@ export const refreshAccessToken = async (
       $set: {
         refreshTokenHash: newRefreshTokenHash,
         previousRefreshTokenHash: incomingTokenHash,
+        expiresAt: newExpiresAt,
       },
     },
     {
