@@ -101,3 +101,46 @@ export const getMe = async (
     return next(error);
   }
 };
+
+export const refresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res
+        .status(401)
+        .json({ message: "Refresh token missing" });
+    }
+
+    const result =
+      await authService.refreshAccessToken(refreshToken);
+
+    res.cookie(
+      "refreshToken",
+      result.refreshToken,
+      refreshTokenCookieOptions
+    );
+
+    return res.status(200).json({
+      success: true,
+      token: result.accessToken,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (
+        error.message === "Invalid refresh token" ||
+        error.message === "Refresh session expired"
+      ) {
+        return res
+          .status(401)
+          .json({ message: error.message });
+      }
+    }
+
+    return next(error);
+  }
+};

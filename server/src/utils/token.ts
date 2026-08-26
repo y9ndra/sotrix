@@ -1,5 +1,11 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { config } from "../config/env";
+
+interface RefreshTokenPayload {
+  userId: string;
+  sessionId: string;
+}
 
 export const hashToken = (token: string): string => {
   return crypto
@@ -16,7 +22,7 @@ export const generateAccessToken = (
       id: userId,
       userId,
     },
-    process.env.JWT_ACCESS_SECRET as string,
+    config.JWT_ACCESS_SECRET,
     {
       expiresIn: "15m",
     }
@@ -31,10 +37,20 @@ export const generateRefreshToken = (
     {
       userId,
       sessionId,
+      jti: crypto.randomUUID(),
     },
-    process.env.JWT_REFRESH_SECRET as string,
+    config.JWT_REFRESH_SECRET,
     {
       expiresIn: "7d",
     }
   );
+};
+
+export const verifyRefreshToken = (
+  token: string
+): RefreshTokenPayload => {
+  return jwt.verify(
+    token,
+    config.JWT_REFRESH_SECRET
+  ) as RefreshTokenPayload;
 };

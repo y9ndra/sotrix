@@ -7,6 +7,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
   hashToken,
+  verifyRefreshToken,
 } from "../utils/token";
 import { config } from "../config/env";
 import { SignupInput, LoginInput } from "../schemas/auth.schema";
@@ -112,5 +113,60 @@ export const getUserProfile = async (userId: string): Promise<AuthUser> => {
     id: (user._id as any).toString(),
     username: user.username,
     email: user.email,
+  };
+};
+
+export interface RefreshServiceResult {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export const refreshAccessToken = async (
+  refreshToken: string
+): Promise<RefreshServiceResult> => {
+  const payload = verifyRefreshToken(refreshToken);
+
+  const refreshTokenHash = hashToken(refreshToken);
+
+  const session = await Session.findOne({
+    _id: payload.sessionId,
+    user: payload.userId,
+    refreshTokenHash,
+  });
+
+  if (!session) {
+    throw new Error("Invalid refresh token");
+  }
+
+  if (session.expiresAt <= new Date()) {
+    await Session.findByIdAndDelete(session._id);
+
+    throw new Error("Refresh session expired");
+  }
+
+  /*
+    Generate a NEW refresh token.
+    This is refresh token rotation.
+  */
+  const newRefreshToken = generateRefreshToken(
+    payload.userId,
+    session._id.toString()
+  );
+
+  const newRefreshTokenHash = hashToken(newRefreshToken);
+
+  /*
+    Replace the old hash.
+    The old refresh token is now invalid.
+  */
+  session.refreshTokenHash = newRefreshTokenHash;
+
+  await session.save();
+
+  const accessToken = generateAccessToken(payload.userId);
+
+  return {
+    accessToken,
+    refreshToken: newRefreshToken,
   };
 };
