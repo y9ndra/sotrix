@@ -10,7 +10,10 @@ import { logout } from '../api/auth.api';
 function Navbar() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const clearUser = useAuthStore((state) => state.clearUser);
+    const user = useAuthStore((state) => state.user);
     const navigate = useNavigate();
+
+    const currentUserId = user?._id || user?.id || "";
 
     const { data: unreadData } = useQuery({
         queryKey: queryKeys.notifications.unreadCount,
@@ -33,43 +36,49 @@ function Navbar() {
     };
 
     return (
-        <nav>
-            <h1>Sotrix</h1>
-            <ul>
-                <li><Link to="/">Home</Link></li>
-                <li><Link to="/feed">Feed</Link></li>
-                {isAuthenticated && <li><Link to="/explore">Explore</Link></li>}
+        <nav className="nav-control-center">
+            <Link to="/" className="nav-logo">SOTRIX</Link>
+            
+            <ul className="nav-spaces">
+                <li>
+                    <Link to="/" className="nav-space-link">home</Link>
+                </li>
                 {isAuthenticated && (
                     <li>
-                        <Link to="/notifications">
-                            Notifications
+                        <Link to="/explore" className="nav-space-link">discover</Link>
+                    </li>
+                )}
+                {isAuthenticated && (
+                    <li>
+                        <span className="nav-space-link disabled" title="Chats coming soon">messages</span>
+                    </li>
+                )}
+                {isAuthenticated && (
+                    <li>
+                        <Link to={`/profile/${currentUserId}`} className="nav-space-link">profile</Link>
+                    </li>
+                )}
+            </ul>
+
+            <ul className="nav-utilities">
+                {isAuthenticated && (
+                    <li>
+                        <Link to="/notifications" className="nav-utility-link" title="Notifications">
+                            <span className="nav-icon">🔔</span>
                             {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
                         </Link>
                     </li>
                 )}
-                {!isAuthenticated ? (
-                    <>
-                        <li><Link to="/login">Login</Link></li>
-                        <li><Link to="/signup">Signup</Link></li>
-                    </>
+                {isAuthenticated ? (
+                    <li>
+                        <button onClick={handleLogout} className="nav-logout-btn">
+                            logout
+                        </button>
+                    </li>
                 ) : (
                     <>
-                        <li><Link to="/my-posts">My Posts</Link></li>
-                        <li>
-                            <button 
-                                onClick={handleLogout} 
-                                style={{ 
-                                    background: 'none', 
-                                    border: 'none', 
-                                    color: 'inherit', 
-                                    cursor: 'pointer', 
-                                    font: 'inherit', 
-                                    padding: 0 
-                                }}
-                            >
-                                Logout
-                            </button>
-                        </li>
+                        <li><Link to="/login" className="nav-space-link">login</Link></li>
+                        <li><Link to="/signup" className="nav-space-link">signup</Link></li>
                     </>
                 )}
             </ul>

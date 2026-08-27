@@ -69,37 +69,16 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   };
 
   return (
-    <div
-      className="create-post-card"
-      style={{
-        padding: "20px",
-        borderRadius: "12px",
-        backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
-        marginBottom: "24px",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-      }}
-    >
-      <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", color: "#111827" }}>
-        Create a Post
-      </h3>
+    <div className="create-post-card">
+      <h3>Create a Post</h3>
 
       <form onSubmit={handleSubmit}>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="What's on your mind?"
+          placeholder="whats happening?"
           rows={3}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #d1d5db",
-            resize: "vertical",
-            fontSize: "14px",
-            fontFamily: "inherit",
-            boxSizing: "border-box",
-          }}
+          className="create-post-textarea"
           disabled={loading}
         />
 
@@ -108,9 +87,9 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             style={{
               position: "relative",
               marginTop: "12px",
-              borderRadius: "8px",
+              borderRadius: "10px",
               overflow: "hidden",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               maxHeight: "300px",
             }}
           >
@@ -143,7 +122,6 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
                 justifyContent: "center",
                 fontSize: "16px",
                 lineHeight: 1,
-                transition: "background-color 0.2s",
               }}
               title="Remove image"
             >
@@ -153,7 +131,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
         )}
 
         {error && (
-          <p style={{ color: "#dc2626", fontSize: "14px", marginTop: "8px" }}>
+          <p style={{ color: "var(--text-primary)", fontSize: "12px", marginTop: "8px", fontFamily: "var(--font-mono)" }}>
             {error}
           </p>
         )}
@@ -166,24 +144,8 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             marginTop: "12px",
           }}
         >
-          <label
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: "1px solid #d1d5db",
-              backgroundColor: "#f9fafb",
-              color: "#374151",
-              fontSize: "14px",
-              fontWeight: 500,
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "all 0.2s",
-            }}
-          >
-            <span>📷</span>
-            <span>{image ? "Change Image" : "Add Image"}</span>
+          <label className="create-post-file-label">
+            <span>{image ? "change file" : "add file"}</span>
             <input
               type="file"
               accept="image/*"
@@ -196,17 +158,8 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
           <button
             type="submit"
             disabled={loading || !content.trim()}
-            style={{
-              padding: "8px 20px",
-              backgroundColor: "#4f46e5",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "8px",
-              fontWeight: 600,
-              fontSize: "14px",
-              cursor: loading || !content.trim() ? "not-allowed" : "pointer",
-              opacity: loading || !content.trim() ? 0.6 : 1,
-            }}
+            className="btn"
+            style={{ width: "auto", minWidth: "100px" }}
           >
             {loading ? "Posting..." : "Post"}
           </button>
