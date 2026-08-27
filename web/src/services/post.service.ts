@@ -40,6 +40,20 @@ export const getMyPosts = async (
   return response.data;
 };
 
+export const getUserPosts = async (
+  userId: string,
+  cursor?: string
+): Promise<PostsResponse> => {
+  const response = await api.get(`/posts/user/${userId}`, {
+    params: {
+      limit: 10,
+      cursor,
+    },
+  });
+
+  return response.data;
+};
+
 export const updatePost = async (
   postId: string,
   content: string

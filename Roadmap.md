@@ -223,7 +223,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - [x] Signup Page
 - [ ] Feed Page
 - [x] Explore Page
-- [ ] Profile Page
+- [x] Profile Page
 - [ ] My Posts Page
 
 ### 🧩 Components

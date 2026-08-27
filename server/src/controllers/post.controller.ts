@@ -100,6 +100,27 @@ export const getMyPosts = async (
   }
 };
 
+export const getUserPosts = async (
+  req: Request<{ userId: string }, {}, {}, any>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user?.id;
+    const { limit, cursor } = req.query as PaginationQuery;
+
+    const result = await getMyPostsService(userId, limit, cursor, currentUserId);
+
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getPostById = async (
   req: Request<IdParam>,
   res: Response,

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import User from "../models/user.model";
 import Follow from "../models/follow.model";
 import redisClient from "../config/redis";
+import Post from "../models/post.model";
 
 export interface UpdateProfileInput {
   name?: string;
@@ -48,9 +49,12 @@ export const getUserById = async (userId: string, currentUserId?: string) => {
     isFollowing = !!existingFollow;
   }
 
+  const postsCount = await Post.countDocuments({ author: userId });
+
   return {
     ...userObj,
     isFollowing,
+    postsCount,
   };
 };
 

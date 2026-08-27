@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import api from "../services/api";
 import { toggleFollowUser } from "../services/follow.service";
 import { useAuthStore } from "../store/authStore";
+import { getUserPosts } from "../services/post.service";
+import PostCard from "../components/PostCard";
 
 const Profile = () => {
   const { id } = useParams();
@@ -16,6 +19,9 @@ const Profile = () => {
   const [editForm, setEditForm] = useState({ name: "", username: "", bio: "" });
   const [saving, setSaving] = useState<boolean>(false);
   const [editError, setEditError] = useState<string>("");
+
+  // Sub-tabs State
+  const [activeSubTab, setActiveSubTab] = useState<"posts" | "media" | "activity">("posts");
 
   const currentUser = useAuthStore((state) => state.user);
   const currentUserId = currentUser?._id || currentUser?.id || null;
@@ -40,6 +46,24 @@ const Profile = () => {
 
     fetchUser();
   }, [id]);
+
+  // Query for User Posts
+  const {
+    data: postsData,
+    isLoading: postsLoading,
+    error: postsError,
+    fetchNextPage: loadMoreUserPosts,
+    hasNextPage: postsHasMore,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["posts", "user", id],
+    queryFn: ({ pageParam }) => getUserPosts(id!, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
+    enabled: !!id,
+  });
+
+  const posts = postsData?.pages.flatMap((page) => page.data) ?? [];
 
   const handleStartEdit = () => {
     setEditForm({
@@ -96,430 +120,283 @@ const Profile = () => {
     return "U";
   };
 
+  const formatFollowers = (count: number) => {
+    if (count >= 1000000) {
+      return (count / 1000000).toFixed(1) + "M";
+    }
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1) + "K";
+    }
+    return count.toString();
+  };
+
   return (
-    <div>
-      <div style={{ maxWidth: "700px", margin: "0 auto", padding: "16px 20px 40px 20px" }}>
+    <div className="profile-container">
+      <div className="profile-card">
+        <div className="profile-body">
+          {loading && (
+            <div className="profile-loading-box">
+              <div className="profile-spinner" />
+              <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "12px" }}>
+                fetching user profile...
+              </p>
+            </div>
+          )}
 
-        <div
-          style={{
-            background: "#ffffff",
-            borderRadius: "20px",
-            boxShadow:
-              "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
-            border: "1px solid #e5e7eb",
-            overflow: "hidden",
-          }}
-        >
-          {/* Header Banner */}
-          <div
-            style={{
-              height: "140px",
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-              position: "relative",
-            }}
-          />
+          {error && !loading && (
+            <div className="profile-error-box">
+              {error}
+            </div>
+          )}
 
-          <div style={{ padding: "0 32px 32px", position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-              {/* Avatar */}
-              <div
-                style={{
-                  width: "96px",
-                  height: "96px",
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                  border: "4px solid #ffffff",
-                  color: "#ffffff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "36px",
-                  fontWeight: 700,
-                  marginTop: "-48px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                }}
-              >
-                {user ? getInitial(user.name, user.username) : "?"}
-              </div>
+          {/* Profile Display / Edit Form */}
+          {user && !loading && !error && (
+            <div className="profile-info">
+              {isEditing ? (
+                <form onSubmit={handleSave} className="profile-edit-form">
+                  <h3 className="profile-edit-title">edit profile</h3>
 
-              {/* Action Button: Edit Profile (for self) or Follow/Unfollow (for others) */}
-              {user && !isEditing && (
-                <div>
-                  {isOwnProfile ? (
-                    <button
-                      onClick={handleStartEdit}
-                      style={{
-                        padding: "8px 16px",
-                        borderRadius: "10px",
-                        border: "1px solid #d1d5db",
-                        backgroundColor: "#ffffff",
-                        color: "#374151",
-                        fontWeight: 600,
-                        fontSize: "14px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <svg
-                        style={{ width: "16px", height: "16px", stroke: "#4b5563" }}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="2"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                        />
-                      </svg>
-                      Edit Profile
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleToggleFollow}
-                      disabled={followLoading}
-                      style={{
-                        padding: "8px 20px",
-                        borderRadius: "10px",
-                        border: user.isFollowing ? "1px solid #d1d5db" : "none",
-                        backgroundColor: user.isFollowing ? "#f3f4f6" : "#4f46e5",
-                        color: user.isFollowing ? "#374151" : "#ffffff",
-                        fontWeight: 600,
-                        fontSize: "14px",
-                        cursor: followLoading ? "not-allowed" : "pointer",
-                        transition: "all 0.2s ease",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        opacity: followLoading ? 0.7 : 1,
-                      }}
-                    >
-                      {user.isFollowing ? (
-                        <>
-                          <svg
-                            style={{ width: "16px", height: "16px", stroke: "#374151" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          Following
-                        </>
-                      ) : (
-                        <>
-                          <svg
-                            style={{ width: "16px", height: "16px", stroke: "#ffffff" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M12 4v16m8-8H4"
-                            />
-                          </svg>
-                          Follow
-                        </>
-                      )}
-                    </button>
+                  {editError && (
+                    <div className="profile-error-box" style={{ marginTop: 0 }}>
+                      {editError}
+                    </div>
                   )}
-                </div>
+
+                  <div className="profile-form-group">
+                    <label className="profile-form-label">name</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      placeholder="Your full name"
+                      className="profile-form-input"
+                    />
+                  </div>
+
+                  <div className="profile-form-group">
+                    <label className="profile-form-label">username</label>
+                    <input
+                      type="text"
+                      value={editForm.username}
+                      onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                      placeholder="Username"
+                      className="profile-form-input"
+                    />
+                  </div>
+
+                  <div className="profile-form-group">
+                    <label className="profile-form-label">bio</label>
+                    <textarea
+                      rows={3}
+                      value={editForm.bio}
+                      onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                      placeholder="Tell us about yourself..."
+                      className="profile-form-textarea"
+                    />
+                  </div>
+
+                  <div className="profile-edit-actions">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      disabled={saving}
+                      className="profile-action-btn"
+                    >
+                      cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="profile-action-btn primary"
+                    >
+                      {saving ? "saving..." : "save changes"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  {/* Header Row: Avatar, Name, Handle on the left; Action on the right */}
+                  <div className="profile-header-row" style={{ alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div className="profile-avatar-large" style={{ marginTop: 0 }}>
+                        {getInitial(user.name, user.username)}
+                      </div>
+                      <div>
+                        <h1 className="profile-name" style={{ margin: 0 }}>
+                          {user.name || user.username}
+                        </h1>
+                        <p className="profile-handle" style={{ margin: 0 }}>
+                          @{user.username}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Button: Edit Profile (for self) or Follow/Unfollow (for others) */}
+                    <div>
+                      {isOwnProfile ? (
+                        <button onClick={handleStartEdit} className="profile-action-btn">
+                          <svg
+                            style={{ width: "14px", height: "14px", stroke: "currentColor" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            />
+                          </svg>
+                          edit profile
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleToggleFollow}
+                          disabled={followLoading}
+                          className={`profile-action-btn ${user.isFollowing ? "" : "primary"}`}
+                        >
+                          {user.isFollowing ? (
+                            <>
+                              <svg
+                                style={{ width: "14px", height: "14px", stroke: "currentColor" }}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              following
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                style={{ width: "14px", height: "14px", stroke: "currentColor" }}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M12 4v16m8-8H4"
+                                />
+                              </svg>
+                              follow
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {user.bio ? (
+                    <p className="profile-bio-box" style={{ marginTop: "20px" }}>
+                      {user.bio}
+                    </p>
+                  ) : (
+                    <p className="profile-bio-placeholder" style={{ marginTop: "16px" }}>
+                      no bio provided yet.
+                    </p>
+                  )}
+
+                  {/* Posts, Followers, and Following Counters Bar */}
+                  <div className="profile-stats-bar">
+                    <div className="profile-stat-item">
+                      <span className="profile-stat-number">
+                        {user.postsCount ?? 0}
+                      </span>
+                      posts
+                    </div>
+                    <div className="profile-stat-item">
+                      <span className="profile-stat-number">
+                        {formatFollowers(user.followersCount ?? 0)}
+                      </span>
+                      followers
+                    </div>
+                    <div className="profile-stat-item">
+                      <span className="profile-stat-number">
+                        {formatFollowers(user.followingCount ?? 0)}
+                      </span>
+                      following
+                    </div>
+                  </div>
+
+                  {/* Sub-tabs Selection: POSTS, MEDIA, ACTIVITY */}
+                  <div className="explore-tabs-header" style={{ marginBottom: "24px" }}>
+                    <div className="explore-tab-nav" style={{ gap: "32px" }}>
+                      <button
+                        onClick={() => setActiveSubTab("posts")}
+                        className={`explore-tab-btn ${activeSubTab === "posts" ? "active" : ""}`}
+                      >
+                        posts
+                      </button>
+                      <button
+                        onClick={() => setActiveSubTab("media")}
+                        className={`explore-tab-btn ${activeSubTab === "media" ? "active" : ""}`}
+                      >
+                        media
+                      </button>
+                      <button
+                        onClick={() => setActiveSubTab("activity")}
+                        className={`explore-tab-btn ${activeSubTab === "activity" ? "active" : ""}`}
+                      >
+                        activity
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tab Contents */}
+                  {activeSubTab === "posts" && (
+                    <div>
+                      {postsError && <p className="error-text">failed to load posts.</p>}
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        {posts.map((post) => (
+                          <PostCard key={post._id} post={post} />
+                        ))}
+                      </div>
+
+                      {posts.length === 0 && !postsLoading && !postsError && (
+                        <p className="explore-empty-msg" style={{ marginTop: "16px" }}>
+                          no posts to display yet.
+                        </p>
+                      )}
+
+                      {postsLoading && !isFetchingNextPage && (
+                        <p className="explore-loading">loading posts...</p>
+                      )}
+
+                      {posts.length > 0 && postsHasMore && (
+                        <button
+                          onClick={() => loadMoreUserPosts()}
+                          disabled={postsLoading || isFetchingNextPage}
+                          className="explore-loadmore-btn"
+                        >
+                          {postsLoading || isFetchingNextPage ? "loading..." : "load more posts"}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {activeSubTab === "media" && (
+                    <p className="explore-empty-msg" style={{ marginTop: "16px" }}>
+                      no media available yet.
+                    </p>
+                  )}
+
+                  {activeSubTab === "activity" && (
+                    <p className="explore-empty-msg" style={{ marginTop: "16px" }}>
+                      no recent activity to display.
+                    </p>
+                  )}
+                </>
               )}
             </div>
-
-            {loading && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  padding: "40px 0",
-                  gap: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    border: "3px solid #e5e7eb",
-                    borderTop: "3px solid #4f46e5",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                  }}
-                />
-                <style>{`
-                  @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                  }
-                `}</style>
-                <p style={{ color: "#6b7280", fontSize: "14px" }}>
-                  Fetching user profile...
-                </p>
-              </div>
-            )}
-
-            {error && !loading && (
-              <div
-                style={{
-                  marginTop: "24px",
-                  padding: "16px",
-                  backgroundColor: "#fef2f2",
-                  border: "1px solid #fee2e2",
-                  borderRadius: "12px",
-                  color: "#991b1b",
-                  fontSize: "14px",
-                  textAlign: "center",
-                  fontWeight: 500,
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            {/* Profile Display / Edit Form */}
-            {user && !loading && !error && (
-              <div style={{ marginTop: "16px" }}>
-                {isEditing ? (
-                  <form
-                    onSubmit={handleSave}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "16px",
-                      marginTop: "12px",
-                    }}
-                  >
-                    <h3
-                      style={{
-                        margin: "0 0 8px 0",
-                        fontSize: "18px",
-                        fontWeight: 700,
-                        color: "#111827",
-                      }}
-                    >
-                      Edit Profile
-                    </h3>
-
-                    {editError && (
-                      <div
-                        style={{
-                          padding: "12px",
-                          backgroundColor: "#fef2f2",
-                          border: "1px solid #fee2e2",
-                          borderRadius: "8px",
-                          color: "#991b1b",
-                          fontSize: "14px",
-                        }}
-                      >
-                        {editError}
-                      </div>
-                    )}
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        value={editForm.name}
-                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        placeholder="Your full name"
-                        style={{
-                          padding: "10px 14px",
-                          borderRadius: "8px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "14px",
-                          outline: "none",
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                        Username
-                      </label>
-                      <input
-                        type="text"
-                        value={editForm.username}
-                        onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                        placeholder="Username"
-                        style={{
-                          padding: "10px 14px",
-                          borderRadius: "8px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "14px",
-                          outline: "none",
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                        Bio
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={editForm.bio}
-                        onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                        placeholder="Tell us about yourself..."
-                        style={{
-                          padding: "10px 14px",
-                          borderRadius: "8px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "14px",
-                          fontFamily: "inherit",
-                          resize: "vertical",
-                          outline: "none",
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "12px",
-                        justifyContent: "flex-end",
-                        marginTop: "8px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setIsEditing(false)}
-                        disabled={saving}
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "8px",
-                          border: "1px solid #d1d5db",
-                          backgroundColor: "#ffffff",
-                          color: "#374151",
-                          fontWeight: 600,
-                          fontSize: "14px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={saving}
-                        style={{
-                          padding: "8px 20px",
-                          borderRadius: "8px",
-                          border: "none",
-                          backgroundColor: "#4f46e5",
-                          color: "#ffffff",
-                          fontWeight: 600,
-                          fontSize: "14px",
-                          cursor: saving ? "not-allowed" : "pointer",
-                          opacity: saving ? 0.7 : 1,
-                        }}
-                      >
-                        {saving ? "Saving..." : "Save Changes"}
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <>
-                    <h1
-                      style={{
-                        fontSize: "24px",
-                        fontWeight: 700,
-                        color: "#111827",
-                        margin: "0 0 4px 0",
-                      }}
-                    >
-                      {user.name || user.username}
-                    </h1>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        color: "#6b7280",
-                        margin: "0 0 12px 0",
-                      }}
-                    >
-                      @{user.username}
-                    </p>
-
-                    {/* Followers and Following Counters */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "24px",
-                        marginBottom: "16px",
-                        fontSize: "14px",
-                        color: "#4b5563",
-                      }}
-                    >
-                      <div>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: "#111827",
-                            fontSize: "16px",
-                            marginRight: "4px",
-                          }}
-                        >
-                          {user.followersCount ?? 0}
-                        </span>
-                        Followers
-                      </div>
-                      <div>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: "#111827",
-                            fontSize: "16px",
-                            marginRight: "4px",
-                          }}
-                        >
-                          {user.followingCount ?? 0}
-                        </span>
-                        Following
-                      </div>
-                    </div>
-
-                    {user.bio ? (
-                      <p
-                        style={{
-                          fontSize: "15px",
-                          color: "#374151",
-                          lineHeight: "1.6",
-                          marginTop: "16px",
-                          marginBottom: "0",
-                          backgroundColor: "#f3f4f6",
-                          padding: "12px 16px",
-                          borderRadius: "10px",
-                        }}
-                      >
-                        {user.bio}
-                      </p>
-                    ) : (
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: "#9ca3af",
-                          fontStyle: "italic",
-                          marginTop: "12px",
-                        }}
-                      >
-                        No bio provided yet.
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

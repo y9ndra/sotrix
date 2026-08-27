@@ -8,6 +8,7 @@ import {
   createPost,
   getPosts,
   getMyPosts,
+  getUserPosts,
   getPostById,
   updatePost,
   deletePost,
@@ -21,6 +22,9 @@ router.post("/", authenticate, upload.single("image"), validate(createPostSchema
 
 // Get authenticated user's posts (Authenticated)
 router.get("/me", authenticate, validate(paginationQuerySchema, "query"), getMyPosts);
+
+// Get a specific user's posts (Authenticated)
+router.get("/user/:userId", authenticate, validate(paginationQuerySchema, "query"), getUserPosts);
 
 // Get all posts (Authenticated)
 router.get("/", authenticate, validate(paginationQuerySchema, "query"), getPosts);
