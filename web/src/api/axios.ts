@@ -41,7 +41,6 @@ const processQueue = (error: any, token: string | null = null) => {
 const handleLogout = () => {
   removeToken();
   useAuthStore.getState().clearUser();
-  window.location.href = "/login";
 };
 
 const refreshAccessToken = async (): Promise<string> => {
