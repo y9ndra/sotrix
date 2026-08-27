@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import Navbar from "./Navbar";
 import Homepage from "../pages/Homepage";
 import Explore from "../pages/Explore";
+import Search from "../pages/Search";
 import Profile from "../pages/Profile";
+
+
 
 const DeckLayout = () => {
   const location = useLocation();
@@ -13,14 +16,16 @@ const DeckLayout = () => {
   const [activeSlot, setActiveSlot] = useState(0);
   const [renderNotifications, setRenderNotifications] = useState(false);
 
-  // Map pathnames to joint horizontal deck slot indices
+  // Map pathnames to joint horizontal deck slot indices (0 to 4)
   useEffect(() => {
     if (pathname === "/") {
       setActiveSlot(0);
     } else if (pathname.startsWith("/explore")) {
       setActiveSlot(1);
-    } else if (pathname.startsWith("/profile")) {
+    } else if (pathname.startsWith("/search")) {
       setActiveSlot(2);
+    } else if (pathname.startsWith("/profile")) {
+      setActiveSlot(4);
     }
   }, [pathname]);
 
@@ -39,7 +44,6 @@ const DeckLayout = () => {
   }, [isNotificationsActive]);
 
   const handleCloseNotifications = () => {
-    // Go back to the page the user was on before checking notifications
     navigate(-1);
   };
 
@@ -55,8 +59,8 @@ const DeckLayout = () => {
           <div
             className="joint-deck-track"
             style={{
-              width: "300%",
-              transform: `translateX(-${activeSlot * 33.333}%)`,
+              width: "500%",
+              transform: `translateX(-${activeSlot * 20}%)`,
             }}
           >
             {/* Slot 0: Home Timeline Dashboard */}
@@ -69,7 +73,19 @@ const DeckLayout = () => {
               <Explore />
             </div>
 
-            {/* Slot 2: Profile Space */}
+            {/* Slot 2: Search Creators Space */}
+            <div className="joint-deck-slot">
+              <Search />
+            </div>
+
+            {/* Slot 3: Messages Space Placeholder */}
+            <div className="joint-deck-slot">
+              <div className="explore-container">
+                <p className="explore-empty-msg">messages space coming soon...</p>
+              </div>
+            </div>
+
+            {/* Slot 4: Profile Page */}
             <div className="joint-deck-slot">
               {isProfileActive ? <Profile /> : <div />}
             </div>

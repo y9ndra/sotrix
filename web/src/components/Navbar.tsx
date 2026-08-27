@@ -50,6 +50,11 @@ function Navbar() {
                 )}
                 {isAuthenticated && (
                     <li>
+                        <Link to="/search" className="nav-space-link">search</Link>
+                    </li>
+                )}
+                {isAuthenticated && (
+                    <li>
                         <span className="nav-space-link disabled" title="Chats coming soon">messages</span>
                     </li>
                 )}

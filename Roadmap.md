@@ -222,7 +222,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - [x] Login Page
 - [x] Signup Page
 - [ ] Feed Page
-- [ ] Explore Page
+- [x] Explore Page
 - [ ] Profile Page
 - [ ] My Posts Page
 
