@@ -1,21 +1,26 @@
-let accessToken: string | null = null;
+const ACCESS_TOKEN_KEY = "accessToken";
 
-export const saveToken = (token: string): void => {
-  accessToken = token;
+export const saveAccessToken = (token: string): void => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, token);
 };
 
-export const setToken = saveToken;
+export const saveToken = saveAccessToken;
+export const setToken = saveAccessToken;
 
-export const getToken = (): string | null => {
-  return accessToken;
+export const getAccessToken = (): string | null => {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
 };
 
-export const removeToken = (): void => {
-  accessToken = null;
+export const getToken = getAccessToken;
+
+export const removeAccessToken = (): void => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
 };
+
+export const removeToken = removeAccessToken;
 
 export const getCurrentUserId = (): string | null => {
-  const token = getToken();
+  const token = getAccessToken();
 
   if (!token) return null;
 
@@ -29,3 +34,4 @@ export const getCurrentUserId = (): string | null => {
     return null;
   }
 };
+

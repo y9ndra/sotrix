@@ -1,11 +1,12 @@
 import axios, { AxiosError } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import {
-  getToken,
+  getAccessToken,
   setToken,
   removeToken,
 } from "../services/token.service";
 import { useAuthStore } from "../store/authStore";
+import authApi from "./authApi";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -20,7 +21,22 @@ interface RetryRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
-let refreshPromise: Promise<string> | null = null;
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
 
 const handleLogout = () => {
   removeToken();
@@ -29,31 +45,17 @@ const handleLogout = () => {
 };
 
 const refreshAccessToken = async (): Promise<string> => {
-  const response = await axios.post(
-    `${API_BASE_URL}/auth/refresh`,
-    {},
-    {
-      withCredentials: true,
-    }
-  );
-
+  const response = await authApi.post("/auth/refresh", {});
   return response.data.token;
 };
 
 export const refreshSession = async (): Promise<string> => {
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken();
-  }
-  try {
-    return await refreshPromise;
-  } finally {
-    refreshPromise = null;
-  }
+  return refreshAccessToken();
 };
 
 api.interceptors.request.use(
   (config) => {
-    const token = getToken();
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -95,27 +97,40 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    /*
-      No access token means this probably isn't
-      an expired authenticated request.
-    */
-    const currentToken = getToken();
-    if (!currentToken) {
-      return Promise.reject(error);
-    }
-
     originalRequest._retry = true;
 
-    try {
-      const newAccessToken = await refreshSession();
-
-      setToken(newAccessToken);
-
-      return api(originalRequest);
-    } catch (refreshError) {
-      handleLogout();
-      return Promise.reject(refreshError);
+    if (isRefreshing) {
+      return new Promise<string>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        })
+        .catch((err) => {
+          return Promise.reject(err);
+        });
     }
+
+    isRefreshing = true;
+
+    return new Promise((resolve, reject) => {
+      refreshSession()
+        .then((newAccessToken) => {
+          setToken(newAccessToken);
+          processQueue(null, newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          resolve(api(originalRequest));
+        })
+        .catch((refreshError) => {
+          processQueue(refreshError, null);
+          handleLogout();
+          reject(refreshError);
+        })
+        .finally(() => {
+          isRefreshing = false;
+        });
+    });
   }
 );
 
