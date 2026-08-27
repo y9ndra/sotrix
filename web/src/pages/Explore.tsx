@@ -173,9 +173,6 @@ const Explore = () => {
         }}
       >
         <div style={{ marginBottom: "20px" }}>
-          <h2 style={{ margin: "0 0 16px 0", color: "#111827", fontSize: "24px", fontWeight: 700 }}>
-            Explore
-          </h2>
 
           <div
             style={{

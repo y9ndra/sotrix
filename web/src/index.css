@@ -1275,21 +1275,22 @@ button, input, textarea, select {
 
 .sheet-close-btn {
   background: none;
-  border: 1px solid var(--border-default);
+  border: none;
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: lowercase;
+  font-size: 20px;
   cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 10px;
-  transition: all var(--transition-fast);
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
 }
 
 .sheet-close-btn:hover {
   color: var(--text-primary);
-  border-color: var(--border-active);
-  background-color: var(--bg-hover);
+  background: none;
 }
 
 .sheet-title {
@@ -1358,6 +1359,22 @@ button, input, textarea, select {
     transform: translateX(0);
     opacity: 1;
   }
+}
+
+/* Joint Deck sliding layout */
+.joint-deck-track {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: #000000;
+}
+
+.joint-deck-slot {
+  width: 33.333%;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 

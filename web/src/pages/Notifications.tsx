@@ -70,7 +70,6 @@ const Notifications = () => {
     <div>
       <div className="notifications-container">
         <div className="notifications-header">
-          <h2 className="notifications-title">Notifications</h2>
           {notifications.length > 0 && (
             <button
               onClick={() => markAllReadMutation.mutate()}
