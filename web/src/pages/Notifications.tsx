@@ -98,7 +98,7 @@ const Notifications = () => {
                   <div className="notification-text">
                     <span className="notification-actor">
                       {notification.actor?.username || "Someone"}
-                    </span>
+                    </span>{" "}
                     <span className="notification-action-text">
                       {getActionText(notification.type)}
                     </span>
