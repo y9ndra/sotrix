@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
-import Navbar from "../components/Navbar";
 import PostCard from "../components/PostCard";
 import UserCard from "../components/UserCard";
 import {
@@ -165,14 +164,12 @@ const Explore = () => {
   };
 
   return (
-    <div style={{ backgroundColor: "#f9fafb", minHeight: "100vh" }}>
-      <Navbar />
-
+    <div>
       <div
         style={{
           maxWidth: "640px",
-          margin: "24px auto",
-          padding: "0 16px 40px 16px",
+          margin: "0 auto",
+          padding: "16px 16px 40px 16px",
         }}
       >
         <div style={{ marginBottom: "20px" }}>

@@ -1,5 +1,4 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Navbar from "../components/Navbar";
 import { queryKeys } from "../lib/queryKeys";
 import {
   getNotifications,
@@ -69,8 +68,6 @@ const Notifications = () => {
 
   return (
     <div>
-      <Navbar />
-
       <div className="notifications-container">
         <div className="notifications-header">
           <h2 className="notifications-title">Notifications</h2>

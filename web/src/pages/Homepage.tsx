@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import { useAuthStore } from "../store/authStore";
@@ -86,9 +85,7 @@ function Homepage() {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Navbar />
-
+    <div>
       <div className="dashboard-container">
         {/* Welcome Section */}
         <div className="home-welcome">

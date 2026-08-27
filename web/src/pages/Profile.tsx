@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import api from "../services/api";
-import Navbar from "../components/Navbar";
 import { toggleFollowUser } from "../services/follow.service";
 import { useAuthStore } from "../store/authStore";
 
@@ -98,25 +97,8 @@ const Profile = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
-      <Navbar />
-
-      <div style={{ maxWidth: "700px", margin: "40px auto", padding: "0 20px" }}>
-        <Link
-          to="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "#4f46e5",
-            textDecoration: "none",
-            fontWeight: 600,
-            fontSize: "14px",
-            marginBottom: "20px",
-          }}
-        >
-          &larr; Back to Home
-        </Link>
+    <div>
+      <div style={{ maxWidth: "700px", margin: "0 auto", padding: "16px 20px 40px 20px" }}>
 
         <div
           style={{

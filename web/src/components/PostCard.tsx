@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import type { Post, PostsResponse } from "../types/post";
@@ -185,123 +186,63 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
   };
 
   return (
-    <article
-      className="post-card"
-      style={{
-        padding: "16px",
-        borderRadius: "10px",
-        backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-      }}
-    >
-      <div
-        className="post-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "10px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "16px", color: "#111827" }}>
+    <article className="post-card">
+      <div className="post-header">
+        <div className="post-author-info">
+          <Link to={`/profile/${post.author?._id}`} className="post-author-link">
+            <h3 className="post-author-name">
               {post.author?.name || post.author?.username || "Unknown"}
             </h3>
-            <p style={{ margin: "2px 0 0 0", fontSize: "13px", color: "#6b7280" }}>
+            <p className="post-author-username">
               @{post.author?.username || "unknown"}
             </p>
-          </div>
+          </Link>
 
-          {!isOwner && post.author?._id && currentUserId !== post.author._id && (
+          {!isOwner && post.author?._id && currentUserId !== post.author._id && !isFollowing && (
             <button
               onClick={handleToggleFollow}
               disabled={followMutation.isPending}
-              style={{
-                padding: "3px 10px",
-                fontSize: "12px",
-                borderRadius: "14px",
-                border: isFollowing ? "1px solid #d1d5db" : "none",
-                backgroundColor: isFollowing ? "#f3f4f6" : "#4f46e5",
-                color: isFollowing ? "#374151" : "#ffffff",
-                cursor: followMutation.isPending ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                transition: "all 0.2s ease",
-                opacity: followMutation.isPending ? 0.6 : 1,
-              }}
+              className="post-follow-btn follow-action-unfollowed"
             >
-              {followMutation.isPending ? "..." : isFollowing ? "Following" : "Follow"}
+              {followMutation.isPending ? "..." : "follow"}
             </button>
           )}
         </div>
 
         {isOwner && (
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div className="post-action-link-group">
             {isDeletingConfirm ? (
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "12px", color: "#dc2626", fontWeight: 500 }}>Delete post?</span>
+                <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 500, fontFamily: "var(--font-mono)" }}>delete?</span>
                 <button
                   onClick={handleConfirmDelete}
                   disabled={loading}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "12px",
-                    borderRadius: "6px",
-                    border: "none",
-                    backgroundColor: "#dc2626",
-                    color: "#ffffff",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    fontWeight: 600,
-                  }}
+                  className="post-btn-text post-btn-text-confirm"
                 >
-                  {loading ? "..." : "Yes"}
+                  {loading ? "..." : "yes"}
                 </button>
                 <button
                   onClick={() => setIsDeletingConfirm(false)}
                   disabled={loading}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "12px",
-                    borderRadius: "6px",
-                    border: "1px solid #d1d5db",
-                    backgroundColor: "#ffffff",
-                    color: "#374151",
-                    cursor: "pointer",
-                  }}
+                  className="post-btn-text post-btn-text-cancel"
                 >
-                  No
+                  no
                 </button>
               </div>
             ) : (
               <>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "12px",
-                    borderRadius: "6px",
-                    border: "1px solid #d1d5db",
-                    backgroundColor: "#f3f4f6",
-                    cursor: "pointer",
-                  }}
+                  className="post-btn-text post-btn-text-edit"
                 >
-                  {isEditing ? "Cancel" : "Edit"}
+                  {isEditing ? "cancel" : "edit"}
                 </button>
                 <button
                   onClick={() => setIsDeletingConfirm(true)}
                   disabled={loading}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "12px",
-                    borderRadius: "6px",
-                    border: "none",
-                    backgroundColor: "#fef2f2",
-                    color: "#dc2626",
-                    cursor: "pointer",
-                  }}
+                  className="post-btn-text post-btn-text-delete"
                 >
-                  Delete
+                  delete
                 </button>
               </>
             )}
@@ -315,45 +256,31 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
             rows={3}
-            style={{
-              width: "100%",
-              padding: "8px",
-              borderRadius: "6px",
-              border: "1px solid #d1d5db",
-              boxSizing: "border-box",
-              fontFamily: "inherit",
-            }}
+            className="post-edit-textarea"
           />
-          {error && <p style={{ color: "#dc2626", fontSize: "12px" }}>{error}</p>}
+          {error && <p style={{ color: "#ef4444", fontSize: "12px", fontFamily: "var(--font-mono)" }}>{error}</p>}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
             <button
               onClick={handleSaveEdit}
               disabled={loading || !editContent.trim()}
-              style={{
-                padding: "6px 14px",
-                fontSize: "13px",
-                backgroundColor: "#4f46e5",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
+              className="btn"
+              style={{ width: "auto", minWidth: "80px", padding: "6px 14px", borderRadius: "10px", fontSize: "12px" }}
             >
-              {loading ? "Saving..." : "Save"}
+              {loading ? "saving..." : "save"}
             </button>
           </div>
         </div>
       ) : (
         <>
-          <p style={{ margin: "8px 0", fontSize: "14px", color: "#374151" }}>
+          <p className="post-content">
             {post.content}
           </p>
           {post.imageUrl && (
-            <div style={{ marginTop: "12px", borderRadius: "8px", overflow: "hidden", border: "1px solid #e5e7eb" }}>
+            <div className="post-image-container">
               <img
                 src={post.imageUrl}
                 alt="Post attachment"
-                style={{ width: "100%", maxHeight: "400px", objectFit: "cover", display: "block" }}
+                className="post-image"
               />
             </div>
           )}
@@ -361,57 +288,29 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
       )}
 
       {error && !isEditing && (
-        <p style={{ color: "#dc2626", fontSize: "12px", margin: "4px 0" }}>{error}</p>
+        <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0", fontFamily: "var(--font-mono)" }}>{error}</p>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
-        <small style={{ color: "#9ca3af", fontSize: "12px" }}>
+      <div className="post-footer">
+        <small className="post-date">
           {new Date(post.createdAt).toLocaleString()}
         </small>
 
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className="post-actions">
           <button
             onClick={handleToggleLike}
             disabled={likeMutation.isPending}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "none",
-              border: "none",
-              color: liked ? "#ef4444" : "#6b7280",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: likeMutation.isPending ? "not-allowed" : "pointer",
-              padding: "4px 8px",
-              borderRadius: "6px",
-              backgroundColor: liked ? "#fee2e2" : "transparent",
-              transition: "all 0.2s ease",
-            }}
+            className={`post-action-btn ${liked ? "liked" : ""}`}
           >
             <span>{liked ? "❤️" : "♡"}</span>
-            <span>{likeCount}</span>
+            <span>like ({likeCount})</span>
           </button>
 
           <button
             onClick={() => setShowComments(!showComments)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "none",
-              border: "none",
-              color: showComments ? "#4f46e5" : "#6b7280",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              padding: "4px 8px",
-              borderRadius: "6px",
-              backgroundColor: showComments ? "#e0e7ff" : "transparent",
-              transition: "all 0.2s ease",
-            }}
+            className={`post-action-btn ${showComments ? "comments-active" : ""}`}
           >
-            💬 {commentCount} {showComments ? "Hide Comments" : "Comments"}
+            💬 comments ({commentCount})
           </button>
         </div>
       </div>
