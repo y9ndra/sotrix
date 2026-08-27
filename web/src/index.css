@@ -1585,4 +1585,131 @@ button, input, textarea, select {
   cursor: not-allowed;
 }
 
+/* ==========================================================================
+   UserCard Component Styling (Obsidian)
+   ========================================================================== */
+.user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  gap: 16px;
+  transition: border-color var(--transition-fast);
+}
+
+.user-card:hover {
+  border-color: var(--border-active);
+}
+
+.user-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px; /* soft corner instead of 50% circle */
+  background-color: #121212;
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.user-display-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-username-tag {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.user-card-bio {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-card-stats {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.user-follow-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.user-follow-btn.unfollowed {
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+  font-weight: 600;
+}
+
+.user-follow-btn.unfollowed:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+.user-follow-btn.following {
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+}
+
+.user-follow-btn.following:hover:not(:disabled) {
+  border-color: var(--border-active);
+  color: var(--text-primary);
+}
+
+.user-follow-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 

@@ -237,6 +237,6 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - [ ] CommentList
 - [ ] CommentItem
 - [ ] CreateComment
-- [ ] UserCard
+- [x] UserCard
 - [ ] ProtectedRoute UI
 - [ ] AuthInitializer UI
