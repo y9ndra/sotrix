@@ -9,7 +9,9 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "worker": "ts-node-dev --respawn --transpile-only src/workers/index.ts",
     "test": "jest --runInBand",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch --runInBand",
+    "test:unit": "jest tests/unit --runInBand",
+    "test:integration": "jest tests/integration tests/auth --runInBand"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
