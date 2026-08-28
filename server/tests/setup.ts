@@ -1,6 +1,12 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 
+// Set environment variables immediately for module load time
+process.env.NODE_ENV = "test";
+process.env.JWT_SECRET = "super123secretkey8124yugisupersecret";
+process.env.JWT_ACCESS_SECRET = "super123accesssecretkey8124yugisupersecret";
+process.env.JWT_REFRESH_SECRET = "super123refreshsecretkey8124yugisupersecret";
+
 // Mock Redis configuration and client to avoid side effects
 jest.mock("../src/config/redis", () => {
   return {
@@ -69,9 +75,6 @@ beforeAll(async () => {
 
   // Override environment variables for testing
   process.env.DATABASE_URL = mongoUri;
-  process.env.JWT_SECRET = "super123secretkey8124yugisupersecret";
-  process.env.JWT_ACCESS_SECRET = "super123accesssecretkey8124yugisupersecret";
-  process.env.JWT_REFRESH_SECRET = "super123refreshsecretkey8124yugisupersecret";
 
   // Establish connection
   await mongoose.connect(mongoUri);

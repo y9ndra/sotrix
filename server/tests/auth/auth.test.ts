@@ -176,4 +176,47 @@ describe("Auth API", () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe("GET /api/auth/me", () => {
+    it("should reject request without an access token", async () => {
+      const response = await request(app).get("/api/auth/me");
+
+      expect(response.status).toBe(401);
+    });
+
+    it("should reject request with an invalid access token", async () => {
+      const response = await request(app)
+        .get("/api/auth/me")
+        .set("Authorization", "Bearer invalid-token");
+
+      expect(response.status).toBe(401);
+    });
+
+    it("should return the authenticated user's profile", async () => {
+      const userData = await signupTestUser();
+
+      // Login and get a real access token
+      const loginResponse = await request(app)
+        .post("/api/auth/login")
+        .send({
+          identifier: userData.email,
+          password: userData.password,
+        });
+
+      const accessToken = loginResponse.body.token;
+
+      // Access protected route
+      const response = await request(app)
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(response.status).toBe(200);
+
+      expect(response.body.success).toBe(true);
+
+      expect(response.body.user).toHaveProperty("id");
+      expect(response.body.user.username).toBe(userData.username);
+      expect(response.body.user.email).toBe(userData.email);
+    });
+  });
 });
