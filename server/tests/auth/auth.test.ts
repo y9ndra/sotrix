@@ -219,4 +219,71 @@ describe("Auth API", () => {
       expect(response.body.user.email).toBe(userData.email);
     });
   });
+
+  describe("POST /api/auth/refresh", () => {
+    it("should issue a new access token using a valid refresh token", async () => {
+      const userData = await signupTestUser();
+
+      const agent = request.agent(app);
+
+      // Login → receives refresh token cookie
+      const loginResponse = await agent
+        .post("/api/auth/login")
+        .send({
+          identifier: userData.email,
+          password: userData.password,
+        });
+
+      expect(loginResponse.status).toBe(200);
+
+      // Refresh → cookie is automatically sent
+      const refreshResponse = await agent.post("/api/auth/refresh");
+
+      expect(refreshResponse.status).toBe(200);
+
+      expect(refreshResponse.body.success).toBe(true);
+
+      expect(refreshResponse.body).toHaveProperty("token");
+
+      expect(typeof refreshResponse.body.token).toBe("string");
+    });
+
+    it("should reject refresh when no refresh token is provided", async () => {
+      const response = await request(app)
+        .post("/api/auth/refresh");
+
+      expect(response.status).toBe(401);
+    });
+
+    it("should invalidate the old refresh token after rotation", async () => {
+      const userData = await signupTestUser();
+
+      const agent = request.agent(app);
+
+      // Login
+      const loginResponse = await agent
+        .post("/api/auth/login")
+        .send({
+          identifier: userData.email,
+          password: userData.password,
+        });
+
+      const oldCookies = loginResponse.headers["set-cookie"];
+
+      expect(oldCookies).toBeDefined();
+
+      // Use old refresh token → rotation happens
+      const refreshResponse = await agent
+        .post("/api/auth/refresh");
+
+      expect(refreshResponse.status).toBe(200);
+
+      // Try the OLD refresh token again manually
+      const replayResponse = await request(app)
+        .post("/api/auth/refresh")
+        .set("Cookie", oldCookies);
+
+      expect(replayResponse.status).toBe(401);
+    });
+  });
 });
