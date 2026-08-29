@@ -14,6 +14,8 @@ export const updateProfileSchema = z.object({
     .string()
     .max(160, "Bio cannot exceed 160 characters")
     .optional(),
+  profilePicUrl: z.string().optional(),
+  profilePicPublicId: z.string().optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

@@ -2,7 +2,8 @@ import { Readable } from "stream";
 import cloudinary from "../config/cloudinary";
 
 export const uploadImage = (
-    buffer: Buffer
+    buffer: Buffer,
+    folder: string = "sotrix/posts"
 ): Promise<{
     secure_url: string;
     public_id: string;
@@ -10,7 +11,7 @@ export const uploadImage = (
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                folder: "sotrix/posts",
+                folder,
                 resource_type: "image",
             },
             (error, result) => {

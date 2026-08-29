@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { getUserById, updateUserProfile, searchUsersService } from "../services/user.service";
 import { UpdateProfileInput } from "../schemas/user.schema";
 import { IdParam, SearchQuery } from "../schemas/common.schema";
+import User from "../models/user.model";
+import { uploadImage, deleteFromCloudinary } from "../services/cloudinary.service";
 
 export const getUserProfile = async (
   req: Request<IdParam>,
@@ -42,7 +44,25 @@ export const updateMyProfile = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const updatedUser = await updateUserProfile(userId, req.body);
+    const updates: UpdateProfileInput = { ...req.body };
+
+    if (req.file) {
+      const { secure_url, public_id } = await uploadImage(req.file.buffer, "sotrix/profiles");
+      
+      const userDoc = await User.findById(userId);
+      if (userDoc?.profilePicPublicId) {
+        try {
+          await deleteFromCloudinary(userDoc.profilePicPublicId);
+        } catch (cloudinaryError) {
+          console.error("Failed to delete old profile picture from Cloudinary:", cloudinaryError);
+        }
+      }
+
+      updates.profilePicUrl = secure_url;
+      updates.profilePicPublicId = public_id;
+    }
+
+    const updatedUser = await updateUserProfile(userId, updates);
 
     return res.status(200).json({
       success: true,

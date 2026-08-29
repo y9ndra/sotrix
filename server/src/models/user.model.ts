@@ -8,6 +8,8 @@ export interface IUser extends Document {
   bio?: string;
   followersCount: number;
   followingCount: number;
+  profilePicUrl?: string;
+  profilePicPublicId?: string;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -19,6 +21,8 @@ const UserSchema = new Schema<IUser>(
     bio: { type: String, default: "" },
     followersCount: { type: Number, default: 0 },
     followingCount: { type: Number, default: 0 },
+    profilePicUrl: { type: String, default: "" },
+    profilePicPublicId: { type: String, default: "" },
   },
   { timestamps: true }
 );

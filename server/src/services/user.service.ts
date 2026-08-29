@@ -8,6 +8,8 @@ export interface UpdateProfileInput {
   name?: string;
   username?: string;
   bio?: string;
+  profilePicUrl?: string;
+  profilePicPublicId?: string;
 }
 
 export const getUserById = async (userId: string, currentUserId?: string) => {
