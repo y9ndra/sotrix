@@ -85,7 +85,7 @@ export const markNotificationAsRead = async (
       $set: { read: true },
     },
     {
-      new: true,
+      returnDocument: "after",
     }
   );
 

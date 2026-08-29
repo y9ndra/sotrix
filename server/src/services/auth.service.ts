@@ -174,7 +174,7 @@ export const refreshAccessToken = async (
       },
     },
     {
-      new: true,
+      returnDocument: "after",
     }
   );
 
