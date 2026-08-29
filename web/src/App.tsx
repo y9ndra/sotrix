@@ -3,10 +3,8 @@ import './App.css';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
-import Feed from './pages/Feed';
 import Explore from './pages/Explore';
 import Search from './pages/Search';
-import MyPosts from './pages/MyPosts';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthInitializer from './components/AuthInitializer';
 import Notifications from './pages/Notifications';
@@ -33,10 +31,8 @@ function App() {
           <Route path="/" element={<></>} />
 
           {/* Sliding Sheet Panel sub-routes */}
-          <Route path="/feed" element={<Feed />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/my-posts" element={<MyPosts />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile/:id" element={<Profile />} />
         </Route>
