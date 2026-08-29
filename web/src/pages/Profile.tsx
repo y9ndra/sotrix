@@ -1,12 +1,63 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import Cropper from "react-easy-crop";
 import api from "../services/api";
 import { toggleFollowUser } from "../services/follow.service";
 import { useAuthStore } from "../store/authStore";
 import { getUserPosts } from "../services/post.service";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
+
+// Canvas Helper Utilities for Image Cropping
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", (err) => reject(err));
+    image.setAttribute("crossOrigin", "anonymous"); // Avoid canvas taint error on cross-origin images
+    image.src = url;
+  });
+
+const getCroppedImg = async (
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<Blob> => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("No 2d context");
+  }
+
+  // Set canvas size to the cropped dimensions
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  // Draw the selected cropped region
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((file) => {
+      if (file) {
+        resolve(file);
+      } else {
+        reject(new Error("Canvas is empty"));
+      }
+    }, "image/jpeg", 0.95);
+  });
+};
 
 const Profile = () => {
   const { id } = useParams();
@@ -22,6 +73,15 @@ const Profile = () => {
   const [profilePicPreview, setProfilePicPreview] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   const [editError, setEditError] = useState<string>("");
+
+  // Cropper Modal State
+  const [isCropperOpen, setIsCropperOpen] = useState<boolean>(false);
+  const [imageToCrop, setImageToCrop] = useState<string>("");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
+  // Lightbox Enlarged Avatar State
   const [isAvatarEnlarged, setIsAvatarEnlarged] = useState<boolean>(false);
 
   // Sub-tabs State
@@ -85,8 +145,31 @@ const Profile = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setProfilePic(file);
-      setProfilePicPreview(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      setImageToCrop(url);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setIsCropperOpen(true);
+    }
+  };
+
+  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropSave = async () => {
+    if (imageToCrop && croppedAreaPixels) {
+      try {
+        const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+        const croppedFile = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+        
+        setProfilePic(croppedFile);
+        setProfilePicPreview(URL.createObjectURL(croppedBlob));
+        setIsCropperOpen(false);
+        setImageToCrop("");
+      } catch (err) {
+        console.error("Error cropping image:", err);
+      }
     }
   };
 
@@ -104,7 +187,6 @@ const Profile = () => {
       }
 
       const response = await api.patch("/users/me", formData);
-
       const updatedData = response.data.data;
 
       setUser((prev: any) => ({
@@ -112,9 +194,7 @@ const Profile = () => {
         ...updatedData,
       }));
       
-      // Update global authStore state in real-time
       setAuthUser(updatedData);
-
       setIsEditing(false);
     } catch (err: any) {
       console.error(err);
@@ -474,6 +554,8 @@ const Profile = () => {
           )}
         </div>
       </div>
+      
+      {/* Lightbox Enlarged Avatar Modal (React Portal) */}
       {isAvatarEnlarged && user.profilePicUrl && createPortal(
         <div className="avatar-enlarged-modal" onClick={() => setIsAvatarEnlarged(false)}>
           <div className="avatar-enlarged-content" onClick={(e) => e.stopPropagation()}>
@@ -481,6 +563,63 @@ const Profile = () => {
               &times;
             </button>
             <img src={user.profilePicUrl} alt={user.username} className="avatar-enlarged-img" />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Avatar Cropper Modal Overlay (React Portal) */}
+      {isCropperOpen && imageToCrop && createPortal(
+        <div className="avatar-enlarged-modal">
+          <div 
+            className="avatar-enlarged-content" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ 
+              flexDirection: "column", 
+              width: "360px", 
+              height: "440px", 
+              backgroundColor: "#000000", 
+              border: "1px solid var(--border-default)", 
+              borderRadius: "10px", 
+              padding: "20px", 
+              display: "flex", 
+              gap: "16px",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.9)"
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "15px", fontFamily: "var(--font-mono)", color: "var(--text-primary)", fontWeight: 600 }}>adjust profile photo</h3>
+            
+            <div style={{ position: "relative", width: "100%", height: "280px", backgroundColor: "#121212", borderRadius: "10px", overflow: "hidden" }}>
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", width: "100%", marginTop: "auto" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCropperOpen(false);
+                  setImageToCrop("");
+                }}
+                className="profile-action-btn"
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCropSave}
+                className="profile-action-btn primary"
+              >
+                crop & apply
+              </button>
+            </div>
           </div>
         </div>,
         document.body
