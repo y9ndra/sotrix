@@ -6,6 +6,7 @@ import { toggleFollowUser } from "../services/follow.service";
 import { useAuthStore } from "../store/authStore";
 import { getUserPosts } from "../services/post.service";
 import PostCard from "../components/PostCard";
+import { createPortal } from "react-dom";
 
 const Profile = () => {
   const { id } = useParams();
@@ -21,6 +22,7 @@ const Profile = () => {
   const [profilePicPreview, setProfilePicPreview] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   const [editError, setEditError] = useState<string>("");
+  const [isAvatarEnlarged, setIsAvatarEnlarged] = useState<boolean>(false);
 
   // Sub-tabs State
   const [activeSubTab, setActiveSubTab] = useState<"posts" | "media" | "activity">("posts");
@@ -273,7 +275,17 @@ const Profile = () => {
                   {/* Header Row: Avatar, Name, Handle on the left; Action on the right */}
                   <div className="profile-header-row">
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <div className="profile-avatar-large" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div
+                        className="profile-avatar-large"
+                        style={{
+                          overflow: "hidden",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: user.profilePicUrl ? "pointer" : "default"
+                        }}
+                        onClick={() => user.profilePicUrl && setIsAvatarEnlarged(true)}
+                      >
                         {user.profilePicUrl ? (
                           <img
                             src={user.profilePicUrl}
@@ -462,6 +474,17 @@ const Profile = () => {
           )}
         </div>
       </div>
+      {isAvatarEnlarged && user.profilePicUrl && createPortal(
+        <div className="avatar-enlarged-modal" onClick={() => setIsAvatarEnlarged(false)}>
+          <div className="avatar-enlarged-content" onClick={(e) => e.stopPropagation()}>
+            <button className="avatar-enlarged-close" onClick={() => setIsAvatarEnlarged(false)}>
+              &times;
+            </button>
+            <img src={user.profilePicUrl} alt={user.username} className="avatar-enlarged-img" />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
