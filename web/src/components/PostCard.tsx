@@ -303,14 +303,17 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
             className={`post-action-btn ${liked ? "liked" : ""}`}
           >
             <span>{liked ? "❤️" : "♡"}</span>
-            <span>like ({likeCount})</span>
+            <span className="post-action-text" style={{ marginLeft: "4px", marginRight: "2px" }}>like</span>
+            <span>({likeCount})</span>
           </button>
 
           <button
             onClick={() => setShowComments(!showComments)}
             className={`post-action-btn ${showComments ? "comments-active" : ""}`}
           >
-            💬 comments ({commentCount})
+            <span>💬</span>
+            <span className="post-action-text" style={{ marginLeft: "4px", marginRight: "2px" }}>comments</span>
+            <span>({commentCount})</span>
           </button>
         </div>
       </div>

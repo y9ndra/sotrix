@@ -2043,6 +2043,11 @@ button, input, textarea, select {
   .profile-stat-number {
     font-size: 14px;
   }
+
+  /* Hide text labels for actions (like/comment) on mobile */
+  .post-action-text {
+    display: none !important;
+  }
 }
 
 
