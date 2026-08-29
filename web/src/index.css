@@ -1181,6 +1181,7 @@ button, input, textarea, select {
 .deck-base-layer {
   width: 100%;
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
   background-color: #000000;
@@ -1736,7 +1737,7 @@ button, input, textarea, select {
 .profile-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   margin-bottom: 16px;
 }
 
@@ -1800,14 +1801,14 @@ button, input, textarea, select {
   font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 4px 0;
+  margin: 0;
 }
 
 .profile-handle {
   font-size: 13px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
-  margin: 0 0 16px 0;
+  margin: 0;
 }
 
 .profile-stats-bar {
@@ -1953,6 +1954,95 @@ button, input, textarea, select {
 @keyframes profile-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Base style for bottom nav (hidden on desktop) */
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* ==========================================================================
+   Mobile Responsive Overrides
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Navbar space links hidden on top */
+  .nav-spaces {
+    display: none !important;
+  }
+
+  .nav-control-center {
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+
+  /* Fixed Mobile Bottom Nav Bar */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background-color: #000000;
+    border-top: 1px solid var(--border-default);
+    z-index: 100;
+    justify-content: space-around;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0 8px;
+  }
+
+  .mobile-nav-link {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    text-transform: lowercase;
+    padding: 8px 12px;
+    transition: all var(--transition-fast);
+  }
+
+  .mobile-nav-link.active {
+    color: var(--text-primary);
+    font-weight: 600;
+    border-bottom: 2px solid var(--accent-matrix);
+  }
+
+  /* Notifications cover full screen width on mobile devices */
+  .deck-sheet-container.half-sheet {
+    width: 100% !important;
+  }
+
+  /* Increase bottom padding to prevent bottomnav overlaps */
+  .explore-container,
+  .profile-container,
+  .dashboard-container {
+    padding-bottom: 80px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Profile page responsive wrapping */
+  .profile-header-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 16px;
+  }
+
+  .profile-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-stats-bar {
+    font-size: 12px;
+    padding: 10px 0;
+    margin: 16px 0;
+  }
+
+  .profile-stat-number {
+    font-size: 14px;
+  }
 }
 
 

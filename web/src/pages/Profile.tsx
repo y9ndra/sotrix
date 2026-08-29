@@ -216,16 +216,16 @@ const Profile = () => {
               ) : (
                 <>
                   {/* Header Row: Avatar, Name, Handle on the left; Action on the right */}
-                  <div className="profile-header-row" style={{ alignItems: "center" }}>
+                  <div className="profile-header-row">
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <div className="profile-avatar-large" style={{ marginTop: 0 }}>
+                      <div className="profile-avatar-large">
                         {getInitial(user.name, user.username)}
                       </div>
                       <div>
-                        <h1 className="profile-name" style={{ margin: 0 }}>
+                        <h1 className="profile-name">
                           {user.name || user.username}
                         </h1>
-                        <p className="profile-handle" style={{ margin: 0 }}>
+                        <p className="profile-handle">
                           @{user.username}
                         </p>
                       </div>
