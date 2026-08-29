@@ -17,6 +17,8 @@ const Profile = () => {
   // Edit Profile State
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editForm, setEditForm] = useState({ name: "", username: "", bio: "" });
+  const [profilePic, setProfilePic] = useState<File | null>(null);
+  const [profilePicPreview, setProfilePicPreview] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   const [editError, setEditError] = useState<string>("");
 
@@ -24,6 +26,7 @@ const Profile = () => {
   const [activeSubTab, setActiveSubTab] = useState<"posts" | "media" | "activity">("posts");
 
   const currentUser = useAuthStore((state) => state.user);
+  const setAuthUser = useAuthStore((state) => state.setUser);
   const currentUserId = currentUser?._id || currentUser?.id || null;
   const isOwnProfile =
     user && (user._id === currentUserId || user.id === currentUserId || id === currentUserId);
@@ -71,8 +74,18 @@ const Profile = () => {
       username: user?.username || "",
       bio: user?.bio || "",
     });
+    setProfilePic(null);
+    setProfilePicPreview(user?.profilePicUrl || "");
     setEditError("");
     setIsEditing(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePic(file);
+      setProfilePicPreview(URL.createObjectURL(file));
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -80,11 +93,26 @@ const Profile = () => {
     setSaving(true);
     setEditError("");
     try {
-      const response = await api.patch("/users/me", editForm);
+      const formData = new FormData();
+      formData.append("name", editForm.name);
+      formData.append("username", editForm.username);
+      formData.append("bio", editForm.bio);
+      if (profilePic) {
+        formData.append("profilePic", profilePic);
+      }
+
+      const response = await api.patch("/users/me", formData);
+
+      const updatedData = response.data.data;
+
       setUser((prev: any) => ({
         ...prev,
-        ...response.data.data,
+        ...updatedData,
       }));
+      
+      // Update global authStore state in real-time
+      setAuthUser(updatedData);
+
       setIsEditing(false);
     } catch (err: any) {
       console.error(err);
@@ -162,6 +190,33 @@ const Profile = () => {
                     </div>
                   )}
 
+                  {/* Profile Picture Upload & Live Preview Row */}
+                  <div className="profile-form-group" style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "20px" }}>
+                    <div className="profile-avatar-large" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
+                      {profilePicPreview ? (
+                        <img
+                          src={profilePicPreview}
+                          alt="Avatar preview"
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        getInitial(editForm.name, editForm.username)
+                      )}
+                    </div>
+                    <label className="profile-action-btn" style={{ cursor: "pointer", display: "inline-flex", gap: "6px" }}>
+                      <svg style={{ width: "14px", height: "14px", stroke: "currentColor" }} fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      upload photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                  </div>
+
                   <div className="profile-form-group">
                     <label className="profile-form-label">name</label>
                     <input
@@ -218,8 +273,16 @@ const Profile = () => {
                   {/* Header Row: Avatar, Name, Handle on the left; Action on the right */}
                   <div className="profile-header-row">
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <div className="profile-avatar-large">
-                        {getInitial(user.name, user.username)}
+                      <div className="profile-avatar-large" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {user.profilePicUrl ? (
+                          <img
+                            src={user.profilePicUrl}
+                            alt={user.username}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          getInitial(user.name, user.username)
+                        )}
                       </div>
                       <div>
                         <h1 className="profile-name">

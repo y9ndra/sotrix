@@ -10,4 +10,6 @@ export interface User {
   isFollowing?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  profilePicUrl?: string;
+  profilePicPublicId?: string;
 }

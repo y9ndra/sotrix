@@ -99,6 +99,10 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
       id: userId,
       username: user.username,
       email: user.email,
+      name: user.name,
+      bio: user.bio,
+      profilePicUrl: user.profilePicUrl,
+      profilePicPublicId: user.profilePicPublicId,
     },
   };
 };
@@ -114,6 +118,10 @@ export const getUserProfile = async (userId: string): Promise<AuthUser> => {
     id: (user._id as any).toString(),
     username: user.username,
     email: user.email,
+    name: user.name,
+    bio: user.bio,
+    profilePicUrl: user.profilePicUrl,
+    profilePicPublicId: user.profilePicPublicId,
   };
 };
 

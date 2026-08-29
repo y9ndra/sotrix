@@ -48,8 +48,16 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
   return (
     <div className="user-card">
       <div className="user-card-left">
-        <Link to={`/profile/${user._id}`} className="user-avatar" style={{ textDecoration: "none" }}>
-          {initialLetter}
+        <Link to={`/profile/${user._id}`} className="user-avatar" style={{ textDecoration: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {user.profilePicUrl ? (
+            <img
+              src={user.profilePicUrl}
+              alt={user.username}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            initialLetter
+          )}
         </Link>
         <div className="user-details">
           <div className="user-meta-row">
