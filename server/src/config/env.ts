@@ -17,6 +17,7 @@ export const config = {
   JWT_ACCESS_SECRET: jwtAccessSecret,
   JWT_REFRESH_SECRET: jwtRefreshSecret,
   NODE_ENV: process.env.NODE_ENV || "development",
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
 };
 
 // Validate that important database URL exists
