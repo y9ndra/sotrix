@@ -19,14 +19,6 @@ function App() {
 
     socket.on("connect", () => {
       console.log("Connected to Socket.IO server:", socket.id);
-
-      socket.emit("test:ping", {
-        message: "Hello from React",
-      });
-    });
-
-    socket.on("test:pong", (data) => {
-      console.log("Received test:pong:", data);
     });
 
     socket.on("disconnect", () => {
@@ -35,7 +27,6 @@ function App() {
 
     return () => {
       socket.off("connect");
-      socket.off("test:pong");
       socket.off("disconnect");
 
       disconnectSocket();

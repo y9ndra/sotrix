@@ -13,15 +13,6 @@ export const initializeSocket = (httpServer: HTTPServer) => {
   io.on("connection", (socket: Socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
-    socket.on("test:ping", (data) => {
-      console.log("Received test:ping:", data);
-
-      socket.emit("test:pong", {
-        message: "Hello from Sotrix server!",
-        receivedAt: new Date().toISOString(),
-      });
-    });
-
     socket.on("disconnect", (reason) => {
       console.log(
         `Socket disconnected: ${socket.id}, reason: ${reason}`
