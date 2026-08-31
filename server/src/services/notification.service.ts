@@ -77,7 +77,7 @@ export const getNotifications = async (
   }
 
   const notifications = await Notification.find(query)
-    .populate("actor", "name username email")
+    .populate("actor", "name username email profilePicUrl")
     .sort({
       createdAt: -1,
       _id: -1,
