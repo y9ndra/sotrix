@@ -2,7 +2,7 @@ import "dotenv/config";
 import { connectDB } from "../config/db";
 import { Worker } from "bullmq";
 import { bullMQConnection } from "../config/bullmq-redis";
-import Notification from "../models/notification.model";
+import { createNotification } from "../services/notification.service";
 import type { NotificationJobData } from "../queues/notification.queue";
 
 // Connect to MongoDB
@@ -17,14 +17,16 @@ export const notificationWorker = new Worker<NotificationJobData>(
     console.log("Processing job:", job.id);
     const { recipientId, actorId, type, postId } = job.data;
 
-    const notification = await Notification.create({
-      recipient: recipientId,
-      actor: actorId,
+    const notification = await createNotification({
+      recipientId,
+      actorId,
       type,
-      post: postId,
+      postId,
     });
 
-    console.log(`Notification created: ${notification._id}`);
+    if (notification) {
+      console.log(`Notification created & emitted: ${notification._id}`);
+    }
 
     return notification;
   },

@@ -1,5 +1,45 @@
 import Notification, { INotification } from "../models/notification.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
+import { emitToUser } from "../socket/socket.manager";
+
+export interface CreateNotificationInput {
+  recipientId: string;
+  actorId: string;
+  type: "like" | "comment" | "follow";
+  postId?: string;
+}
+
+export const createNotification = async ({
+  recipientId,
+  actorId,
+  type,
+  postId,
+}: CreateNotificationInput): Promise<INotification | null> => {
+  if (recipientId.toString() === actorId.toString()) {
+    return null;
+  }
+
+  const notification = await Notification.create({
+    recipient: recipientId,
+    actor: actorId,
+    type,
+    post: postId,
+  });
+
+  await notification.populate("actor", "name username email profilePicUrl");
+
+  try {
+    emitToUser(
+      recipientId.toString(),
+      "notification:new",
+      notification
+    );
+  } catch (error) {
+    console.error("Failed to emit real-time notification:", error);
+  }
+
+  return notification;
+};
 
 export interface PaginatedNotificationsResult {
   data: INotification[];
