@@ -1,4 +1,6 @@
 import Notification, { INotification } from "../models/notification.model";
+import Like from "../models/like.model";
+import Follow from "../models/follow.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
 import { emitToUser } from "../socket/socket.manager";
 
@@ -17,6 +19,36 @@ export const createNotification = async ({
 }: CreateNotificationInput): Promise<INotification | null> => {
   if (recipientId.toString() === actorId.toString()) {
     return null;
+  }
+
+  // Ensure the action still exists (prevents race conditions if user unliked before worker processes job)
+  if (type === "like" && postId) {
+    const isLiked = await Like.exists({ user: actorId, post: postId });
+    if (!isLiked) {
+      return null;
+    }
+  }
+
+  if (type === "follow") {
+    const isFollowing = await Follow.exists({
+      follower: actorId,
+      following: recipientId,
+    });
+    if (!isFollowing) {
+      return null;
+    }
+  }
+
+  // Check if identical unread notification already exists
+  const existingNotification = await Notification.findOne({
+    recipient: recipientId,
+    actor: actorId,
+    type,
+    ...(postId ? { post: postId } : {}),
+  });
+
+  if (existingNotification) {
+    return existingNotification;
   }
 
   const notification = await Notification.create({
@@ -39,6 +71,20 @@ export const createNotification = async ({
   }
 
   return notification;
+};
+
+export const removeNotification = async (
+  recipientId: string,
+  actorId: string,
+  type: "like" | "comment" | "follow",
+  postId?: string
+): Promise<void> => {
+  await Notification.findOneAndDelete({
+    recipient: recipientId,
+    actor: actorId,
+    type,
+    ...(postId ? { post: postId } : {}),
+  });
 };
 
 export interface PaginatedNotificationsResult {

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { toggleFollow as toggleFollowService } from "../services/follow.service";
 import { IdParam } from "../schemas/common.schema";
 import { addNotificationJob } from "../jobs/notification.job";
+import { removeNotification } from "../services/notification.service";
 
 export const toggleFollow = async (
   req: Request<IdParam>,
@@ -28,6 +29,8 @@ export const toggleFollow = async (
         actorId: followerId,
         type: "follow",
       });
+    } else {
+      await removeNotification(targetUserId, followerId, "follow");
     }
 
     return res.status(200).json({

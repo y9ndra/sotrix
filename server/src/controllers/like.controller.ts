@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { toggleLike as toggleLikeService } from "../services/like.service";
 import { PostIdParam } from "../schemas/common.schema";
 import { addNotificationJob } from "../jobs/notification.job";
+import { removeNotification } from "../services/notification.service";
 
 export const toggleLike = async (
   req: Request<PostIdParam>,
@@ -28,6 +29,11 @@ export const toggleLike = async (
         type: "like",
         postId,
       });
+    } else if (
+      !result.liked &&
+      result.postAuthorId !== userId
+    ) {
+      await removeNotification(result.postAuthorId, userId, "like", postId);
     }
 
     return res.status(200).json({

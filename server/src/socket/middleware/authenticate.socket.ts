@@ -3,7 +3,8 @@ import jwt from "jsonwebtoken";
 import { config } from "../../config/env";
 
 interface SocketTokenPayload {
-  id: string;
+  id?: string;
+  userId?: string;
 }
 
 export const authenticateSocket = (
@@ -11,10 +12,10 @@ export const authenticateSocket = (
   next: (err?: Error) => void
 ) => {
   try {
-    const token = socket.handshake.auth.token;
+    const token = socket.handshake.auth?.token;
 
     if (!token) {
-      return next(new Error("Authentication error"));
+      return next(new Error("Authentication error: No token provided"));
     }
 
     const decoded = jwt.verify(
@@ -22,7 +23,12 @@ export const authenticateSocket = (
       config.JWT_ACCESS_SECRET
     ) as SocketTokenPayload;
 
-    socket.data.userId = decoded.id;
+    const userId = decoded.id || decoded.userId;
+    if (!userId) {
+      return next(new Error("Authentication error: Invalid payload"));
+    }
+
+    socket.data.userId = userId.toString();
 
     next();
   } catch (error) {

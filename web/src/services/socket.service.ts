@@ -10,17 +10,25 @@ export const connectSocket = (): Socket | null => {
   const token = getToken();
 
   if (!token) {
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
     return null;
   }
 
-  if (!socket) {
-    socket = io(SOCKET_URL, {
-      withCredentials: true,
-      auth: {
-        token,
-      },
-    });
+  // If socket already exists, disconnect and recreate to ensure clean connection with fresh token
+  if (socket) {
+    socket.disconnect();
+    socket = null;
   }
+
+  socket = io(SOCKET_URL, {
+    withCredentials: true,
+    auth: {
+      token,
+    },
+  });
 
   return socket;
 };
