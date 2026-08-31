@@ -17,17 +17,21 @@ function App() {
   useEffect(() => {
     const socket = connectSocket();
 
-    socket.on("connect", () => {
-      console.log("Connected to Socket.IO server:", socket.id);
-    });
+    if (socket) {
+      socket.on("connect", () => {
+        console.log("Connected to Socket.IO server:", socket.id);
+      });
 
-    socket.on("disconnect", () => {
-      console.log("Disconnected from Socket.IO server");
-    });
+      socket.on("disconnect", () => {
+        console.log("Disconnected from Socket.IO server");
+      });
+    }
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
+      if (socket) {
+        socket.off("connect");
+        socket.off("disconnect");
+      }
 
       disconnectSocket();
     };
