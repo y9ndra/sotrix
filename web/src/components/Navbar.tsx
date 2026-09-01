@@ -1,5 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { useNotificationStore } from '../store/notification.store';
 import { removeToken } from '../services/token.service';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
@@ -15,13 +17,23 @@ function Navbar() {
 
     const currentUserId = user?._id || user?.id || "";
 
+    const storeUnreadCount = useNotificationStore((state) => state.unreadCount);
+    const setStoreUnreadCount = useNotificationStore((state) => state.setUnreadCount);
+
     const { data: unreadData } = useQuery({
         queryKey: queryKeys.notifications.unreadCount,
         queryFn: getUnreadCount,
         enabled: isAuthenticated,
         refetchInterval: 10000,
     });
-    const unreadCount = unreadData?.data?.unreadCount || 0;
+
+    useEffect(() => {
+        if (unreadData?.data?.unreadCount !== undefined) {
+            setStoreUnreadCount(unreadData.data.unreadCount);
+        }
+    }, [unreadData, setStoreUnreadCount]);
+
+    const unreadCount = storeUnreadCount || unreadData?.data?.unreadCount || 0;
 
     const handleLogout = async () => {
         try {

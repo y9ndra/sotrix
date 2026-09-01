@@ -7,8 +7,12 @@ import {
 } from "../services/notification.service";
 import type { Notification } from "../types/notification";
 
+import { useNotificationStore } from "../store/notification.store";
+
 const Notifications = () => {
   const queryClient = useQueryClient();
+  const storeMarkAsRead = useNotificationStore((state) => state.markAsRead);
+  const storeMarkAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
   // Infinite query for notifications
   const {
@@ -30,6 +34,9 @@ const Notifications = () => {
   // Mutation to mark a single notification as read
   const markReadMutation = useMutation({
     mutationFn: markAsRead,
+    onMutate: (id: string) => {
+      storeMarkAsRead(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
@@ -39,6 +46,9 @@ const Notifications = () => {
   // Mutation to mark all notifications as read
   const markAllReadMutation = useMutation({
     mutationFn: markAllAsRead,
+    onMutate: () => {
+      storeMarkAllAsRead();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });

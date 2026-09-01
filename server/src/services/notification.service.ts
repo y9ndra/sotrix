@@ -63,7 +63,7 @@ export const createNotification = async ({
   try {
     emitNotification(
       recipientId.toString(),
-      notification
+      notification.toObject()
     );
   } catch (error) {
     console.error("Failed to emit real-time notification:", error);

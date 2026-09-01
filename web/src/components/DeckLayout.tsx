@@ -5,10 +5,11 @@ import Homepage from "../pages/Homepage";
 import Explore from "../pages/Explore";
 import Search from "../pages/Search";
 import Profile from "../pages/Profile";
-
-
+import { useNotificationInitialization } from "../hooks/useNotificationInitialization";
 
 const DeckLayout = () => {
+  useNotificationInitialization();
+
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;

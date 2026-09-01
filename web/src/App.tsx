@@ -47,7 +47,10 @@ function App() {
       });
 
       socket.on("notification:new", (notification: Notification) => {
-        console.log("Real-time notification received:", notification);
+        console.log(
+          "🔔 New real-time notification received:",
+          notification
+        );
         addNotification(notification);
         queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
         queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });

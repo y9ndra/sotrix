@@ -6,23 +6,31 @@ interface NotificationState {
 
   unreadCount: number;
 
-  addNotification: (
-    notification: Notification
-  ) => void;
+  isInitialized: boolean;
 
   setNotifications: (
     notifications: Notification[]
+  ) => void;
+
+  addNotification: (
+    notification: Notification
   ) => void;
 
   setUnreadCount: (
     count: number
   ) => void;
 
+  incrementUnreadCount: () => void;
+
   markAsRead: (
     notificationId: string
   ) => void;
 
   markAllAsRead: () => void;
+
+  setInitialized: (
+    value: boolean
+  ) => void;
 }
 
 export const useNotificationStore =
@@ -31,27 +39,65 @@ export const useNotificationStore =
 
     unreadCount: 0,
 
-    addNotification: (notification) =>
-      set((state) => ({
-        notifications: [
-          notification,
-          ...state.notifications,
-        ],
-
-        unreadCount: notification.read
-          ? state.unreadCount
-          : state.unreadCount + 1,
-      })),
+    isInitialized: false,
 
     setNotifications: (notifications) =>
+      set((state) => {
+        const existingIds = new Set(
+          state.notifications.map(
+            (notification) => notification._id
+          )
+        );
+
+        const newNotifications =
+          notifications.filter(
+            (notification) =>
+              !existingIds.has(notification._id)
+          );
+
+        return {
+          notifications: [
+            ...state.notifications,
+            ...newNotifications,
+          ],
+        };
+      }),
+
+    setInitialized: (value) =>
       set({
-        notifications,
+        isInitialized: value,
+      }),
+
+    addNotification: (notification) =>
+      set((state) => {
+        const alreadyExists = state.notifications.some(
+          (item) => item._id === notification._id
+        );
+
+        if (alreadyExists) {
+          return state;
+        }
+
+        return {
+          notifications: [
+            notification,
+            ...state.notifications,
+          ],
+          unreadCount: notification.read
+            ? state.unreadCount
+            : state.unreadCount + 1,
+        };
       }),
 
     setUnreadCount: (count) =>
       set({
         unreadCount: count,
       }),
+
+    incrementUnreadCount: () =>
+      set((state) => ({
+        unreadCount: state.unreadCount + 1,
+      })),
 
     markAsRead: (notificationId) =>
       set((state) => {
