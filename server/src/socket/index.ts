@@ -4,11 +4,14 @@ import IORedis from "ioredis";
 import { config } from "../config/env";
 import { authenticateSocket } from "./middleware/authenticate.socket";
 import { setSocketIO } from "./socket.manager";
+import { getUserRoom } from "./socketRooms";
+
+let io: SocketIOServer | null = null;
 
 export const initializeSocket = (
   httpServer: HTTPServer
-) => {
-  const io = new SocketIOServer(httpServer, {
+): SocketIOServer => {
+  io = new SocketIOServer(httpServer, {
     cors: {
       origin: config.CLIENT_URL,
       credentials: true,
@@ -39,7 +42,7 @@ export const initializeSocket = (
         if (channel === "socket:emit_to_user") {
           try {
             const { userId, event, data } = JSON.parse(message);
-            io.to(userId).emit(event, data);
+            io.to(userId).to(getUserRoom(userId)).emit(event, data);
           } catch (e) {
             console.error("Error processing Redis socket message:", e);
           }
@@ -56,9 +59,14 @@ export const initializeSocket = (
     const userId = socket.data.userId;
 
     socket.join(userId);
+    socket.join(getUserRoom(userId));
 
     console.log(
       `Socket connected: ${socket.id}, user: ${userId}`
+    );
+
+    console.log(
+      `Socket ${socket.id} joined room: ${getUserRoom(userId)}`
     );
 
     socket.on("test:ping", (data) => {
@@ -76,6 +84,14 @@ export const initializeSocket = (
       );
     });
   });
+
+  return io;
+};
+
+export const getIO = (): SocketIOServer => {
+  if (!io) {
+    throw new Error("Socket.IO has not been initialized");
+  }
 
   return io;
 };

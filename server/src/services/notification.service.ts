@@ -2,7 +2,7 @@ import Notification, { INotification } from "../models/notification.model";
 import Like from "../models/like.model";
 import Follow from "../models/follow.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
-import { emitToUser } from "../socket/socket.manager";
+import { emitNotification } from "../socket/notification.emitter";
 
 export interface CreateNotificationInput {
   recipientId: string;
@@ -61,9 +61,8 @@ export const createNotification = async ({
   await notification.populate("actor", "name username email profilePicUrl");
 
   try {
-    emitToUser(
+    emitNotification(
       recipientId.toString(),
-      "notification:new",
       notification
     );
   } catch (error) {

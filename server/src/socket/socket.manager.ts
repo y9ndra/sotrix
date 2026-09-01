@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from "socket.io";
 import IORedis from "ioredis";
+import { getUserRoom } from "./socketRooms";
 
 let io: SocketIOServer | null = null;
 let redisPub: IORedis | null = null;
@@ -42,7 +43,7 @@ export const emitToUser = (
   data: unknown
 ): void => {
   if (io) {
-    io.to(userId).emit(event, data);
+    io.to(userId).to(getUserRoom(userId)).emit(event, data);
   } else {
     const pub = getRedisPub();
     if (pub) {
