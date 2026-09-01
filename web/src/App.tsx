@@ -36,6 +36,14 @@ function App() {
     if (socket) {
       socket.on("connect", () => {
         console.log("Connected to Socket.IO server:", socket.id, "as user:", user._id || (user as any).id);
+
+        socket.emit("test:ping", {
+          message: "Hello from frontend 👋",
+        });
+      });
+
+      socket.on("test:pong", (data) => {
+        console.log("Received pong from backend:", data);
       });
 
       socket.on("notification:new", (notification: Notification) => {
@@ -53,6 +61,7 @@ function App() {
     return () => {
       if (socket) {
         socket.off("connect");
+        socket.off("test:pong");
         socket.off("notification:new");
         socket.off("disconnect");
       }

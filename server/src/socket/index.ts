@@ -61,6 +61,15 @@ export const initializeSocket = (
       `Socket connected: ${socket.id}, user: ${userId}`
     );
 
+    socket.on("test:ping", (data) => {
+      console.log("Received ping from client:", data);
+
+      socket.emit("test:pong", {
+        message: "Hello from Sotrix backend 🚀",
+        receivedAt: new Date().toISOString(),
+      });
+    });
+
     socket.on("disconnect", (reason) => {
       console.log(
         `Socket disconnected: ${socket.id}, reason: ${reason}`
