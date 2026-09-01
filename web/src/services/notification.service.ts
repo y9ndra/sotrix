@@ -37,7 +37,11 @@ export const markAsRead = async (id: string): Promise<any> => {
   return response.data;
 };
 
+export const markNotificationAsRead = markAsRead;
+
 export const markAllAsRead = async (): Promise<any> => {
   const response = await api.patch("/notifications/read-all");
   return response.data;
 };
+
+export const markAllNotificationsAsRead = markAllAsRead;

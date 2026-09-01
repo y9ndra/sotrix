@@ -7,9 +7,11 @@ import {
 } from "../services/notification.service";
 import type { Notification } from "../types/notification";
 
+import { useNavigate } from "react-router-dom";
 import { useNotificationStore } from "../store/notification.store";
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const storeMarkAsRead = useNotificationStore((state) => state.markAsRead);
   const storeMarkAllAsRead = useNotificationStore((state) => state.markAllAsRead);
@@ -55,9 +57,31 @@ const Notifications = () => {
     },
   });
 
+  const getNotificationDestination = (notification: Notification): string | null => {
+    switch (notification.type) {
+      case "follow":
+        return notification.actor
+          ? `/profile/${notification.actor._id || (notification.actor as any).id || notification.actor.username}`
+          : null;
+      case "like":
+      case "comment":
+        if (notification.actor) {
+          return `/profile/${notification.actor._id || (notification.actor as any).id || notification.actor.username}`;
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.read) {
       markReadMutation.mutate(notification._id);
+    }
+
+    const destination = getNotificationDestination(notification);
+    if (destination) {
+      navigate(destination);
     }
   };
 
