@@ -22,18 +22,21 @@ export const useCreateComment = () => {
         queryKey: queryKeys.comments.byPost(variables.postId),
       });
 
-      // 2. Increment comment count across infinite post caches
+      // 2. Increment comment count across infinite post caches and single post cache
       updatePostInAllInfiniteCaches(queryClient, variables.postId, (oldPost: Post) => ({
         ...oldPost,
         commentCount: (oldPost.commentCount ?? 0) + 1,
       }));
 
-      // 3. Invalidate feed and post queries
+      // 3. Invalidate feed, posts, and post detail queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.feed,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.posts.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.detail(variables.postId),
       });
     },
   });

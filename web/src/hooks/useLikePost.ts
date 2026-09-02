@@ -28,17 +28,21 @@ export const useLikePost = () => {
       // 1. Cancel outgoing queries so they don't overwrite optimistic update
       await queryClient.cancelQueries({ queryKey: queryKeys.feed });
       await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts.detail(postId) });
 
-      // 2. Snapshot current state for rollback
+      // 2. Snapshot current states for rollback
       const previousFeedQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
         queryKey: queryKeys.feed,
       });
       const previousPostQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
         queryKey: queryKeys.posts.all,
       });
+      const previousDetailPost = queryClient.getQueryData<Post>(
+        queryKeys.posts.detail(postId)
+      );
       const previousQueries = [...previousFeedQueries, ...previousPostQueries];
 
-      // 3. Optimistically update all matching infinite caches (feed, explore, profile)
+      // 3. Optimistically update all matching caches (feed, explore, profile, single post)
       updatePostInAllInfiniteCaches(queryClient, postId, (oldPost: Post) => {
         const nextLiked = !oldPost.isLiked;
         return {
@@ -50,7 +54,7 @@ export const useLikePost = () => {
         };
       });
 
-      return { previousQueries };
+      return { previousQueries, previousDetailPost, postId };
     },
 
     onError: (_err, _variables, context) => {
@@ -60,9 +64,17 @@ export const useLikePost = () => {
           queryClient.setQueryData(queryKey, oldData);
         });
       }
+      if (context?.postId && context?.previousDetailPost) {
+        queryClient.setQueryData(
+          queryKeys.posts.detail(context.postId),
+          context.previousDetailPost
+        );
+      }
     },
 
-    onSettled: () => {
+    onSettled: (_data, _error, variables) => {
+      const postId = typeof variables === "string" ? variables : variables.postId;
+
       // Sync with server state
       queryClient.invalidateQueries({
         queryKey: queryKeys.feed,
@@ -70,6 +82,11 @@ export const useLikePost = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.posts.all,
       });
+      if (postId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.posts.detail(postId),
+        });
+      }
     },
   });
 };

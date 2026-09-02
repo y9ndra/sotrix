@@ -1,9 +1,10 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
-import type { Post, PostAuthor, PostsResponse } from "../types/post";
+import type { Post, PostAuthor, PostsResponse } from "../types/post.types";
 import { queryKeys } from "./queryKeys";
 
 /**
- * Updates a specific post across ALL active infinite post query caches (posts and feed)
+ * Updates a specific post across ALL active infinite post query caches (feed, explore, profile, etc.)
+ * as well as single post detail caches.
  */
 export const updatePostInAllInfiniteCaches = (
   queryClient: QueryClient,
@@ -23,22 +24,25 @@ export const updatePostInAllInfiniteCaches = (
 
     queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKey, {
       ...oldData,
-
       pages: oldData.pages.map((page) => ({
         ...page,
-
         data: page.data.map((post) =>
-          post._id === postId
-            ? updater(post)
-            : post
+          post._id === postId ? updater(post) : post
         ),
       })),
     });
   });
+
+  // Also update single post detail cache if currently loaded
+  const detailKey = queryKeys.posts.detail(postId);
+  const detailData = queryClient.getQueryData<Post>(detailKey);
+  if (detailData) {
+    queryClient.setQueryData<Post>(detailKey, updater(detailData));
+  }
 };
 
 /**
- * Updates a specific author's follow status across ALL active infinite post query caches (posts and feed)
+ * Updates a specific author's follow status across ALL active post query caches
  */
 export const updateAuthorInAllInfiniteCaches = (
   queryClient: QueryClient,
@@ -58,18 +62,14 @@ export const updateAuthorInAllInfiniteCaches = (
 
     queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKey, {
       ...oldData,
-
       pages: oldData.pages.map((page) => ({
         ...page,
-
         data: page.data.map((post) => {
-          if (post.author._id !== authorId) {
+          if (post.author?._id !== authorId) {
             return post;
           }
-
           return {
             ...post,
-
             author: updater(post.author),
           };
         }),
