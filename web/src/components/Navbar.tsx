@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationStore } from '../store/notification.store';
 import { removeToken } from '../services/token.service';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
 import { getUnreadCount } from '../services/notification.service';
 import { logout } from '../api/auth.api';
@@ -14,26 +14,30 @@ function Navbar() {
     const user = useAuthStore((state) => state.user);
     const navigate = useNavigate();
     const location = useLocation();
+    const queryClient = useQueryClient();
 
     const currentUserId = user?._id || user?.id || "";
 
     const storeUnreadCount = useNotificationStore((state) => state.unreadCount);
     const setStoreUnreadCount = useNotificationStore((state) => state.setUnreadCount);
+    const resetNotifications = useNotificationStore((state) => state.resetNotifications);
 
     const { data: unreadData } = useQuery({
         queryKey: queryKeys.notifications.unreadCount,
         queryFn: getUnreadCount,
         enabled: isAuthenticated,
-        refetchInterval: 10000,
+        refetchInterval: 5000,
     });
 
     useEffect(() => {
-        if (unreadData?.data?.unreadCount !== undefined) {
+        if (typeof unreadData?.data?.unreadCount === "number") {
             setStoreUnreadCount(unreadData.data.unreadCount);
+            // Whenever unread count updates from backend, simultaneously sync notifications list
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
         }
-    }, [unreadData, setStoreUnreadCount]);
+    }, [unreadData?.data?.unreadCount, setStoreUnreadCount, queryClient]);
 
-    const unreadCount = storeUnreadCount || unreadData?.data?.unreadCount || 0;
+    const unreadCount = typeof storeUnreadCount === "number" ? storeUnreadCount : (unreadData?.data?.unreadCount ?? 0);
 
     const handleLogout = async () => {
         try {
@@ -43,6 +47,7 @@ function Navbar() {
         } finally {
             removeToken();
             clearUser();
+            resetNotifications();
             navigate('/login');
         }
     };

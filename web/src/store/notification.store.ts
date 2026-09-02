@@ -3,142 +3,109 @@ import type { Notification } from "../types/notification.types";
 
 interface NotificationState {
   notifications: Notification[];
-
   unreadCount: number;
-
   isInitialized: boolean;
 
-  setNotifications: (
-    notifications: Notification[]
-  ) => void;
-
-  addNotification: (
-    notification: Notification
-  ) => void;
-
-  setUnreadCount: (
-    count: number
-  ) => void;
-
+  setNotifications: (notifications: Notification[]) => void;
+  addNotification: (notification: Notification) => void;
+  setUnreadCount: (count: number) => void;
   incrementUnreadCount: () => void;
-
-  markAsRead: (
-    notificationId: string
-  ) => void;
-
+  markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
-
-  setInitialized: (
-    value: boolean
-  ) => void;
+  setInitialized: (value: boolean) => void;
+  resetNotifications: () => void;
 }
 
-export const useNotificationStore =
-  create<NotificationState>((set) => ({
-    notifications: [],
+export const useNotificationStore = create<NotificationState>((set) => ({
+  notifications: [],
+  unreadCount: 0,
+  isInitialized: false,
 
-    unreadCount: 0,
+  setNotifications: (notifications) =>
+    set((state) => {
+      const map = new Map<string, Notification>();
+      state.notifications.forEach((n) => {
+        if (n && n._id) map.set(n._id.toString(), n);
+      });
 
-    isInitialized: false,
+      notifications.forEach((n) => {
+        if (n && n._id) map.set(n._id.toString(), n);
+      });
 
-    setNotifications: (notifications) =>
-      set((state) => {
-        const existingIds = new Set(
-          state.notifications.map(
-            (notification) => notification._id
-          )
-        );
+      const merged = Array.from(map.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
-        const newNotifications =
-          notifications.filter(
-            (notification) =>
-              !existingIds.has(notification._id)
-          );
+      return {
+        notifications: merged,
+      };
+    }),
 
-        return {
-          notifications: [
-            ...state.notifications,
-            ...newNotifications,
-          ],
-        };
-      }),
+  setInitialized: (value) =>
+    set({
+      isInitialized: value,
+    }),
 
-    setInitialized: (value) =>
-      set({
-        isInitialized: value,
-      }),
+  addNotification: (notification) =>
+    set((state) => {
+      const alreadyExists = state.notifications.some(
+        (item) => item._id?.toString() === notification._id?.toString()
+      );
 
-    addNotification: (notification) =>
-      set((state) => {
-        const alreadyExists = state.notifications.some(
-          (item) => item._id === notification._id
-        );
+      if (alreadyExists) {
+        return state;
+      }
 
-        if (alreadyExists) {
-          return state;
+      return {
+        notifications: [notification, ...state.notifications],
+        unreadCount: notification.read
+          ? state.unreadCount
+          : state.unreadCount + 1,
+      };
+    }),
+
+  setUnreadCount: (count) =>
+    set({
+      unreadCount: Math.max(0, count),
+    }),
+
+  incrementUnreadCount: () =>
+    set((state) => ({
+      unreadCount: state.unreadCount + 1,
+    })),
+
+  markAsRead: (notificationId) =>
+    set((state) => {
+      let wasUnread = false;
+      const updated = state.notifications.map((item) => {
+        if (item._id?.toString() === notificationId.toString()) {
+          if (!item.read) wasUnread = true;
+          return { ...item, read: true };
         }
+        return item;
+      });
 
-        return {
-          notifications: [
-            notification,
-            ...state.notifications,
-          ],
-          unreadCount: notification.read
-            ? state.unreadCount
-            : state.unreadCount + 1,
-        };
-      }),
+      return {
+        notifications: updated,
+        unreadCount: wasUnread
+          ? Math.max(0, state.unreadCount - 1)
+          : state.unreadCount,
+      };
+    }),
 
-    setUnreadCount: (count) =>
-      set({
-        unreadCount: count,
-      }),
-
-    incrementUnreadCount: () =>
-      set((state) => ({
-        unreadCount: state.unreadCount + 1,
+  markAllAsRead: () =>
+    set((state) => ({
+      notifications: state.notifications.map((notification) => ({
+        ...notification,
+        read: true,
       })),
+      unreadCount: 0,
+    })),
 
-    markAsRead: (notificationId) =>
-      set((state) => {
-        const notification =
-          state.notifications.find(
-            (item) =>
-              item._id === notificationId
-          );
-
-        return {
-          notifications:
-            state.notifications.map(
-              (item) =>
-                item._id === notificationId
-                  ? {
-                      ...item,
-                      read: true,
-                    }
-                  : item
-            ),
-
-          unreadCount:
-            notification && !notification.read
-              ? Math.max(
-                  0,
-                  state.unreadCount - 1
-                )
-              : state.unreadCount,
-        };
-      }),
-
-    markAllAsRead: () =>
-      set((state) => ({
-        notifications:
-          state.notifications.map(
-            (notification) => ({
-              ...notification,
-              read: true,
-            })
-          ),
-
-        unreadCount: 0,
-      })),
-  }));
+  resetNotifications: () =>
+    set({
+      notifications: [],
+      unreadCount: 0,
+      isInitialized: false,
+    }),
+}));

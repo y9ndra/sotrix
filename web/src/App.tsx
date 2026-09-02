@@ -52,8 +52,57 @@ function App() {
           notification
         );
         addNotification(notification);
-        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
+
+        // Optimistically prepend to TanStack infinite cache
+        queryClient.setQueryData<any>(
+          queryKeys.notifications.all,
+          (oldData: any) => {
+            if (!oldData || !oldData.pages) {
+              return {
+                pages: [
+                  {
+                    success: true,
+                    data: [notification],
+                    pagination: { hasMore: false, nextCursor: null },
+                  },
+                ],
+                pageParams: [undefined],
+              };
+            }
+
+            const exists = oldData.pages.some((page: any) =>
+              page.data?.some((n: any) => n._id === notification._id)
+            );
+            if (exists) return oldData;
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page: any, idx: number) => {
+                if (idx === 0) {
+                  return {
+                    ...page,
+                    data: [notification, ...(page.data || [])],
+                  };
+                }
+                return page;
+              }),
+            };
+          }
+        );
+
+        // Optimistically update unread count cache
+        queryClient.setQueryData(
+          queryKeys.notifications.unreadCount,
+          (old: any) => ({
+            success: true,
+            data: {
+              unreadCount: (old?.data?.unreadCount ?? 0) + 1,
+            },
+          })
+        );
+
+        queryClient.refetchQueries({ queryKey: queryKeys.notifications.all });
+        queryClient.refetchQueries({ queryKey: queryKeys.notifications.unreadCount });
       });
 
       socket.on("disconnect", () => {

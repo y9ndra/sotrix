@@ -39,7 +39,7 @@ export const createNotification = async ({
     }
   }
 
-  // Check if identical unread notification already exists
+  // Check if identical notification already exists
   const existingNotification = await Notification.findOne({
     recipient: recipientId,
     actor: actorId,
@@ -48,6 +48,21 @@ export const createNotification = async ({
   });
 
   if (existingNotification) {
+    if (existingNotification.read) {
+      existingNotification.read = false;
+      existingNotification.createdAt = new Date();
+      await existingNotification.save();
+      await existingNotification.populate("actor", "name username email profilePicUrl");
+
+      try {
+        emitNotification(
+          recipientId.toString(),
+          existingNotification.toObject()
+        );
+      } catch (error) {
+        console.error("Failed to emit real-time notification:", error);
+      }
+    }
     return existingNotification;
   }
 
