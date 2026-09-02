@@ -1,6 +1,11 @@
-import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Comment } from "../types/comment";
-import { getCommentsForPost, createComment, updateComment, deleteComment } from "../services/comment.service";
+import { updateComment, deleteComment } from "../services/comment.service";
+import { useComments } from "../hooks/useComments";
+import { useCreateComment } from "../hooks/useCreateComment";
+import { queryKeys } from "../lib/queryKeys";
+import { updatePostInAllInfiniteCaches } from "../lib/queryCache";
+import type { Post } from "../types/post.types";
 import CommentItem from "./CommentItem";
 import CreateComment from "./CreateComment";
 
@@ -10,64 +15,37 @@ interface CommentListProps {
 }
 
 const CommentList = ({ postId, onCommentCountChange }: CommentListProps) => {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: commentsResponse, isLoading, error } = useComments(postId);
+  const createCommentMutation = useCreateComment();
 
-  const fetchComments = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getCommentsForPost(postId);
-      setComments(response.data);
-      setNextCursor(response.pagination.nextCursor);
-      setHasMore(response.pagination.hasMore);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to load comments");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchComments();
-  }, [postId]);
-
-  const handleLoadMore = async () => {
-    if (!nextCursor || !hasMore || loading) return;
-    try {
-      setLoading(true);
-      const response = await getCommentsForPost(postId, nextCursor);
-      setComments((prev) => [...prev, ...response.data]);
-      setNextCursor(response.pagination.nextCursor);
-      setHasMore(response.pagination.hasMore);
-    } catch (err: any) {
-      setError("Failed to load more comments");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const comments: Comment[] = commentsResponse?.data ?? [];
 
   const handleAddComment = async (content: string) => {
-    const response = await createComment(postId, content);
-    setComments((prev) => [response.data, ...prev]);
+    await createCommentMutation.mutateAsync({ postId, content });
     if (onCommentCountChange) {
       onCommentCountChange(1);
     }
   };
 
   const handleUpdateComment = async (commentId: string, newContent: string) => {
-    const response = await updateComment(commentId, newContent);
-    setComments((prev) =>
-      prev.map((c) => (c._id === commentId ? response.data : c))
-    );
+    await updateComment(commentId, newContent);
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.comments.byPost(postId),
+    });
   };
 
   const handleDeleteComment = async (commentId: string) => {
     await deleteComment(commentId);
-    setComments((prev) => prev.filter((c) => c._id !== commentId));
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.comments.byPost(postId),
+    });
+    updatePostInAllInfiniteCaches(queryClient, postId, (oldPost: Post) => ({
+      ...oldPost,
+      commentCount: Math.max(0, (oldPost.commentCount ?? 1) - 1),
+    }));
+    queryClient.invalidateQueries({ queryKey: queryKeys.feed });
+    queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
     if (onCommentCountChange) {
       onCommentCountChange(-1);
     }
@@ -81,7 +59,7 @@ const CommentList = ({ postId, onCommentCountChange }: CommentListProps) => {
 
       <CreateComment onAddComment={handleAddComment} />
 
-      {error && <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "8px" }}>{error}</p>}
+      {error && <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "8px" }}>Failed to load comments</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
         {comments.map((comment) => (
@@ -94,31 +72,13 @@ const CommentList = ({ postId, onCommentCountChange }: CommentListProps) => {
         ))}
       </div>
 
-      {comments.length === 0 && !loading && (
+      {comments.length === 0 && !isLoading && (
         <p style={{ color: "#9ca3af", fontSize: "12px", textAlign: "center", marginTop: "12px" }}>
           No comments yet. Be the first to comment!
         </p>
       )}
 
-      {loading && <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "8px" }}>Loading comments...</p>}
-
-      {hasMore && !loading && (
-        <button
-          onClick={handleLoadMore}
-          style={{
-            marginTop: "8px",
-            background: "none",
-            border: "none",
-            color: "#4f46e5",
-            fontSize: "12px",
-            fontWeight: 600,
-            cursor: "pointer",
-            padding: 0,
-          }}
-        >
-          Load more comments
-        </button>
-      )}
+      {isLoading && <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "8px" }}>Loading comments...</p>}
     </div>
   );
 };

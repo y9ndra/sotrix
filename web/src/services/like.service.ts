@@ -12,3 +12,11 @@ export const toggleLike = async (
   const response = await api.post(`/posts/${postId}/like`);
   return response.data;
 };
+
+export const likePost = async (postId: string): Promise<ToggleLikeResponse> => {
+  return toggleLike(postId);
+};
+
+export const unlikePost = async (postId: string): Promise<ToggleLikeResponse> => {
+  return toggleLike(postId);
+};

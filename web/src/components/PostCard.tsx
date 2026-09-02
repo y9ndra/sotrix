@@ -5,13 +5,10 @@ import type { InfiniteData } from "@tanstack/react-query";
 import type { Post, PostsResponse } from "../types/post";
 import CommentList from "./CommentList";
 import { useAuthStore } from "../store/authStore";
-import { toggleLike } from "../services/like.service";
 import { toggleFollowUser } from "../services/follow.service";
 import { queryKeys } from "../lib/queryKeys";
-import {
-  updatePostInAllInfiniteCaches,
-  updateAuthorInAllInfiniteCaches,
-} from "../lib/queryCache";
+import { updateAuthorInAllInfiniteCaches } from "../lib/queryCache";
+import { useLikePost } from "../hooks/useLikePost";
 
 interface PostCardProps {
   post: Post;
@@ -50,65 +47,14 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
   const currentUserId = currentUser?._id || currentUser?.id || null;
 
   const queryClient = useQueryClient();
-
-  const likeMutation = useMutation({
-    mutationFn: toggleLike,
-    onMutate: async (postId) => {
-      // Cancel outgoing refetches so they don't overwrite our optimistic update
-      await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
-      await queryClient.cancelQueries({ queryKey: queryKeys.feed });
-
-      // Save all matching caches for rollback
-      const previousPostQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
-        queryKey: queryKeys.posts.all,
-      });
-      const previousFeedQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
-        queryKey: queryKeys.feed,
-      });
-      const previousQueries = [...previousPostQueries, ...previousFeedQueries];
-
-      // Optimistically update all matching infinite caches (Explore, Feed, Profile feeds, etc.)
-      updatePostInAllInfiniteCaches(queryClient, postId, (oldPost) => ({
-        ...oldPost,
-        isLiked: !oldPost.isLiked,
-        likeCount: oldPost.isLiked
-          ? Math.max(0, (oldPost.likeCount ?? 0) - 1)
-          : (oldPost.likeCount ?? 0) + 1,
-      }));
-
-      // Optimistically update local states for fallback
-      setLiked((prev) => !prev);
-      setLikeCount((prev) => Math.max(0, prev + (liked ? -1 : 1)));
-
-      return { previousQueries };
-    },
-    onError: (err: any, _postId, context) => {
-      // Rollback all caches to their snapshot
-      if (context?.previousQueries) {
-        context.previousQueries.forEach(([queryKey, oldData]) => {
-          queryClient.setQueryData(queryKey, oldData);
-        });
-      }
-
-      // Rollback local states
-      setLiked(post.isLiked ?? false);
-      setLikeCount(post.likeCount ?? 0);
-
-      console.error("Failed to toggle like, rolled back:", err);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.posts.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.feed,
-      });
-    },
-  });
+  const likeMutation = useLikePost();
 
   const handleToggleLike = () => {
     if (likeMutation.isPending) return;
-    likeMutation.mutate(post._id);
+    likeMutation.mutate({
+      postId: post._id,
+      isLiked: liked,
+    });
   };
 
   const followMutation = useMutation({

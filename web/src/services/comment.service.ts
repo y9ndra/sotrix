@@ -14,6 +14,8 @@ export const getCommentsForPost = async (
   return response.data;
 };
 
+export const getComments = getCommentsForPost;
+
 export const createComment = async (
   postId: string,
   content: string
