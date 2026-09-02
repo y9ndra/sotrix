@@ -1,56 +1,35 @@
-import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import { useAuthStore } from "../store/authStore";
-import { getHomeFeed } from "../services/feed.service";
-import type { Post } from "../types/post";
+import { useFeed } from "../hooks/useFeed";
+import { queryKeys } from "../lib/queryKeys";
+import type { Post } from "../types/post.types";
 
 function Homepage() {
   const user = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [feedLoading, setFeedLoading] = useState(false);
-  const [feedError, setFeedError] = useState<string | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useFeed();
 
-  const fetchFeed = async (cursor?: string) => {
-    try {
-      setFeedLoading(true);
-      setFeedError(null);
-      const response = await getHomeFeed(cursor);
-      
-      if (cursor) {
-        setPosts((prev) => [...prev, ...response.data]);
-      } else {
-        setPosts(response.data);
-      }
-      setNextCursor(response.pagination.nextCursor);
-      setHasMore(response.pagination.hasMore);
-    } catch (err) {
-      setFeedError("Failed to load feed timeline");
-    } finally {
-      setFeedLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchFeed();
-    }
-  }, [user]);
-
-  const handlePostCreated = (newPost: Post) => {
-    setPosts((prev) => [newPost, ...prev]);
-  };
-
-  const loadMorePosts = () => {
-    if (nextCursor && hasMore && !feedLoading) {
-      fetchFeed(nextCursor);
-    }
+  const handlePostCreated = (_newPost: Post) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.feed });
+    queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
   };
 
   if (!user) return null;
+
+  const posts =
+    data?.pages.flatMap(
+      (page) => page.data
+    ) ?? [];
 
   return (
     <div>
@@ -66,7 +45,11 @@ function Homepage() {
         {/* Timeline feed */}
         <h3 className="section-title">home feed</h3>
 
-        {feedError && <p style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "13px" }}>{feedError}</p>}
+        {isError && (
+          <p style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "13px" }}>
+            Failed to load feed timeline
+          </p>
+        )}
 
         <div className="posts-list" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {posts.map((post) => (
@@ -74,17 +57,26 @@ function Homepage() {
           ))}
         </div>
 
-        {posts.length === 0 && !feedLoading && !feedError && (
+        {posts.length === 0 && !isLoading && !isError && (
           <p style={{ color: "var(--text-muted)", textAlign: "center", marginTop: "20px", fontFamily: "var(--font-mono)", fontSize: "13px" }}>
             [ no posts in your feed yet ]
           </p>
         )}
 
-        {feedLoading && <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "12px" }}>loading feed...</p>}
+        {isLoading && (
+          <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "12px" }}>
+            loading feed...
+          </p>
+        )}
 
-        {posts.length > 0 && hasMore && !feedLoading && (
-          <button onClick={loadMorePosts} className="btn" style={{ marginTop: "12px" }}>
-            show more posts
+        {posts.length > 0 && hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="btn"
+            style={{ marginTop: "12px" }}
+          >
+            {isFetchingNextPage ? "loading..." : "show more posts"}
           </button>
         )}
       </div>

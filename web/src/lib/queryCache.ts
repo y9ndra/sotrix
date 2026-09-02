@@ -3,16 +3,20 @@ import type { Post, PostAuthor, PostsResponse } from "../types/post";
 import { queryKeys } from "./queryKeys";
 
 /**
- * Updates a specific post across ALL active infinite post query caches matching queryKeys.posts.all prefix
+ * Updates a specific post across ALL active infinite post query caches (posts and feed)
  */
 export const updatePostInAllInfiniteCaches = (
   queryClient: QueryClient,
   postId: string,
   updater: (post: Post) => Post
 ) => {
-  const queries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+  const postQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
     queryKey: queryKeys.posts.all,
   });
+  const feedQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+    queryKey: queryKeys.feed,
+  });
+  const queries = [...postQueries, ...feedQueries];
 
   queries.forEach(([queryKey, oldData]) => {
     if (!oldData) return;
@@ -34,16 +38,20 @@ export const updatePostInAllInfiniteCaches = (
 };
 
 /**
- * Updates a specific author's follow status across ALL active infinite post query caches matching queryKeys.posts.all prefix
+ * Updates a specific author's follow status across ALL active infinite post query caches (posts and feed)
  */
 export const updateAuthorInAllInfiniteCaches = (
   queryClient: QueryClient,
   authorId: string,
   updater: (author: PostAuthor) => PostAuthor
 ) => {
-  const queries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+  const postQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
     queryKey: queryKeys.posts.all,
   });
+  const feedQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+    queryKey: queryKeys.feed,
+  });
+  const queries = [...postQueries, ...feedQueries];
 
   queries.forEach(([queryKey, oldData]) => {
     if (!oldData) return;

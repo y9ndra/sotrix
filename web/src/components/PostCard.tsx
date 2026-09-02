@@ -56,11 +56,16 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
     onMutate: async (postId) => {
       // Cancel outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
+      await queryClient.cancelQueries({ queryKey: queryKeys.feed });
 
       // Save all matching caches for rollback
-      const previousQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+      const previousPostQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
         queryKey: queryKeys.posts.all,
       });
+      const previousFeedQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+        queryKey: queryKeys.feed,
+      });
+      const previousQueries = [...previousPostQueries, ...previousFeedQueries];
 
       // Optimistically update all matching infinite caches (Explore, Feed, Profile feeds, etc.)
       updatePostInAllInfiniteCaches(queryClient, postId, (oldPost) => ({
@@ -95,6 +100,9 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
       queryClient.invalidateQueries({
         queryKey: queryKeys.posts.all,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.feed,
+      });
     },
   });
 
@@ -108,11 +116,16 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
     onMutate: async (authorId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
+      await queryClient.cancelQueries({ queryKey: queryKeys.feed });
 
       // Save all matching caches for rollback
-      const previousQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+      const previousPostQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
         queryKey: queryKeys.posts.all,
       });
+      const previousFeedQueries = queryClient.getQueriesData<InfiniteData<PostsResponse>>({
+        queryKey: queryKeys.feed,
+      });
+      const previousQueries = [...previousPostQueries, ...previousFeedQueries];
 
       // Optimistically update follow status for all posts of this author across all infinite caches
       updateAuthorInAllInfiniteCaches(queryClient, authorId, (author) => ({
@@ -146,6 +159,9 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.posts.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.feed,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.users.suggested,

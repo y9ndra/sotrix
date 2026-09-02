@@ -1,16 +1,28 @@
-import api from "./api";
-import type { PostsResponse } from "../types/post";
+import api from "../api/axios";
+import type { Post } from "../types/post.types";
 
-export const getHomeFeed = async (
-  cursor?: string,
-  limit: number = 10
-): Promise<PostsResponse> => {
+export interface FeedResponse {
+  success: boolean;
+
+  data: Post[];
+
+  pagination: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+}
+
+export const getFeed = async (
+  cursor?: string
+): Promise<FeedResponse> => {
   const response = await api.get("/feed", {
     params: {
-      limit,
-      cursor,
+      limit: 10,
+      ...(cursor ? { cursor } : {}),
     },
   });
 
   return response.data;
 };
+
+export const getHomeFeed = getFeed;
