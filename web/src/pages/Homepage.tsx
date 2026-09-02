@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
@@ -18,6 +19,33 @@ function Homepage() {
     hasNextPage,
     isFetchingNextPage,
   } = useFeed();
+
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const element = loadMoreRef.current;
+
+    if (!element) return;
+    if (!hasNextPage) return;
+    if (isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      {
+        rootMargin: "500px",
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handlePostCreated = (_newPost: Post) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.feed });
@@ -57,6 +85,15 @@ function Homepage() {
           ))}
         </div>
 
+        {/* Infinite scroll sentinel */}
+        <div ref={loadMoreRef} style={{ height: "20px", margin: "10px 0" }} />
+
+        {isFetchingNextPage && (
+          <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", textAlign: "center", margin: "16px 0" }}>
+            loading more posts...
+          </p>
+        )}
+
         {posts.length === 0 && !isLoading && !isError && (
           <p style={{ color: "var(--text-muted)", textAlign: "center", marginTop: "20px", fontFamily: "var(--font-mono)", fontSize: "13px" }}>
             [ no posts in your feed yet ]
@@ -67,17 +104,6 @@ function Homepage() {
           <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "12px" }}>
             loading feed...
           </p>
-        )}
-
-        {posts.length > 0 && hasNextPage && (
-          <button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            className="btn"
-            style={{ marginTop: "12px" }}
-          >
-            {isFetchingNextPage ? "loading..." : "show more posts"}
-          </button>
         )}
       </div>
     </div>

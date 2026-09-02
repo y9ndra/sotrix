@@ -48,6 +48,25 @@ const Explore = () => {
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
   });
 
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const element = loadMoreRef.current;
+    if (!element || !postsHasMore || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreExplorePosts();
+        }
+      },
+      { rootMargin: "500px" }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [postsHasMore, isFetchingNextPage, loadMoreExplorePosts]);
+
   const posts = postsData?.pages.flatMap((page) => page.data) ?? [];
 
   // State for Searching Posts
@@ -189,16 +208,13 @@ const Explore = () => {
             </p>
           )}
 
-          {postsLoading && !isFetchingNextPage && <p className="explore-loading">loading posts...</p>}
+          {/* Infinite scroll sentinel */}
+          <div ref={loadMoreRef} style={{ height: "20px", margin: "10px 0" }} />
 
-          {posts.length > 0 && postsHasMore && (
-            <button
-              onClick={() => loadMoreExplorePosts()}
-              disabled={postsLoading || isFetchingNextPage}
-              className="explore-loadmore-btn"
-            >
-              {postsLoading || isFetchingNextPage ? "loading..." : "load more posts"}
-            </button>
+          {isFetchingNextPage && (
+            <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", textAlign: "center", margin: "16px 0" }}>
+              loading more posts...
+            </p>
           )}
         </div>
       )}
