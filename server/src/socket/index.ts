@@ -39,7 +39,7 @@ export const initializeSocket = (
       });
 
       redisSub.on("message", (channel, message) => {
-        if (channel === "socket:emit_to_user") {
+        if (channel === "socket:emit_to_user" && io) {
           try {
             const { userId, event, data } = JSON.parse(message);
             io.to(userId).to(getUserRoom(userId)).emit(event, data);

@@ -134,27 +134,27 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ### Day 28 [COMPLETED]
 - Cron jobs and scheduled background scripts (database pruning, recalculating analytics)
 
-### Day 29 [CURRENT]
+### Day 29 [COMPLETED]
 - Advanced Production Auth: refresh token rotation, token blacklist, sliding sessions
 
-### Day 30
+### Day 30 [COMPLETED]
 - Backend unit and integration testing (Jest, Supertest)
 
 ---
 
 ## 🔵 PHASE 4 — Real-Time & Media Processing (Days 31–40)
 
-### Day 31
+### Day 31 [COMPLETED]
 - WebSockets introduction & setting up Socket.IO in Express
 
-### Day 32
+### Day 32 [COMPLETED]
 - Real-time notification service (Likes, comments, follows)
 
-### Day 33
-- Private chat architecture (rooms, message persistence schema)
+### Day 33 [COMPLETED]
+- Frontend Feed Integration (TanStack Query, infinite scroll, optimistic likes, comment mutations, query-key architecture)
 
-### Day 34
-- Chat features: online presence status, typing indicators
+### Day 34 [CURRENT]
+- Chat features: private chat rooms, message persistence, online presence status, typing indicators
 
 ### Day 35
 - Advanced media pipeline: asynchronous uploads, processing jobs in queues
@@ -218,25 +218,26 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 - [x] Global Layout Shell & Resets
 
 ### 📄 Pages
-- [x] Homepage
+- [x] Homepage (Timeline Feed with Infinite Scroll)
 - [x] Login Page
 - [x] Signup Page
-- [ ] Feed Page
 - [x] Explore Page
-- [x] Profile Page
-- [ ] My Posts Page
+- [x] Profile Page (with User Posts tab)
+- [x] Notifications Page
+- [x] Search Page
+- [ ] Direct Messages / Chat Page
 
 ### 🧩 Components
-- [ ] Navbar
-- [ ] Hero Section
-- [ ] Footer
+- [x] Navbar
 - [x] Button
 - [x] Input
-- [ ] PostCard
-- [ ] CreatePost
-- [ ] CommentList
-- [ ] CommentItem
-- [ ] CreateComment
+- [x] PostCard
+- [x] CreatePost
+- [x] CommentList
+- [x] CommentItem
+- [x] CreateComment
 - [x] UserCard
-- [ ] ProtectedRoute UI
-- [ ] AuthInitializer UI
+- [x] ProtectedRoute UI
+- [x] AuthInitializer UI
+- [ ] ChatRoom / MessageList
+- [ ] ChatInput / TypingIndicator
