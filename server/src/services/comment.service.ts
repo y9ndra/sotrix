@@ -37,7 +37,7 @@ export const createComment = async ({
     post,
   });
 
-  await comment.populate("author", "name username email");
+  await comment.populate("author", "name username email profilePicUrl");
 
   return {
     comment,
@@ -78,7 +78,7 @@ export const getCommentsForPost = async (
   }
 
   const comments = await Comment.find(query)
-    .populate("author", "name username email")
+    .populate("author", "name username email profilePicUrl")
     .sort({
       createdAt: -1,
       _id: -1,

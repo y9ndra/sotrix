@@ -3,6 +3,7 @@ export interface CommentAuthor {
   name?: string;
   username: string;
   email?: string;
+  profilePicUrl?: string;
 }
 
 export interface Comment {

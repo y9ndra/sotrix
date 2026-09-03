@@ -26,40 +26,23 @@ const CreateComment = ({ onAddComment }: CreateCommentProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-      {error && <p style={{ color: "#dc2626", fontSize: "12px", margin: 0 }}>{error}</p>}
-      <div style={{ display: "flex", gap: "8px" }}>
+    <form onSubmit={handleSubmit} className="comment-create-form">
+      {error && <p className="comments-error">{error}</p>}
+      <div className="comment-input-row">
         <input
           type="text"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Write a comment..."
+          placeholder="write a comment..."
           disabled={loading}
-          style={{
-            flex: 1,
-            padding: "8px 12px",
-            borderRadius: "6px",
-            border: "1px solid #d1d5db",
-            fontSize: "13px",
-            outline: "none",
-          }}
+          className="comment-input"
         />
         <button
           type="submit"
           disabled={loading || !content.trim()}
-          style={{
-            padding: "8px 14px",
-            borderRadius: "6px",
-            border: "none",
-            backgroundColor: "#4f46e5",
-            color: "#ffffff",
-            fontWeight: 600,
-            fontSize: "13px",
-            cursor: loading || !content.trim() ? "not-allowed" : "pointer",
-            opacity: loading || !content.trim() ? 0.6 : 1,
-          }}
+          className="comment-submit-btn"
         >
-          {loading ? "Posting..." : "Comment"}
+          {loading ? "posting..." : "comment"}
         </button>
       </div>
     </form>

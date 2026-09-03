@@ -155,9 +155,6 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
             <h3 className="post-author-name">
               {post.author?.name || post.author?.username || "Unknown"}
             </h3>
-            <p className="post-author-username">
-              @{post.author?.username || "unknown"}
-            </p>
           </Link>
 
           {!isOwner && post.author?._id && currentUserId !== post.author._id && !isFollowing && (

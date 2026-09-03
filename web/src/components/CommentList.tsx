@@ -52,16 +52,18 @@ const CommentList = ({ postId, onCommentCountChange }: CommentListProps) => {
   };
 
   return (
-    <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}>
-      <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#374151" }}>
-        Comments ({comments.length})
-      </h4>
+    <div className="comments-section">
+      <div className="comments-header">
+        <h4 className="comments-title">
+          comments ({comments.length})
+        </h4>
+      </div>
 
       <CreateComment onAddComment={handleAddComment} />
 
-      {error && <p style={{ color: "#dc2626", fontSize: "12px", marginTop: "8px" }}>Failed to load comments</p>}
+      {error && <p className="comments-error">failed to load comments.</p>}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
+      <div className="comments-list">
         {comments.map((comment) => (
           <CommentItem
             key={comment._id}
@@ -73,12 +75,12 @@ const CommentList = ({ postId, onCommentCountChange }: CommentListProps) => {
       </div>
 
       {comments.length === 0 && !isLoading && (
-        <p style={{ color: "#9ca3af", fontSize: "12px", textAlign: "center", marginTop: "12px" }}>
-          No comments yet. Be the first to comment!
+        <p className="comments-empty">
+          no comments yet. be the first to start the thread.
         </p>
       )}
 
-      {isLoading && <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "8px" }}>Loading comments...</p>}
+      {isLoading && <p className="comments-loading">loading comments...</p>}
     </div>
   );
 };

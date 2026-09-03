@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { Comment } from "../types/comment";
 import { useAuthStore } from "../store/authStore";
 
@@ -46,89 +47,60 @@ const CommentItem = ({ comment, onUpdateComment, onDeleteComment }: CommentItemP
     }
   };
 
+  const authorInitial = (comment.author?.name || comment.author?.username || "U")
+    .charAt(0)
+    .toUpperCase();
+
   return (
-    <div
-      style={{
-        padding: "10px 12px",
-        borderRadius: "8px",
-        backgroundColor: "#f9fafb",
-        border: "1px solid #f3f4f6",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontWeight: 600, fontSize: "13px", color: "#111827" }}>
-          {comment.author?.name || comment.author?.username || "Anonymous"}
-          <span style={{ fontWeight: 400, color: "#6b7280", marginLeft: "4px" }}>
-            @{comment.author?.username}
-          </span>
-        </span>
+    <div className="comment-item">
+      <div className="comment-item-header">
+        <div className="comment-author-wrap">
+          <Link to={`/profile/${comment.author?._id}`} className="comment-author-avatar">
+            {comment.author?.profilePicUrl ? (
+              <img src={comment.author.profilePicUrl} alt={comment.author.username} />
+            ) : (
+              authorInitial
+            )}
+          </Link>
+          <Link to={`/profile/${comment.author?._id}`} className="comment-author-name">
+            {comment.author?.name || comment.author?.username || "anonymous"}
+          </Link>
+        </div>
+
         {isOwner && (
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <div className="comment-actions">
             {isDeletingConfirm ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "11px", color: "#dc2626", fontWeight: 500 }}>Confirm delete?</span>
+              <div className="comment-confirm-box">
+                <span className="comment-confirm-text">delete?</span>
                 <button
                   onClick={handleConfirmDelete}
                   disabled={loading}
-                  style={{
-                    fontSize: "11px",
-                    padding: "2px 8px",
-                    borderRadius: "4px",
-                    border: "none",
-                    backgroundColor: "#dc2626",
-                    color: "#ffffff",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    fontWeight: 600,
-                  }}
+                  className="comment-btn-confirm"
                 >
-                  {loading ? "..." : "Yes"}
+                  {loading ? "..." : "yes"}
                 </button>
                 <button
                   onClick={() => setIsDeletingConfirm(false)}
                   disabled={loading}
-                  style={{
-                    fontSize: "11px",
-                    padding: "2px 8px",
-                    borderRadius: "4px",
-                    border: "1px solid #d1d5db",
-                    backgroundColor: "#ffffff",
-                    color: "#374151",
-                    cursor: "pointer",
-                  }}
+                  className="comment-btn-cancel"
                 >
-                  No
+                  no
                 </button>
               </div>
             ) : (
               <>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  style={{
-                    fontSize: "11px",
-                    padding: "2px 6px",
-                    border: "none",
-                    background: "none",
-                    color: "#4f46e5",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
+                  className="comment-action-btn comment-action-edit"
                 >
-                  {isEditing ? "Cancel" : "Edit"}
+                  {isEditing ? "cancel" : "edit"}
                 </button>
                 <button
                   onClick={() => setIsDeletingConfirm(true)}
                   disabled={loading}
-                  style={{
-                    fontSize: "11px",
-                    padding: "2px 6px",
-                    border: "none",
-                    background: "none",
-                    color: "#dc2626",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
+                  className="comment-action-btn comment-action-delete"
                 >
-                  Delete
+                  delete
                 </button>
               </>
             )}
@@ -137,52 +109,47 @@ const CommentItem = ({ comment, onUpdateComment, onDeleteComment }: CommentItemP
       </div>
 
       {isEditing ? (
-        <div style={{ marginTop: "6px" }}>
+        <div className="comment-edit-box">
           <input
             type="text"
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "6px",
-              borderRadius: "4px",
-              border: "1px solid #d1d5db",
-              fontSize: "13px",
-              boxSizing: "border-box",
-            }}
+            disabled={loading}
+            className="comment-edit-input"
           />
-          {error && <p style={{ color: "#dc2626", fontSize: "11px", margin: "2px 0" }}>{error}</p>}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px", marginTop: "4px" }}>
+          {error && <p className="comments-error">{error}</p>}
+          <div className="comment-edit-actions">
+            <button
+              onClick={() => setIsEditing(false)}
+              disabled={loading}
+              className="comment-action-btn comment-action-edit"
+            >
+              cancel
+            </button>
             <button
               onClick={handleSave}
               disabled={loading || !editContent.trim()}
-              style={{
-                padding: "3px 8px",
-                fontSize: "12px",
-                backgroundColor: "#4f46e5",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
+              className="comment-save-btn"
             >
-              {loading ? "Saving..." : "Save"}
+              {loading ? "saving..." : "save"}
             </button>
           </div>
         </div>
       ) : (
-        <p style={{ margin: "4px 0", fontSize: "13px", color: "#374151" }}>
+        <p className="comment-content">
           {comment.content}
         </p>
       )}
 
       {error && !isEditing && (
-        <p style={{ color: "#dc2626", fontSize: "11px", margin: "4px 0 0 0" }}>{error}</p>
+        <p className="comments-error">{error}</p>
       )}
 
-      <small style={{ color: "#9ca3af", fontSize: "11px" }}>
-        {new Date(comment.createdAt).toLocaleString()}
-      </small>
+      <div className="comment-item-footer">
+        <small className="comment-time">
+          {new Date(comment.createdAt).toLocaleString()}
+        </small>
+      </div>
     </div>
   );
 };
