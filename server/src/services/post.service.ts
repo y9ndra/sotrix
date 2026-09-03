@@ -96,7 +96,7 @@ export const createPost = async ({
     imagePublicId,
   });
 
-  await post.populate("author", "name username email");
+  await post.populate("author", "name username email profilePicUrl");
   const postObj = post.toObject();
 
   return {
@@ -143,7 +143,7 @@ export const getPosts = async (
   }
 
   const posts = await Post.find(query)
-    .populate("author", "name username email")
+    .populate("author", "name username email profilePicUrl")
     .sort({
       createdAt: -1,
       _id: -1,
@@ -177,7 +177,7 @@ export const getPostById = async (
   postId: string,
   currentUserId?: string
 ): Promise<any> => {
-  const post = await Post.findById(postId).populate("author", "name username email");
+  const post = await Post.findById(postId).populate("author", "name username email profilePicUrl");
 
   if (!post) {
     throw new Error("Post not found");
@@ -216,7 +216,7 @@ export const getMyPosts = async (
   }
 
   const posts = await Post.find(query)
-    .populate("author", "name username email")
+    .populate("author", "name username email profilePicUrl")
     .sort({
       createdAt: -1,
       _id: -1,
@@ -263,7 +263,7 @@ export const updatePost = async (
 
   post.content = content;
   await post.save();
-  await post.populate("author", "name username email");
+  await post.populate("author", "name username email profilePicUrl");
 
   const [postWithLike] = await attachLikeStatus([post], userId);
   return postWithLike;
@@ -307,7 +307,7 @@ export const searchPostsService = async (
   const posts = await Post.find({
     content: regex,
   })
-    .populate("author", "name username email")
+    .populate("author", "name username email profilePicUrl")
     .sort({
       createdAt: -1,
       _id: -1,

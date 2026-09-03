@@ -123,7 +123,7 @@ export const updateComment = async (
 
   comment.content = content;
   await comment.save();
-  await comment.populate("author", "name username email");
+  await comment.populate("author", "name username email profilePicUrl");
 
   return comment;
 };

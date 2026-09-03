@@ -147,12 +147,30 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
     }
   };
 
+  const authorInitial = (post.author?.name || post.author?.username || "U")
+    .charAt(0)
+    .toUpperCase();
+
   return (
     <article className="post-card">
       <div className="post-header">
         <div className="post-author-info">
-          <Link to={`/profile/${post.author?._id}`} className="post-author-link">
-            <h3 className="post-author-name">
+          <Link
+            to={`/profile/${post.author?._id}`}
+            className="post-author-link"
+            style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", textDecoration: "none" }}
+          >
+            <div className="post-author-avatar">
+              {post.author?.profilePicUrl ? (
+                <img
+                  src={post.author.profilePicUrl}
+                  alt={post.author.name || post.author.username || "avatar"}
+                />
+              ) : (
+                authorInitial
+              )}
+            </div>
+            <h3 className="post-author-name" style={{ margin: 0, lineHeight: 1 }}>
               {post.author?.name || post.author?.username || "Unknown"}
             </h3>
           </Link>

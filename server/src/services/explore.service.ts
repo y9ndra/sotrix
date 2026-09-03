@@ -128,7 +128,7 @@ export const getExplorePosts = async (
   }
 
   const posts = await Post.find(query)
-    .populate("author", "name username email bio")
+    .populate("author", "name username email bio profilePicUrl")
     .sort({
       createdAt: -1,
       _id: -1,

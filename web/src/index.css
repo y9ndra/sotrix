@@ -940,6 +940,40 @@ button, input, textarea, select {
   gap: 10px;
 }
 
+.post-author-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.post-author-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast);
+}
+
+.post-author-link:hover .post-author-avatar {
+  border-color: var(--border-active);
+}
+
+.post-author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .post-author-meta {
   display: flex;
   flex-direction: column;
@@ -951,6 +985,11 @@ button, input, textarea, select {
   color: var(--text-primary);
   margin: 0;
   line-height: 1.2;
+  transition: color var(--transition-fast);
+}
+
+.post-author-link:hover .post-author-name {
+  color: var(--accent-matrix);
 }
 
 .post-author-username {
@@ -1659,17 +1698,6 @@ button, input, textarea, select {
 /* Dimmer backdrop for closing by click */
 .deck-backdrop {
   display: none;
-}
-
-.post-author-link {
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
-}
-
-.post-author-link:hover .post-author-name {
-  color: var(--accent-matrix);
 }
 
 /* Sheet content slide transitions */

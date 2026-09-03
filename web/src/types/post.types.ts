@@ -3,6 +3,7 @@ export interface PostAuthor {
   name?: string;
   username: string;
   isFollowing?: boolean;
+  profilePicUrl?: string;
 }
 
 export interface Post {
