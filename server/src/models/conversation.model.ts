@@ -29,6 +29,9 @@ const conversationSchema = new Schema<IConversation>(
   }
 );
 
+// Index to find conversations for a user
+conversationSchema.index({ participants: 1 });
+
 // Compound index to quickly fetch conversations for a user sorted by recent activity
 conversationSchema.index({ participants: 1, updatedAt: -1 });
 
