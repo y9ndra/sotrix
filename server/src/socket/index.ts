@@ -5,6 +5,7 @@ import { config } from "../config/env";
 import { authenticateSocket } from "./middleware/authenticate.socket";
 import { setSocketIO } from "./socket.manager";
 import { getUserRoom } from "./socketRooms";
+import { registerChatHandlers } from "./chat.handler";
 
 let io: SocketIOServer | null = null;
 
@@ -68,6 +69,9 @@ export const initializeSocket = (
     console.log(
       `Socket ${socket.id} joined room: ${getUserRoom(userId)}`
     );
+
+    // Register chat handlers (rooms, messaging)
+    registerChatHandlers(io!, socket);
 
     socket.on("test:ping", (data) => {
       console.log("Received ping from client:", data);
