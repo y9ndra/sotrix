@@ -118,7 +118,7 @@ export const searchUsersService = async (
       { name: regex }
     ]
   })
-    .select("_id username name followersCount")
+    .select("_id username name bio followersCount profilePicUrl")
     .limit(10);
 
   const followedUsers = await Follow.find({

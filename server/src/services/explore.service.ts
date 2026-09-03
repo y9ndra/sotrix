@@ -20,6 +20,7 @@ export interface SuggestedUserItem {
   bio: string;
   followersCount: number;
   isFollowing: boolean;
+  profilePicUrl?: string;
 }
 
 export interface PaginatedSuggestedUsersResult {
@@ -190,7 +191,7 @@ export const getSuggestedUsers = async (
   }
 
   const users = await User.find(query)
-    .select("_id name username bio followersCount followingCount")
+    .select("_id name username bio followersCount followingCount profilePicUrl")
     .sort({
       followersCount: -1,
       _id: -1,
@@ -217,6 +218,7 @@ export const getSuggestedUsers = async (
     bio: user.bio || "",
     followersCount: user.followersCount || 0,
     isFollowing: false,
+    profilePicUrl: user.profilePicUrl || "",
   }));
 
   return {
