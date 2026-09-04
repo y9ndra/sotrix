@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toggleFollowUser } from "../services/follow.service";
 import type { SuggestedUser } from "../services/explore.service";
+import { usePresenceStore } from "../store/presenceStore";
 
 interface UserCardProps {
   user: SuggestedUser;
@@ -12,6 +13,7 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
   const [isFollowing, setIsFollowing] = useState(user.isFollowing || false);
   const [followersCount, setFollowersCount] = useState(user.followersCount || 0);
   const [loading, setLoading] = useState(false);
+  const isOnline = usePresenceStore((state) => state.isOnline(user._id));
 
   const handleFollowToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -48,17 +50,24 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
   return (
     <div className="user-card">
       <div className="user-card-left">
-        <Link to={`/profile/${user._id}`} className="user-avatar" style={{ textDecoration: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {user.profilePicUrl ? (
-            <img
-              src={user.profilePicUrl}
-              alt={user.username}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            initialLetter
-          )}
-        </Link>
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <Link to={`/profile/${user._id}`} className="user-avatar" style={{ textDecoration: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {user.profilePicUrl ? (
+              <img
+                src={user.profilePicUrl}
+                alt={user.username}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              initialLetter
+            )}
+          </Link>
+          <span
+            className={`chat-presence-dot ${isOnline ? "online" : "offline"}`}
+            style={{ width: "10px", height: "10px", bottom: "-1px", right: "-1px" }}
+            title={isOnline ? "Online" : "Offline"}
+          />
+        </div>
         <div className="user-details">
           <div className="user-meta-row">
             <Link to={`/profile/${user._id}`} className="user-display-name" style={{ textDecoration: "none" }}>

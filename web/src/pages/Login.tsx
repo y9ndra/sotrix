@@ -42,7 +42,7 @@ function Login(){
           setSuccess("Logged in successfully!");
           setUsername("");
           setPassword("");
-          navigate("/");
+          navigate("/", { replace: true });
         } else {
           setError("Failed to fetch user profile after authentication");
         }

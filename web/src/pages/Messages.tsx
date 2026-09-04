@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { usePresenceStore } from "../store/presenceStore";
 import { getSocket } from "../services/socket.service";
 import { queryKeys } from "../lib/queryKeys";
-import { getConversations, getMessages } from "../services/chat.service";
+import { getConversations, getConversation, getMessages } from "../services/chat.service";
 import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.types";
 
 const Messages: React.FC = () => {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const currentUserId = currentUser?._id || (currentUser as any)?.id || "";
+  const isUserOnline = usePresenceStore((state) => state.isOnline);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeConversationId = searchParams.get("conversationId");
@@ -19,12 +21,11 @@ const Messages: React.FC = () => {
     activeConversationId
   );
   const [inputContent, setInputContent] = useState("");
-  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [remoteTypingUserId, setRemoteTypingUserId] = useState<string | null>(null);
 
   const isTypingEmittedRef = useRef(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const chatMessagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Sync selected conversation from URL search params if present
   useEffect(() => {
@@ -40,13 +41,13 @@ const Messages: React.FC = () => {
     enabled: !!currentUserId,
   });
 
-  // Automatically select the first conversation if none selected
+  // Automatically select the first conversation in state if none selected
   useEffect(() => {
-    if (!selectedConversationId && conversations.length > 0 && !activeConversationId) {
-      setSelectedConversationId(conversations[0]._id);
-      setSearchParams({ conversationId: conversations[0]._id });
+    if (!selectedConversationId && conversations.length > 0) {
+      const defaultId = activeConversationId || conversations[0]._id;
+      setSelectedConversationId(defaultId);
     }
-  }, [conversations, selectedConversationId, activeConversationId, setSearchParams]);
+  }, [conversations, selectedConversationId, activeConversationId]);
 
   // Fetch messages for selected conversation
   const { data: messagesResponse, isLoading: messagesLoading } = useQuery({
@@ -59,52 +60,52 @@ const Messages: React.FC = () => {
   const rawMessages: ChatMessage[] = messagesResponse?.data ?? [];
   const displayMessages = [...rawMessages].reverse();
 
-  // Selected conversation object
-  const currentConversation = conversations.find(
-    (c) => c._id === selectedConversationId
-  );
+  // Fetch active conversation details directly if selected
+  const { data: directConversation } = useQuery({
+    queryKey: queryKeys.conversations.detail(selectedConversationId || ""),
+    queryFn: () => getConversation(selectedConversationId!),
+    enabled: !!selectedConversationId,
+  });
+
+  // Selected conversation object (prioritizes direct conversation query, falls back to list)
+  const currentConversation =
+    directConversation ||
+    conversations.find((c) => c._id === selectedConversationId);
 
   // Other participant in the active conversation
-  const otherParticipant = currentConversation?.participants.find(
-    (p) => p._id !== currentUserId
+  const otherParticipant = currentConversation?.participants?.find(
+    (p) => (p?._id || (p as any)?.id) !== currentUserId
   );
 
-  // Scroll to bottom when new messages arrive or conversation changes
+  // Sync direct conversation into conversations list cache so inbox highlights immediately
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (directConversation) {
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) => {
+          if (old.some((c) => c._id === directConversation._id)) {
+            return old;
+          }
+          return [directConversation, ...old];
+        }
+      );
+    }
+  }, [directConversation, queryClient]);
+
+  // Scroll messages container internally without scrolling parent ancestors
+  useEffect(() => {
+    const container = chatMessagesContainerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    }
   }, [displayMessages.length, selectedConversationId, remoteTypingUserId]);
 
-  // Socket.IO Room & Real-time Listeners
+  // Request fresh presence list on component mount
   useEffect(() => {
     const socket = getSocket();
-    if (!socket) return;
-
-    // Presence listeners
-    const handlePresenceList = (data: { users: string[] }) => {
-      setOnlineUserIds(new Set(data.users || []));
-    };
-
-    const handlePresenceOnline = ({ userId }: { userId: string }) => {
-      setOnlineUserIds((prev) => new Set(prev).add(userId));
-    };
-
-    const handlePresenceOffline = ({ userId }: { userId: string }) => {
-      setOnlineUserIds((prev) => {
-        const next = new Set(prev);
-        next.delete(userId);
-        return next;
-      });
-    };
-
-    socket.on("presence:list", handlePresenceList);
-    socket.on("presence:online", handlePresenceOnline);
-    socket.on("presence:offline", handlePresenceOffline);
-
-    return () => {
-      socket.off("presence:list", handlePresenceList);
-      socket.off("presence:online", handlePresenceOnline);
-      socket.off("presence:offline", handlePresenceOffline);
-    };
+    if (socket) {
+      socket.emit("presence:get");
+    }
   }, []);
 
   // Real-time Chat Room (Join/Leave), Message & Typing Listeners
@@ -232,8 +233,10 @@ const Messages: React.FC = () => {
     setSearchParams({ conversationId: id });
   };
 
-  const isOtherUserOnline = otherParticipant
-    ? onlineUserIds.has(otherParticipant._id)
+  const otherParticipantId =
+    otherParticipant?._id || (otherParticipant as any)?.id || "";
+  const isOtherUserOnline = otherParticipantId
+    ? isUserOnline(otherParticipantId)
     : false;
 
   return (
@@ -255,9 +258,12 @@ const Messages: React.FC = () => {
             </div>
           ) : (
             conversations.map((conv) => {
-              const other = conv.participants.find((p) => p._id !== currentUserId);
+              const other = conv.participants?.find(
+                (p) => (p?._id || (p as any)?.id) !== currentUserId
+              );
+              const otherId = other?._id || (other as any)?.id || "";
               const isSelected = conv._id === selectedConversationId;
-              const isOnline = other ? onlineUserIds.has(other._id) : false;
+              const isOnline = otherId ? isUserOnline(otherId) : false;
 
               return (
                 <div
@@ -332,7 +338,7 @@ const Messages: React.FC = () => {
 
                 <div className="chat-header-details">
                   <Link
-                    to={`/profile/${otherParticipant._id}`}
+                    to={`/profile/${otherParticipantId}`}
                     className="chat-header-name"
                   >
                     {otherParticipant.name || otherParticipant.username}
@@ -348,7 +354,7 @@ const Messages: React.FC = () => {
             </header>
 
             {/* Message History Feed */}
-            <div className="chat-messages-container">
+            <div ref={chatMessagesContainerRef} className="chat-messages-container">
               {messagesLoading ? (
                 <div className="chat-loading-wrap">
                   <p className="chat-loading-label">fetching transmission history...</p>
@@ -398,8 +404,6 @@ const Messages: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Form */}
@@ -410,7 +414,6 @@ const Messages: React.FC = () => {
                 onChange={handleInputChange}
                 placeholder={`Message @${otherParticipant.username}...`}
                 className="chat-input-field"
-                autoFocus
               />
               <button
                 type="submit"

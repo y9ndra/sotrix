@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { connectSocket, disconnectSocket } from "./services/socket.service";
 import { useNotificationStore } from "./store/notification.store";
+import { usePresenceStore } from "./store/presenceStore";
 import { queryKeys } from "./lib/queryKeys";
 import type { Notification } from "./types/notification.types";
 
@@ -29,6 +30,7 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated || !user) {
       disconnectSocket();
+      usePresenceStore.getState().clearPresence();
       return;
     }
 
@@ -38,10 +40,33 @@ function App() {
       socket.on("connect", () => {
         console.log("Connected to Socket.IO server:", socket.id, "as user:", user._id || (user as any).id);
 
+        // Fetch current online users presence list immediately
+        socket.emit("presence:get");
+
         socket.emit("test:ping", {
           message: "Hello from frontend 👋",
         });
       });
+
+      // Global Presence event listeners
+      const handlePresenceList = (data: { users: string[] }) => {
+        console.log("🟢 Received presence:list:", data?.users);
+        usePresenceStore.getState().setOnlineUsers(data?.users || []);
+      };
+
+      const handlePresenceOnline = ({ userId }: { userId: string }) => {
+        console.log("🟢 User came online:", userId);
+        usePresenceStore.getState().addUser(userId);
+      };
+
+      const handlePresenceOffline = ({ userId }: { userId: string }) => {
+        console.log("⚪ User went offline:", userId);
+        usePresenceStore.getState().removeUser(userId);
+      };
+
+      socket.on("presence:list", handlePresenceList);
+      socket.on("presence:online", handlePresenceOnline);
+      socket.on("presence:offline", handlePresenceOffline);
 
       socket.on("test:pong", (data) => {
         console.log("Received pong from backend:", data);
@@ -109,16 +134,20 @@ function App() {
       socket.on("disconnect", () => {
         console.log("Disconnected from Socket.IO server");
       });
+
+      return () => {
+        socket.off("connect");
+        socket.off("test:pong");
+        socket.off("presence:list", handlePresenceList);
+        socket.off("presence:online", handlePresenceOnline);
+        socket.off("presence:offline", handlePresenceOffline);
+        socket.off("notification:new");
+        socket.off("disconnect");
+        disconnectSocket();
+      };
     }
 
     return () => {
-      if (socket) {
-        socket.off("connect");
-        socket.off("test:pong");
-        socket.off("notification:new");
-        socket.off("disconnect");
-      }
-
       disconnectSocket();
     };
   }, [isAuthenticated, user?._id, (user as any)?.id, addNotification, queryClient]);

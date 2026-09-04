@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Conversation, { IConversation } from "../models/conversation.model";
+import Follow from "../models/follow.model";
 import "../models/user.model"; // Ensure User model is registered for populate
 
 /**
@@ -38,6 +39,24 @@ export const getOrCreateConversation = async (
 
   if (existing) {
     return existing;
+  }
+
+  // Only followers can initiate a conversation with a user
+  const isFollower = await Follow.exists({
+    $or: [
+      {
+        follower: new mongoose.Types.ObjectId(userA),
+        following: new mongoose.Types.ObjectId(userB),
+      },
+      {
+        follower: new mongoose.Types.ObjectId(userB),
+        following: new mongoose.Types.ObjectId(userA),
+      },
+    ],
+  });
+
+  if (!isFollower) {
+    throw new Error("Only followers can message this user");
   }
 
   try {

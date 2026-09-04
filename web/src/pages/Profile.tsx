@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
 import api from "../services/api";
 import { toggleFollowUser } from "../services/follow.service";
 import { getOrCreateConversation } from "../services/chat.service";
+import { queryKeys } from "../lib/queryKeys";
 import { useAuthStore } from "../store/authStore";
+import { usePresenceStore } from "../store/presenceStore";
 import { getUserPosts } from "../services/post.service";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
@@ -63,10 +65,12 @@ const getCroppedImg = async (
 const Profile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [followLoading, setFollowLoading] = useState<boolean>(false);
+  const [chatLoading, setChatLoading] = useState<boolean>(false);
 
   // Edit Profile State
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -94,6 +98,7 @@ const Profile = () => {
   const currentUserId = currentUser?._id || currentUser?.id || null;
   const isOwnProfile =
     user && (user._id === currentUserId || user.id === currentUserId || id === currentUserId);
+  const isUserOnline = usePresenceStore((state) => state.isOnline(user?._id || user?.id || id));
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -243,12 +248,31 @@ const Profile = () => {
   };
 
   const handleStartChat = async () => {
-    if (!user?._id) return;
+    const targetId = user?._id || user?.id || id;
+    if (!targetId || chatLoading) return;
+
+    setChatLoading(true);
     try {
-      const conv = await getOrCreateConversation(user._id);
+      const conv = await getOrCreateConversation(targetId);
+
+      // Pre-seed conversation in TanStack Query caches so Messages page has it immediately
+      queryClient.setQueryData<any>(
+        queryKeys.conversations.all,
+        (old: any = []) => {
+          const filtered = Array.isArray(old)
+            ? old.filter((c: any) => c._id !== conv._id)
+            : [];
+          return [conv, ...filtered];
+        }
+      );
+      queryClient.setQueryData(queryKeys.conversations.detail(conv._id), conv);
+
       navigate(`/messages?conversationId=${conv._id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to start conversation:", err);
+      alert(err.response?.data?.message || err.message || "Failed to start conversation");
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -370,7 +394,8 @@ const Profile = () => {
                       <div
                         className="profile-avatar-large"
                         style={{
-                          overflow: "hidden",
+                          position: "relative",
+                          overflow: "visible",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -378,23 +403,38 @@ const Profile = () => {
                         }}
                         onClick={() => user.profilePicUrl && setIsAvatarEnlarged(true)}
                       >
-                        {user.profilePicUrl ? (
-                          <img
-                            src={user.profilePicUrl}
-                            alt={user.username}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        ) : (
-                          getInitial(user.name, user.username)
-                        )}
+                        <div style={{ width: "100%", height: "100%", borderRadius: "10px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {user.profilePicUrl ? (
+                            <img
+                              src={user.profilePicUrl}
+                              alt={user.username}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            getInitial(user.name, user.username)
+                          )}
+                        </div>
+                        <span
+                          className={`chat-presence-dot ${isUserOnline ? "online" : "offline"}`}
+                          style={{ width: "14px", height: "14px", bottom: "-2px", right: "-2px", borderWidth: "2.5px" }}
+                          title={isUserOnline ? "Online" : "Offline"}
+                        />
                       </div>
                       <div>
                         <h1 className="profile-name">
                           {user.name || user.username}
                         </h1>
-                        <p className="profile-handle">
-                          @{user.username}
-                        </p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+                          <p className="profile-handle">
+                            @{user.username}
+                          </p>
+                          <span
+                            className={`status-indicator ${isUserOnline ? "online" : "offline"}`}
+                            style={{ fontSize: "11px", fontWeight: 600 }}
+                          >
+                            • {isUserOnline ? "ONLINE" : "OFFLINE"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -458,10 +498,11 @@ const Profile = () => {
                         </button>
                       )}
 
-                      {!isOwnProfile && (
+                      {!isOwnProfile && user.isFollowing && (
                         <button
                           onClick={handleStartChat}
-                          className="profile-action-btn"
+                          disabled={chatLoading}
+                          className="profile-action-btn primary"
                           style={{ marginLeft: "8px" }}
                           title={`Send message to @${user.username}`}
                         >
@@ -477,7 +518,7 @@ const Profile = () => {
                               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                             />
                           </svg>
-                          message
+                          {chatLoading ? "starting..." : "message"}
                         </button>
                       )}
                     </div>

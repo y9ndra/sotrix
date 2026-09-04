@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
 import { getUnreadCount } from '../services/notification.service';
 import { logout } from '../api/auth.api';
+import { disconnectSocket } from '../services/socket.service';
 
 function Navbar() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -45,6 +46,8 @@ function Navbar() {
         } catch (err) {
             console.error("Server logout error:", err);
         } finally {
+            disconnectSocket();
+            queryClient.clear();
             removeToken();
             clearUser();
             resetNotifications();
@@ -78,7 +81,7 @@ function Navbar() {
                     )}
                     {isAuthenticated && (
                         <li>
-                            <Link to={`/profile/${currentUserId}`} className="nav-space-link">profile</Link>
+                            <Link to={currentUserId ? `/profile/${currentUserId}` : "/"} className="nav-space-link">profile</Link>
                         </li>
                     )}
                 </ul>
@@ -121,7 +124,7 @@ function Navbar() {
                     <Link to="/messages" className={`mobile-nav-link ${location.pathname.startsWith("/messages") ? "active" : ""}`}>
                         messages
                     </Link>
-                    <Link to={`/profile/${currentUserId}`} className={`mobile-nav-link ${location.pathname.startsWith("/profile") ? "active" : ""}`}>
+                    <Link to={currentUserId ? `/profile/${currentUserId}` : "/"} className={`mobile-nav-link ${location.pathname.startsWith("/profile") ? "active" : ""}`}>
                         profile
                     </Link>
                 </div>

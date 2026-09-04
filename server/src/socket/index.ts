@@ -89,6 +89,13 @@ export const initializeSocket = (
       });
     }
 
+    // Allow clients to request fresh presence list on demand
+    socket.on("presence:get", () => {
+      socket.emit("presence:list", {
+        users: getOnlineUsers(),
+      });
+    });
+
     // Register chat handlers (rooms, messaging)
     registerChatHandlers(io!, socket);
 

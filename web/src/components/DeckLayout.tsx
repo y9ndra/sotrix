@@ -1,5 +1,5 @@
 import { useLocation, Outlet, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Navbar from "./Navbar";
 import Homepage from "../pages/Homepage";
 import Explore from "../pages/Explore";
@@ -17,6 +17,7 @@ const DeckLayout = () => {
 
   const [activeSlot, setActiveSlot] = useState(0);
   const [renderNotifications, setRenderNotifications] = useState(false);
+  const deckBaseLayerRef = useRef<HTMLDivElement>(null);
 
   // Map pathnames to joint horizontal deck slot indices (0 to 4)
   useEffect(() => {
@@ -32,6 +33,19 @@ const DeckLayout = () => {
       setActiveSlot(4);
     }
   }, [pathname]);
+
+  // Ensure deck-base-layer is never shifted horizontally by browser focus or scroll events
+  useEffect(() => {
+    if (deckBaseLayerRef.current) {
+      deckBaseLayerRef.current.scrollLeft = 0;
+    }
+  }, [pathname, activeSlot]);
+
+  const handleBaseLayerScroll = () => {
+    if (deckBaseLayerRef.current && deckBaseLayerRef.current.scrollLeft !== 0) {
+      deckBaseLayerRef.current.scrollLeft = 0;
+    }
+  };
 
   const isNotificationsActive = pathname.startsWith("/notifications");
 
@@ -51,7 +65,35 @@ const DeckLayout = () => {
     navigate(-1);
   };
 
+  // Guard Messages space with delayed unmount matching slide transition
+  const isMessagesActive = pathname.startsWith("/messages") || pathname.startsWith("/chat");
+  const [renderMessages, setRenderMessages] = useState(isMessagesActive);
+
+  useEffect(() => {
+    if (isMessagesActive) {
+      setRenderMessages(true);
+    } else {
+      const timer = setTimeout(() => {
+        setRenderMessages(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isMessagesActive]);
+
+  // Guard Profile space with delayed unmount matching slide transition
   const isProfileActive = pathname.startsWith("/profile");
+  const [renderProfile, setRenderProfile] = useState(isProfileActive);
+
+  useEffect(() => {
+    if (isProfileActive) {
+      setRenderProfile(true);
+    } else {
+      const timer = setTimeout(() => {
+        setRenderProfile(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isProfileActive]);
 
   return (
     <div className="deck-root-container">
@@ -59,7 +101,11 @@ const DeckLayout = () => {
 
       <div className="deck-workspace">
         {/* Base Layer: The Joint Horizontal Sliding Deck Workspace */}
-        <div className={`deck-base-layer ${isNotificationsActive ? "dimmed-half" : ""}`}>
+        <div
+          ref={deckBaseLayerRef}
+          onScroll={handleBaseLayerScroll}
+          className={`deck-base-layer ${isNotificationsActive ? "dimmed-half" : ""}`}
+        >
           <div
             className="joint-deck-track"
             style={{
@@ -84,12 +130,12 @@ const DeckLayout = () => {
 
             {/* Slot 3: Real-time Messages Space */}
             <div className="joint-deck-slot">
-              <Messages />
+              {renderMessages ? <Messages /> : <div />}
             </div>
 
             {/* Slot 4: Profile Page */}
             <div className="joint-deck-slot">
-              {isProfileActive ? <Profile /> : <div />}
+              {renderProfile ? <Profile /> : <div />}
             </div>
           </div>
         </div>
