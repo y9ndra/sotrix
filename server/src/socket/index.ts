@@ -6,6 +6,11 @@ import { authenticateSocket } from "./middleware/authenticate.socket";
 import { setSocketIO } from "./socket.manager";
 import { getUserRoom } from "./socketRooms";
 import { registerChatHandlers } from "./chat.handler";
+import {
+  addUserSocket,
+  removeUserSocket,
+  getOnlineUsers,
+} from "./presence.manager";
 
 let io: SocketIOServer | null = null;
 
@@ -70,6 +75,20 @@ export const initializeSocket = (
       `Socket ${socket.id} joined room: ${getUserRoom(userId)}`
     );
 
+    // Multi-socket presence tracking
+    if (userId) {
+      const becameOnline = addUserSocket(userId, socket.id);
+      if (becameOnline) {
+        io!.emit("presence:online", { userId });
+        console.log(`Presence: User ${userId} is now ONLINE`);
+      }
+
+      // Send initial online users list to connecting socket
+      socket.emit("presence:list", {
+        users: getOnlineUsers(),
+      });
+    }
+
     // Register chat handlers (rooms, messaging)
     registerChatHandlers(io!, socket);
 
@@ -86,6 +105,14 @@ export const initializeSocket = (
       console.log(
         `Socket disconnected: ${socket.id}, reason: ${reason}`
       );
+
+      if (userId) {
+        const becameOffline = removeUserSocket(userId, socket.id);
+        if (becameOffline) {
+          io!.emit("presence:offline", { userId });
+          console.log(`Presence: User ${userId} is now OFFLINE`);
+        }
+      }
     });
   });
 
