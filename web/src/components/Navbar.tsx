@@ -73,7 +73,7 @@ function Navbar() {
                     )}
                     {isAuthenticated && (
                         <li>
-                            <span className="nav-space-link disabled" title="Chats coming soon">messages</span>
+                            <Link to="/messages" className={`nav-space-link ${location.pathname.startsWith("/messages") ? "active" : ""}`}>messages</Link>
                         </li>
                     )}
                     {isAuthenticated && (
@@ -117,6 +117,9 @@ function Navbar() {
                     </Link>
                     <Link to="/search" className={`mobile-nav-link ${location.pathname.startsWith("/search") ? "active" : ""}`}>
                         search
+                    </Link>
+                    <Link to="/messages" className={`mobile-nav-link ${location.pathname.startsWith("/messages") ? "active" : ""}`}>
+                        messages
                     </Link>
                     <Link to={`/profile/${currentUserId}`} className={`mobile-nav-link ${location.pathname.startsWith("/profile") ? "active" : ""}`}>
                         profile

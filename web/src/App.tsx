@@ -8,6 +8,7 @@ import Search from './pages/Search';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthInitializer from './components/AuthInitializer';
 import Notifications from './pages/Notifications';
+import Messages from './pages/Messages';
 import DeckLayout from './components/DeckLayout';
 
 import { useEffect } from "react";
@@ -144,6 +145,8 @@ function App() {
           {/* Sliding Sheet Panel sub-routes */}
           <Route path="/explore" element={<Explore />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/chat" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile/:id" element={<Profile />} />
         </Route>

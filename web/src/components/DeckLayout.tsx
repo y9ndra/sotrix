@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 import Homepage from "../pages/Homepage";
 import Explore from "../pages/Explore";
 import Search from "../pages/Search";
+import Messages from "../pages/Messages";
 import Profile from "../pages/Profile";
 import { useNotificationInitialization } from "../hooks/useNotificationInitialization";
 
@@ -25,6 +26,8 @@ const DeckLayout = () => {
       setActiveSlot(1);
     } else if (pathname.startsWith("/search")) {
       setActiveSlot(2);
+    } else if (pathname.startsWith("/messages") || pathname.startsWith("/chat")) {
+      setActiveSlot(3);
     } else if (pathname.startsWith("/profile")) {
       setActiveSlot(4);
     }
@@ -79,11 +82,9 @@ const DeckLayout = () => {
               <Search />
             </div>
 
-            {/* Slot 3: Messages Space Placeholder */}
+            {/* Slot 3: Real-time Messages Space */}
             <div className="joint-deck-slot">
-              <div className="explore-container">
-                <p className="explore-empty-msg">messages space coming soon...</p>
-              </div>
+              <Messages />
             </div>
 
             {/* Slot 4: Profile Page */}

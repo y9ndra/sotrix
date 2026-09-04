@@ -1,0 +1,30 @@
+export interface ChatUser {
+  _id: string;
+  name?: string;
+  username: string;
+  profilePicUrl?: string;
+}
+
+export interface Conversation {
+  _id: string;
+  participants: ChatUser[];
+  participantKey: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatMessage {
+  _id: string;
+  conversation: string;
+  sender: ChatUser;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MessagesResponse {
+  success: boolean;
+  data: ChatMessage[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}

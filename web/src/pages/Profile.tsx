@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
 import api from "../services/api";
 import { toggleFollowUser } from "../services/follow.service";
+import { getOrCreateConversation } from "../services/chat.service";
 import { useAuthStore } from "../store/authStore";
 import { getUserPosts } from "../services/post.service";
 import PostCard from "../components/PostCard";
@@ -61,6 +62,7 @@ const getCroppedImg = async (
 
 const Profile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -238,6 +240,16 @@ const Profile = () => {
       return (count / 1000).toFixed(1) + "K";
     }
     return count.toString();
+  };
+
+  const handleStartChat = async () => {
+    if (!user?._id) return;
+    try {
+      const conv = await getOrCreateConversation(user._id);
+      navigate(`/messages?conversationId=${conv._id}`);
+    } catch (err) {
+      console.error("Failed to start conversation:", err);
+    }
   };
 
   return (
@@ -443,6 +455,29 @@ const Profile = () => {
                               follow
                             </>
                           )}
+                        </button>
+                      )}
+
+                      {!isOwnProfile && (
+                        <button
+                          onClick={handleStartChat}
+                          className="profile-action-btn"
+                          style={{ marginLeft: "8px" }}
+                          title={`Send message to @${user.username}`}
+                        >
+                          <svg
+                            style={{ width: "14px", height: "14px", stroke: "currentColor" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                            />
+                          </svg>
+                          message
                         </button>
                       )}
                     </div>
