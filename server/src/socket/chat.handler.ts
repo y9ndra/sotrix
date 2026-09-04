@@ -88,4 +88,70 @@ export const registerChatHandlers = (
       }
     }
   );
+
+  // Handle typing:start event (broadcast to others in room)
+  socket.on(
+    "typing:start",
+    async (payload: { conversationId: string }) => {
+      try {
+        if (!userId) return;
+
+        const { conversationId } = payload || {};
+        if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
+          return;
+        }
+
+        // Verify conversation membership
+        const conversation = await Conversation.findOne({
+          _id: conversationId,
+          participants: userId,
+        });
+
+        if (!conversation) {
+          return;
+        }
+
+        // Broadcast only to OTHER participants in the conversation room
+        socket.to(conversationId).emit("typing:start", {
+          conversationId,
+          userId,
+        });
+      } catch (error) {
+        console.error("Error handling typing:start event:", error);
+      }
+    }
+  );
+
+  // Handle typing:stop event (broadcast to others in room)
+  socket.on(
+    "typing:stop",
+    async (payload: { conversationId: string }) => {
+      try {
+        if (!userId) return;
+
+        const { conversationId } = payload || {};
+        if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
+          return;
+        }
+
+        // Verify conversation membership
+        const conversation = await Conversation.findOne({
+          _id: conversationId,
+          participants: userId,
+        });
+
+        if (!conversation) {
+          return;
+        }
+
+        // Broadcast only to OTHER participants in the conversation room
+        socket.to(conversationId).emit("typing:stop", {
+          conversationId,
+          userId,
+        });
+      } catch (error) {
+        console.error("Error handling typing:stop event:", error);
+      }
+    }
+  );
 };
