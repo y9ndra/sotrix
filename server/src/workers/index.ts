@@ -10,3 +10,4 @@ connectDB().catch((err) => {
 // Import workers to start them
 import "./notification.worker";
 import "./maintenance.worker";
+import "./media.worker";

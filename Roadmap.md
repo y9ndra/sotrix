@@ -153,10 +153,10 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ### Day 33 [COMPLETED]
 - Frontend Feed Integration (TanStack Query, infinite scroll, optimistic likes, comment mutations, query-key architecture)
 
-### Day 34 [CURRENT]
+### Day 34 [COMPLETED]
 - Chat features: private chat rooms, message persistence, online presence status, typing indicators
 
-### Day 35
+### Day 35 [COMPLETED]
 - Advanced media pipeline: asynchronous uploads, processing jobs in queues
 
 ### Day 36

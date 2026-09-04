@@ -41,3 +41,21 @@ export const deleteFromCloudinary = async (
 ): Promise<void> => {
     await cloudinary.uploader.destroy(publicId);
 };
+
+export const processMedia = async (
+    publicId: string,
+    resourceType: "image" | "video" = "image"
+): Promise<{ secure_url?: string }> => {
+    // Trigger eager transformations/optimization (compression, resize, webp conversion)
+    const result = await cloudinary.uploader.explicit(publicId, {
+        type: "upload",
+        resource_type: resourceType,
+        eager: [
+            { width: 800, crop: "limit", quality: "auto", fetch_format: "auto" },
+            { width: 300, height: 300, crop: "fill", quality: "auto", fetch_format: "auto" },
+        ],
+    });
+    return {
+        secure_url: result.secure_url,
+    };
+};
