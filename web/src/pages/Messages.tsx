@@ -12,7 +12,7 @@ const Messages: React.FC = () => {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const currentUserId = currentUser?._id || (currentUser as any)?.id || "";
-  const isUserOnline = usePresenceStore((state) => state.isOnline);
+  const onlineUserIds = usePresenceStore((state) => state.onlineUserIds);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeConversationId = searchParams.get("conversationId");
@@ -100,12 +100,32 @@ const Messages: React.FC = () => {
     }
   }, [displayMessages.length, selectedConversationId, remoteTypingUserId]);
 
-  // Request fresh presence list on component mount
+  // Request fresh presence list and attach real-time presence listeners
   useEffect(() => {
     const socket = getSocket();
-    if (socket) {
-      socket.emit("presence:get");
-    }
+    if (!socket) return;
+
+    socket.emit("presence:get");
+
+    const handlePresenceList = (data: { users: (string | { userId?: string; id?: string })[] }) => {
+      usePresenceStore.getState().setOnlineUsers(data?.users || []);
+    };
+    const handlePresenceOnline = (data: string | { userId?: string; id?: string }) => {
+      usePresenceStore.getState().addUser(data);
+    };
+    const handlePresenceOffline = (data: string | { userId?: string; id?: string }) => {
+      usePresenceStore.getState().removeUser(data);
+    };
+
+    socket.on("presence:list", handlePresenceList);
+    socket.on("presence:online", handlePresenceOnline);
+    socket.on("presence:offline", handlePresenceOffline);
+
+    return () => {
+      socket.off("presence:list", handlePresenceList);
+      socket.off("presence:online", handlePresenceOnline);
+      socket.off("presence:offline", handlePresenceOffline);
+    };
   }, []);
 
   // Real-time Chat Room (Join/Leave), Message & Typing Listeners
@@ -234,10 +254,10 @@ const Messages: React.FC = () => {
   };
 
   const otherParticipantId =
-    otherParticipant?._id || (otherParticipant as any)?.id || "";
-  const isOtherUserOnline = otherParticipantId
-    ? isUserOnline(otherParticipantId)
-    : false;
+    otherParticipant?._id?.toString() || (otherParticipant as any)?.id?.toString() || "";
+  const isOtherUserOnline = Boolean(
+    otherParticipantId && onlineUserIds.has(otherParticipantId)
+  );
 
   return (
     <div className="chat-page-layout">
@@ -261,9 +281,9 @@ const Messages: React.FC = () => {
               const other = conv.participants?.find(
                 (p) => (p?._id || (p as any)?.id) !== currentUserId
               );
-              const otherId = other?._id || (other as any)?.id || "";
+              const otherId = other?._id?.toString() || (other as any)?.id?.toString() || "";
               const isSelected = conv._id === selectedConversationId;
-              const isOnline = otherId ? isUserOnline(otherId) : false;
+              const isOnline = Boolean(otherId && onlineUserIds.has(otherId));
 
               return (
                 <div

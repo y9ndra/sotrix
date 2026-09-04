@@ -2,9 +2,9 @@ import { create } from "zustand";
 
 interface PresenceState {
   onlineUserIds: Set<string>;
-  setOnlineUsers: (users: string[]) => void;
-  addUser: (userId: string) => void;
-  removeUser: (userId: string) => void;
+  setOnlineUsers: (users: (string | { userId?: string; id?: string; _id?: string })[]) => void;
+  addUser: (raw: string | { userId?: string; id?: string; _id?: string }) => void;
+  removeUser: (raw: string | { userId?: string; id?: string; _id?: string }) => void;
   clearPresence: () => void;
   isOnline: (userId: string | undefined | null) => boolean;
 }
@@ -13,23 +13,37 @@ export const usePresenceStore = create<PresenceState>((set, get) => ({
   onlineUserIds: new Set<string>(),
 
   setOnlineUsers: (users) => {
-    set({ onlineUserIds: new Set((users || []).map((u) => u.toString())) });
+    const ids = (users || [])
+      .map((u) => {
+        if (typeof u === "object" && u !== null) {
+          return (u.userId || u.id || u._id || "").toString();
+        }
+        return (u || "").toString();
+      })
+      .filter(Boolean);
+    set({ onlineUserIds: new Set(ids) });
   },
 
-  addUser: (userId) => {
-    if (!userId) return;
+  addUser: (raw) => {
+    const id = typeof raw === "object" && raw !== null ? (raw.userId || raw.id || raw._id) : raw;
+    if (!id) return;
+    const idStr = id.toString();
     set((state) => {
+      if (state.onlineUserIds.has(idStr)) return state;
       const next = new Set(state.onlineUserIds);
-      next.add(userId.toString());
+      next.add(idStr);
       return { onlineUserIds: next };
     });
   },
 
-  removeUser: (userId) => {
-    if (!userId) return;
+  removeUser: (raw) => {
+    const id = typeof raw === "object" && raw !== null ? (raw.userId || raw.id || raw._id) : raw;
+    if (!id) return;
+    const idStr = id.toString();
     set((state) => {
+      if (!state.onlineUserIds.has(idStr)) return state;
       const next = new Set(state.onlineUserIds);
-      next.delete(userId.toString());
+      next.delete(idStr);
       return { onlineUserIds: next };
     });
   },
