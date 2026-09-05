@@ -162,7 +162,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ### Day 36 [COMPLETED]
 - Image processing (Sharp library) for compression, resizing, and generating thumbnails
 
-### Day 37
+### Day 37 [COMPLETED]
 - Text search optimization (Elasticsearch introduction or MongoDB Atlas Search)
 
 ### Day 38

@@ -301,11 +301,10 @@ export const searchPostsService = async (
   currentUserId?: string
 ): Promise<any[]> => {
   const search = query.trim();
-  const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(escapedSearch, "i");
 
-  const posts = await Post.find({
-    content: regex,
+  // 1. Prioritize MongoDB Text Index ($text) for high-performance indexed word search
+  let posts = await Post.find({
+    $text: { $search: search },
   })
     .populate("author", "name username email profilePicUrl")
     .sort({
@@ -313,6 +312,22 @@ export const searchPostsService = async (
       _id: -1,
     })
     .limit(10);
+
+  // 2. Fallback to regex for partial/substring search if text index finds no matches
+  if (posts.length === 0) {
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escapedSearch, "i");
+
+    posts = await Post.find({
+      content: regex,
+    })
+      .populate("author", "name username email profilePicUrl")
+      .sort({
+        createdAt: -1,
+        _id: -1,
+      })
+      .limit(10);
+  }
 
   return attachLikeStatus(posts, currentUserId);
 };
