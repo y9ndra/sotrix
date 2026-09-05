@@ -148,6 +148,10 @@ describe("Media Pipeline - End-to-End Unit Tests", () => {
       await expect(processMediaDocument(media._id.toString())).rejects.toThrow(
         "Cloudinary upload timeout"
       );
+
+      // Verify status in DB was updated to 'failed'
+      const failed = await Media.findById(media._id);
+      expect(failed?.status).toBe("failed");
     });
   });
 });

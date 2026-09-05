@@ -73,6 +73,9 @@ export const processMediaDocument = async (mediaId: string): Promise<IMedia> => 
 
     return media;
   } catch (error) {
+    media.status = "failed";
+    await media.save();
+
     // Re-throw so worker handles retries & terminal failure
     throw error;
   }
