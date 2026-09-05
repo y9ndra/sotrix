@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import { bullMQConnection } from "../config/bullmq-redis";
 import Media from "../models/media.model";
-import { processMediaDocument } from "../services/media-processing.service";
+import { processMedia } from "../services/media-processing.service";
 import type { ProcessMediaJobData } from "../queues/media.queue";
 
 export const mediaWorker = new Worker<ProcessMediaJobData>(
@@ -11,7 +11,7 @@ export const mediaWorker = new Worker<ProcessMediaJobData>(
     console.log(`[MEDIA WORKER] Processing job ${job.id} for media: ${mediaId}`);
 
     try {
-      const media = await processMediaDocument(mediaId);
+      const media = await processMedia(mediaId);
       console.log(`[MEDIA WORKER] Media ${mediaId} processed successfully ✅`);
       return { mediaId, status: media.status };
     } catch (error) {

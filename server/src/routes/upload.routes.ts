@@ -48,6 +48,7 @@ router.get(
           id: media._id,
           status: media.status,
           url: media.url,
+          optimizedUrl: media.optimizedUrl,
           type: media.type,
           createdAt: media.createdAt,
           updatedAt: media.updatedAt,

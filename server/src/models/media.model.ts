@@ -9,6 +9,7 @@ export interface IMedia extends Document {
   publicId: string;
   type: MediaType;
   status: MediaStatus;
+  optimizedUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,9 @@ const mediaSchema = new Schema<IMedia>(
       default: "processing",
       required: true,
       index: true,
+    },
+    optimizedUrl: {
+      type: String,
     },
   },
   {

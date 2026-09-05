@@ -1,6 +1,9 @@
 import sharp from "sharp";
 import Media, { IMedia } from "../models/media.model";
-import { processMedia as processCloudinaryMedia } from "./cloudinary.service";
+import {
+  uploadBufferToCloudinary,
+  processMedia as processCloudinaryMedia,
+} from "./cloudinary.service";
 
 export const downloadImageBuffer = async (imageUrl: string): Promise<Buffer> => {
   const response = await fetch(imageUrl);
@@ -47,12 +50,26 @@ export const processMediaDocument = async (mediaId: string): Promise<IMedia> => 
   }
 
   try {
-    // Perform heavy processing on Cloudinary
-    await processCloudinaryMedia(media.publicId, media.type);
+    if (media.type === "image") {
+      // 1. Download original from Cloudinary & run Sharp processing
+      const processedBuffer = await processImageFromUrl(media.url);
 
-    // Mark as completed on success
-    media.status = "completed";
-    await media.save();
+      // 2. Upload processed buffer back to Cloudinary
+      const result = await uploadBufferToCloudinary(
+        processedBuffer,
+        "sotrix/processed"
+      );
+
+      // 3. Save optimizedUrl & mark status completed
+      media.optimizedUrl = result.secure_url;
+      media.status = "completed";
+      await media.save();
+    } else {
+      // Non-image media (e.g. video) fallback
+      await processCloudinaryMedia(media.publicId, media.type);
+      media.status = "completed";
+      await media.save();
+    }
 
     return media;
   } catch (error) {
@@ -60,3 +77,5 @@ export const processMediaDocument = async (mediaId: string): Promise<IMedia> => 
     throw error;
   }
 };
+
+export const processMedia = processMediaDocument;

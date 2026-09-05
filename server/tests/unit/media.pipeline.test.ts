@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import sharp from "sharp";
 import Media from "../../src/models/media.model";
 import { uploadAndCreateMedia } from "../../src/services/media.service";
 import { processMediaDocument } from "../../src/services/media-processing.service";
@@ -11,6 +12,10 @@ jest.mock("../../src/services/cloudinary.service", () => ({
     secure_url: "https://res.cloudinary.com/demo/image/upload/sample.jpg",
     public_id: "sotrix/media/sample_123",
   }),
+  uploadBufferToCloudinary: jest.fn().mockResolvedValue({
+    secure_url: "https://res.cloudinary.com/demo/image/upload/sotrix/processed/sample_proc.webp",
+    public_id: "sotrix/processed/sample_proc",
+  }),
   deleteFromCloudinary: jest.fn().mockResolvedValue(undefined),
   processMedia: jest.fn().mockResolvedValue({
     secure_url: "https://res.cloudinary.com/demo/image/upload/sample_opt.webp",
@@ -20,6 +25,34 @@ jest.mock("../../src/services/cloudinary.service", () => ({
 describe("Media Pipeline - End-to-End Unit Tests", () => {
   const mockUserId = new mongoose.Types.ObjectId();
   const mockBuffer = Buffer.from("fake-image-content");
+  const originalFetch = global.fetch;
+
+  beforeAll(async () => {
+    // Generate valid sample image buffer for fetch mocking
+    const sampleImageBuffer = await sharp({
+      create: {
+        width: 100,
+        height: 100,
+        channels: 3,
+        background: { r: 255, g: 0, b: 0 },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () =>
+        sampleImageBuffer.buffer.slice(
+          sampleImageBuffer.byteOffset,
+          sampleImageBuffer.byteOffset + sampleImageBuffer.byteLength
+        ),
+    } as any);
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -50,7 +83,7 @@ describe("Media Pipeline - End-to-End Unit Tests", () => {
   });
 
   describe("2. Worker Processing and Status Transitions", () => {
-    it("should transition media status from 'processing' to 'completed' after processing", async () => {
+    it("should process image via Sharp, upload to Cloudinary, and save optimizedUrl", async () => {
       const media = await Media.create({
         user: mockUserId,
         url: "https://res.cloudinary.com/demo/image/upload/initial.jpg",
@@ -62,11 +95,20 @@ describe("Media Pipeline - End-to-End Unit Tests", () => {
       const processed = await processMediaDocument(media._id.toString());
 
       expect(processed.status).toBe("completed");
-      expect(cloudinaryService.processMedia).toHaveBeenCalledWith("sotrix/media/test_proc", "image");
+      expect(processed.optimizedUrl).toBe(
+        "https://res.cloudinary.com/demo/image/upload/sotrix/processed/sample_proc.webp"
+      );
+      expect(cloudinaryService.uploadBufferToCloudinary).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        "sotrix/processed"
+      );
 
-      // Verify status in DB
+      // Verify status & optimizedUrl in DB
       const updated = await Media.findById(media._id);
       expect(updated?.status).toBe("completed");
+      expect(updated?.optimizedUrl).toBe(
+        "https://res.cloudinary.com/demo/image/upload/sotrix/processed/sample_proc.webp"
+      );
     });
   });
 
@@ -78,20 +120,21 @@ describe("Media Pipeline - End-to-End Unit Tests", () => {
         publicId: "sotrix/media/already_done",
         type: "image",
         status: "completed",
+        optimizedUrl: "https://res.cloudinary.com/demo/image/upload/sotrix/processed/already_done.webp",
       });
 
       const result = await processMediaDocument(media._id.toString());
 
       expect(result.status).toBe("completed");
-      // Cloudinary processing must NOT be called again
-      expect(cloudinaryService.processMedia).not.toHaveBeenCalled();
+      // Uploading to Cloudinary must NOT be called again
+      expect(cloudinaryService.uploadBufferToCloudinary).not.toHaveBeenCalled();
     });
   });
 
   describe("4. Error Propagation for Retries", () => {
     it("should throw error when processing fails so BullMQ can trigger backoff retry", async () => {
-      (cloudinaryService.processMedia as jest.Mock).mockRejectedValueOnce(
-        new Error("Cloudinary rate limit / timeout")
+      (cloudinaryService.uploadBufferToCloudinary as jest.Mock).mockRejectedValueOnce(
+        new Error("Cloudinary upload timeout")
       );
 
       const media = await Media.create({
@@ -103,7 +146,7 @@ describe("Media Pipeline - End-to-End Unit Tests", () => {
       });
 
       await expect(processMediaDocument(media._id.toString())).rejects.toThrow(
-        "Cloudinary rate limit / timeout"
+        "Cloudinary upload timeout"
       );
     });
   });

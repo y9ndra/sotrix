@@ -36,6 +36,8 @@ export const uploadImage = (
     });
 };
 
+export const uploadBufferToCloudinary = uploadImage;
+
 export const deleteFromCloudinary = async (
     publicId: string
 ): Promise<void> => {
