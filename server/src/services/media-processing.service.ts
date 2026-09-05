@@ -1,5 +1,20 @@
+import sharp from "sharp";
 import Media, { IMedia } from "../models/media.model";
 import { processMedia as processCloudinaryMedia } from "./cloudinary.service";
+
+export const processImage = async (
+  inputBuffer: Buffer
+): Promise<Buffer> => {
+  return sharp(inputBuffer)
+    .resize({
+      width: 1200,
+      withoutEnlargement: true,
+    })
+    .webp({
+      quality: 80,
+    })
+    .toBuffer();
+};
 
 /**
  * Service to handle media processing (resizing, compressing, generating variants)
