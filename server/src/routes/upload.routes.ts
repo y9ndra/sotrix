@@ -6,7 +6,7 @@ import { uploadAndCreateMedia, getMediaStatus } from "../services/media.service"
 const router = Router();
 
 router.post(
-  ["/upload", "/media", "/media/upload"],
+  ["/upload", "/media", "/media/upload", "/upload/media"],
   authenticate,
   upload.single("image"),
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -33,7 +33,7 @@ router.post(
 );
 
 router.get(
-  "/media/:id/status",
+  ["/media/:id/status", "/upload/media/:id/status"],
   authenticate,
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     try {

@@ -159,7 +159,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ### Day 35 [COMPLETED]
 - Advanced media pipeline: asynchronous uploads, processing jobs in queues
 
-### Day 36
+### Day 36 [COMPLETED]
 - Image processing (Sharp library) for compression, resizing, and generating thumbnails
 
 ### Day 37
