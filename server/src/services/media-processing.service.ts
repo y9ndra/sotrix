@@ -2,6 +2,15 @@ import sharp from "sharp";
 import Media, { IMedia } from "../models/media.model";
 import { processMedia as processCloudinaryMedia } from "./cloudinary.service";
 
+export const downloadImageBuffer = async (imageUrl: string): Promise<Buffer> => {
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to download image: ${response.statusText || response.status}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+};
+
 export const processImage = async (
   inputBuffer: Buffer
 ): Promise<Buffer> => {
@@ -14,6 +23,11 @@ export const processImage = async (
       quality: 80,
     })
     .toBuffer();
+};
+
+export const processImageFromUrl = async (imageUrl: string): Promise<Buffer> => {
+  const inputBuffer = await downloadImageBuffer(imageUrl);
+  return processImage(inputBuffer);
 };
 
 /**
