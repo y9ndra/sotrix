@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
+import { userCreateContentLimiter } from "../middleware/rateLimiter";
 import upload from "../middleware/upload.middleware";
 import { validate } from "../middleware/validate";
 import { createPostSchema, updatePostSchema } from "../schemas/post.schema";
@@ -17,8 +18,8 @@ import {
 
 const router = Router();
 
-// Create post (Authenticated)
-router.post("/", authenticate, upload.single("image"), validate(createPostSchema, "body"), createPost);
+// Create post (Authenticated + User Rate Limited)
+router.post("/", authenticate, userCreateContentLimiter, upload.single("image"), validate(createPostSchema, "body"), createPost);
 
 // Get authenticated user's posts (Authenticated)
 router.get("/me", authenticate, validate(paginationQuerySchema, "query"), getMyPosts);

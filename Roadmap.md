@@ -165,7 +165,7 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ### Day 37 [COMPLETED]
 - Text search optimization (Elasticsearch introduction or MongoDB Atlas Search)
 
-### Day 38
+### Day 38 [COMPLETED]
 - Performance testing: API profiling, identifying memory leaks in Node.js
 
 ### Day 39

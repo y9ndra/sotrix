@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
+import { userCreateContentLimiter } from "../middleware/rateLimiter";
 import { validate } from "../middleware/validate";
 import { createCommentSchema, updateCommentSchema } from "../schemas/comment.schema";
 import { idParamSchema, postIdParamSchema, paginationQuerySchema } from "../schemas/common.schema";
@@ -12,8 +13,8 @@ import {
 
 const router = Router();
 
-// Create comment for a post (Authenticated)
-router.post("/posts/:postId/comments", authenticate, validate(postIdParamSchema, "params"), validate(createCommentSchema, "body"), createComment);
+// Create comment for a post (Authenticated + User Rate Limited)
+router.post("/posts/:postId/comments", authenticate, userCreateContentLimiter, validate(postIdParamSchema, "params"), validate(createCommentSchema, "body"), createComment);
 
 // Get comments for a post
 router.get("/posts/:postId/comments", validate(postIdParamSchema, "params"), validate(paginationQuerySchema, "query"), getCommentsForPost);

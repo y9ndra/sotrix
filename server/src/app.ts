@@ -2,7 +2,6 @@ import express, { Application, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { config } from './config/env';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -15,19 +14,11 @@ import uploadRoutes from './routes/upload.routes';
 import notificationRoutes from './routes/notification.routes';
 import conversationRoutes from './routes/conversation.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { globalLimiter } from './middleware/rateLimiter';
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 
 const app: Application = express();
-
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 1000,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-});
-
-
 
 app.use(helmet());
 
@@ -38,6 +29,7 @@ app.use(
   })
 );
 
+// Tier 1: Global rate limiter (skips health check, test mode bypass)
 app.use(globalLimiter);
 
 app.use(express.json());
