@@ -42,10 +42,7 @@ export const createComment = async (
       success: true,
       data: comment,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error && error.message === "Post not found") {
-      return res.status(404).json({ message: error.message });
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -65,10 +62,7 @@ export const getCommentsForPost = async (
       success: true,
       ...result,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error && error.message === "Post not found") {
-      return res.status(404).json({ message: error.message });
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -97,15 +91,7 @@ export const updateComment = async (
       success: true,
       data: updatedComment,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.message === "Comment not found") {
-        return res.status(404).json({ message: error.message });
-      }
-      if (error.message.includes("not authorized")) {
-        return res.status(403).json({ message: error.message });
-      }
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -129,15 +115,7 @@ export const deleteComment = async (
       success: true,
       message: "Comment deleted successfully",
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.message === "Comment not found") {
-        return res.status(404).json({ message: error.message });
-      }
-      if (error.message.includes("not authorized")) {
-        return res.status(403).json({ message: error.message });
-      }
-    }
+  } catch (error) {
     next(error);
   }
 };

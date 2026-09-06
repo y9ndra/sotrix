@@ -168,10 +168,10 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 ### Day 38 [COMPLETED]
 - Performance testing: API profiling, identifying memory leaks in Node.js
 
-### Day 39
+### Day 39 [COMPLETED]
 - Load testing using K6 or Autocannon
 
-### Day 40
+### Day 40 [COMPLETED]
 - Refactoring, automated test suites execution, and Phase 4 review
 
 ---

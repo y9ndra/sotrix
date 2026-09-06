@@ -136,10 +136,7 @@ export const getPostById = async (
       success: true,
       data: post,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error && error.message === "Post not found") {
-      return res.status(404).json({ message: error.message });
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -168,15 +165,7 @@ export const updatePost = async (
       success: true,
       data: updatedPost,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.message === "Post not found") {
-        return res.status(404).json({ message: error.message });
-      }
-      if (error.message.includes("not authorized")) {
-        return res.status(403).json({ message: error.message });
-      }
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -200,15 +189,7 @@ export const deletePost = async (
       success: true,
       message: "Post deleted successfully",
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.message === "Post not found") {
-        return res.status(404).json({ message: error.message });
-      }
-      if (error.message.includes("not authorized")) {
-        return res.status(403).json({ message: error.message });
-      }
-    }
+  } catch (error) {
     next(error);
   }
 };

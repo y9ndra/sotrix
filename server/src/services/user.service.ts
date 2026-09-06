@@ -3,6 +3,7 @@ import User from "../models/user.model";
 import Follow from "../models/follow.model";
 import redisClient from "../config/redis";
 import Post from "../models/post.model";
+import { uploadImage, deleteFromCloudinary } from "./cloudinary.service";
 
 export interface UpdateProfileInput {
   name?: string;
@@ -63,7 +64,8 @@ export const getUserById = async (userId: string, currentUserId?: string) => {
 
 export const updateUserProfile = async (
   userId: string,
-  updates: UpdateProfileInput
+  updates: UpdateProfileInput,
+  fileBuffer?: Buffer
 ) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error("Invalid User ID format");
@@ -79,6 +81,20 @@ export const updateUserProfile = async (
     if (existingUser) {
       throw new Error("Username is already taken");
     }
+  }
+
+  if (fileBuffer) {
+    const { secure_url, public_id } = await uploadImage(fileBuffer, "sotrix/profiles");
+    const existingUserDoc = await User.findById(userId);
+    if (existingUserDoc?.profilePicPublicId) {
+      try {
+        await deleteFromCloudinary(existingUserDoc.profilePicPublicId);
+      } catch (cloudinaryError) {
+        console.error("Failed to delete old profile picture from Cloudinary:", cloudinaryError);
+      }
+    }
+    sanitizedUpdates.profilePicUrl = secure_url;
+    sanitizedUpdates.profilePicPublicId = public_id;
   }
 
   const user = await User.findByIdAndUpdate(userId, sanitizedUpdates, {

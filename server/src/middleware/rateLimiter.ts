@@ -31,6 +31,7 @@ export const userActionLimiter = rateLimit({
   limit: isTest ? 10_000 : 60, // 60 actions per minute per user
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req: Request): string => {
     return req.user?.id || req.ip || "anonymous";
   },
@@ -49,6 +50,7 @@ export const userCreateContentLimiter = rateLimit({
   limit: isTest ? 10_000 : 15, // Max 15 posts/comments per minute per user
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req: Request): string => {
     return req.user?.id || req.ip || "anonymous";
   },

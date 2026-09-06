@@ -41,15 +41,7 @@ export const toggleLike = async (
       liked: result.liked,
       likeCount: result.likeCount,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.message === "Post not found") {
-        return res.status(404).json({ message: error.message });
-      }
-      if (error.message === "Invalid post ID") {
-        return res.status(400).json({ message: error.message });
-      }
-    }
+  } catch (error) {
     next(error);
   }
 };

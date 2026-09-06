@@ -2,8 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { getUserById, updateUserProfile, searchUsersService } from "../services/user.service";
 import { UpdateProfileInput } from "../schemas/user.schema";
 import { IdParam, SearchQuery } from "../schemas/common.schema";
-import User from "../models/user.model";
-import { uploadImage, deleteFromCloudinary } from "../services/cloudinary.service";
 
 export const getUserProfile = async (
   req: Request<IdParam>,
@@ -20,16 +18,8 @@ export const getUserProfile = async (
       success: true,
       data: user,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.message === "Invalid User ID format") {
-        return res.status(400).json({ message: error.message });
-      }
-      if (error.message === "User not found") {
-        return res.status(404).json({ message: error.message });
-      }
-    }
-    return next(error);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -44,63 +34,34 @@ export const updateMyProfile = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const updates: UpdateProfileInput = { ...req.body };
-
-    if (req.file) {
-      const { secure_url, public_id } = await uploadImage(req.file.buffer, "sotrix/profiles");
-      
-      const userDoc = await User.findById(userId);
-      if (userDoc?.profilePicPublicId) {
-        try {
-          await deleteFromCloudinary(userDoc.profilePicPublicId);
-        } catch (cloudinaryError) {
-          console.error("Failed to delete old profile picture from Cloudinary:", cloudinaryError);
-        }
-      }
-
-      updates.profilePicUrl = secure_url;
-      updates.profilePicPublicId = public_id;
-    }
-
-    const updatedUser = await updateUserProfile(userId, updates);
+    const updatedUser = await updateUserProfile(
+      userId,
+      req.body,
+      req.file?.buffer
+    );
 
     return res.status(200).json({
       success: true,
       data: updatedUser,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.message === "Invalid User ID format") {
-        return res.status(400).json({ message: error.message });
-      }
-      if (error.message === "Username is already taken") {
-        return res.status(400).json({ message: error.message });
-      }
-      if (error.message === "User not found") {
-        return res.status(404).json({ message: error.message });
-      }
-    }
-    return next(error);
+  } catch (error) {
+    next(error);
   }
 };
 
 export const searchUsers = async (
   req: Request<{}, {}, {}, SearchQuery>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<any> => {
   try {
     const { q } = req.query;
     const currentUserId = req.user?.id;
     if (!currentUserId) {
-      return res.status(401).json({
-        message: "Unauthorized",
-      });
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const users = await searchUsersService(
-      q,
-      currentUserId
-    );
+    const users = await searchUsersService(q, currentUserId);
 
     return res.status(200).json({
       users,
@@ -108,9 +69,6 @@ export const searchUsers = async (
       data: users,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: "Failed to search users",
-    });
+    next(error);
   }
 };
-
