@@ -18,6 +18,7 @@ import { useNotificationStore } from "./store/notification.store";
 import { usePresenceStore } from "./store/presenceStore";
 import { queryKeys } from "./lib/queryKeys";
 import type { Notification } from "./types/notification.types";
+import type { ChatMessage, MessagesResponse } from "./types/chat.types";
 
 import { useAuthStore } from "./store/authStore";
 
@@ -131,6 +132,38 @@ function App() {
         queryClient.refetchQueries({ queryKey: queryKeys.notifications.unreadCount });
       });
 
+      const handleGlobalMessageNew = (newMsg: ChatMessage) => {
+        // Optimistically update conversation message cache if loaded
+        queryClient.setQueryData<MessagesResponse>(
+          queryKeys.conversations.messages(newMsg.conversation),
+          (oldData) => {
+            if (!oldData) {
+              return {
+                success: true,
+                data: [newMsg],
+                nextCursor: null,
+                hasMore: false,
+              };
+            }
+            if (oldData.data.some((m) => m._id === newMsg._id)) {
+              return oldData;
+            }
+            return {
+              ...oldData,
+              data: [newMsg, ...oldData.data],
+            };
+          }
+        );
+
+        // Invalidate conversations list so sidebar snippet and order updates immediately
+        queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.conversations.detail(newMsg.conversation),
+        });
+      };
+
+      socket.on("message:new", handleGlobalMessageNew);
+
       socket.on("disconnect", () => {
         console.log("Disconnected from Socket.IO server");
       });
@@ -142,6 +175,7 @@ function App() {
         socket.off("presence:online", handlePresenceOnline);
         socket.off("presence:offline", handlePresenceOffline);
         socket.off("notification:new");
+        socket.off("message:new", handleGlobalMessageNew);
         socket.off("disconnect");
         disconnectSocket();
       };

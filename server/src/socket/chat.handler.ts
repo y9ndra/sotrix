@@ -2,6 +2,7 @@ import { Server as SocketIOServer, Socket } from "socket.io";
 import mongoose from "mongoose";
 import Conversation from "../models/conversation.model";
 import { createMessage } from "../services/message.service";
+import { getUserRoom } from "./socketRooms";
 
 export const registerChatHandlers = (
   io: SocketIOServer,
@@ -79,8 +80,18 @@ export const registerChatHandlers = (
           content
         );
 
-        // 2. Emit canonical persisted message to everyone in the conversation room
-        io.to(conversationId).emit("message:new", message);
+        // 2. Fetch conversation participants to broadcast to their individual user rooms
+        const conversation = await Conversation.findById(conversationId).select("participants");
+        const participantIds = conversation?.participants || [];
+
+        // Broadcast to conversation room AND each participant's personal room
+        // Socket.IO deduplicates targets across chained rooms automatically
+        let emitter: any = io.to(conversationId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+        }
+        emitter.emit("message:new", message);
       } catch (error: any) {
         socket.emit("chat:error", {
           message: error.message || "Failed to send message",

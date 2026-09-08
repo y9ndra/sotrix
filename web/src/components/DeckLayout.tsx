@@ -65,21 +65,6 @@ const DeckLayout = () => {
     navigate(-1);
   };
 
-  // Guard Messages space with delayed unmount matching slide transition
-  const isMessagesActive = pathname.startsWith("/messages") || pathname.startsWith("/chat");
-  const [renderMessages, setRenderMessages] = useState(isMessagesActive);
-
-  useEffect(() => {
-    if (isMessagesActive) {
-      setRenderMessages(true);
-    } else {
-      const timer = setTimeout(() => {
-        setRenderMessages(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isMessagesActive]);
-
   // Guard Profile space with delayed unmount matching slide transition
   const isProfileActive = pathname.startsWith("/profile");
   const [renderProfile, setRenderProfile] = useState(isProfileActive);
@@ -130,7 +115,7 @@ const DeckLayout = () => {
 
             {/* Slot 3: Real-time Messages Space */}
             <div className="joint-deck-slot">
-              {renderMessages ? <Messages /> : <div />}
+              <Messages />
             </div>
 
             {/* Slot 4: Profile Page */}

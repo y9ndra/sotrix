@@ -39,6 +39,8 @@ const Messages: React.FC = () => {
     queryKey: queryKeys.conversations.all,
     queryFn: getConversations,
     enabled: !!currentUserId,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Automatically select the first conversation on desktop screens if none selected.
@@ -59,6 +61,8 @@ const Messages: React.FC = () => {
     queryKey: queryKeys.conversations.messages(selectedConversationId || ""),
     queryFn: () => getMessages(selectedConversationId!),
     enabled: !!selectedConversationId,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Messages are returned newest-first from backend: reverse for natural bottom-up chat display
@@ -70,6 +74,8 @@ const Messages: React.FC = () => {
     queryKey: queryKeys.conversations.detail(selectedConversationId || ""),
     queryFn: () => getConversation(selectedConversationId!),
     enabled: !!selectedConversationId,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Selected conversation object (prioritizes direct conversation query, falls back to list)
