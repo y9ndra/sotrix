@@ -271,8 +271,9 @@ const Messages: React.FC = () => {
 
   const otherParticipantId =
     otherParticipant?._id?.toString() || (otherParticipant as any)?.id?.toString() || "";
+  const isFollowingOther = Boolean(otherParticipant?.isFollowing);
   const isOtherUserOnline = Boolean(
-    otherParticipantId && onlineUserIds.has(otherParticipantId)
+    isFollowingOther && otherParticipantId && onlineUserIds.has(otherParticipantId)
   );
 
   return (
@@ -303,7 +304,8 @@ const Messages: React.FC = () => {
               );
               const otherId = other?._id?.toString() || (other as any)?.id?.toString() || "";
               const isSelected = conv._id === selectedConversationId;
-              const isOnline = Boolean(otherId && onlineUserIds.has(otherId));
+              const isFollowing = Boolean(other?.isFollowing);
+              const isOnline = Boolean(isFollowing && otherId && onlineUserIds.has(otherId));
 
               return (
                 <div
@@ -323,10 +325,12 @@ const Messages: React.FC = () => {
                         {(other?.name || other?.username || "U").charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <span
-                      className={`chat-presence-dot ${isOnline ? "online" : "offline"}`}
-                      title={isOnline ? "Online" : "Offline"}
-                    />
+                    {isFollowing && (
+                      <span
+                        className={`chat-presence-dot ${isOnline ? "online" : "offline"}`}
+                        title={isOnline ? "Online" : "Offline"}
+                      />
+                    )}
                   </div>
 
                   <div className="chat-inbox-info">
@@ -392,9 +396,12 @@ const Messages: React.FC = () => {
                         .toUpperCase()}
                     </div>
                   )}
-                  <span
-                    className={`chat-presence-dot ${isOtherUserOnline ? "online" : "offline"}`}
-                  />
+                  {isFollowingOther && (
+                    <span
+                      className={`chat-presence-dot ${isOtherUserOnline ? "online" : "offline"}`}
+                      title={isOtherUserOnline ? "Online" : "Offline"}
+                    />
+                  )}
                 </div>
 
                 <div className="chat-header-details">
@@ -405,9 +412,11 @@ const Messages: React.FC = () => {
                     {otherParticipant.name || otherParticipant.username}
                   </Link>
                   <div className="chat-header-status">
-                    <span className={`status-indicator ${isOtherUserOnline ? "online" : "offline"}`}>
-                      {isOtherUserOnline ? "ONLINE" : "OFFLINE"}
-                    </span>
+                    {isFollowingOther && (
+                      <span className={`status-indicator ${isOtherUserOnline ? "online" : "offline"}`}>
+                        {isOtherUserOnline ? "ONLINE" : "OFFLINE"}
+                      </span>
+                    )}
                     <span className="chat-header-handle">@{otherParticipant.username}</span>
                   </div>
                 </div>

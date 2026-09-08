@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { toggleFollowUser } from "../services/follow.service";
 import type { SuggestedUser } from "../services/explore.service";
-import { usePresenceStore } from "../store/presenceStore";
+import { queryKeys } from "../lib/queryKeys";
 
 interface UserCardProps {
   user: SuggestedUser;
@@ -10,10 +11,10 @@ interface UserCardProps {
 }
 
 const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
+  const queryClient = useQueryClient();
   const [isFollowing, setIsFollowing] = useState(user.isFollowing || false);
   const [followersCount, setFollowersCount] = useState(user.followersCount || 0);
   const [loading, setLoading] = useState(false);
-  const isOnline = usePresenceStore((state) => state.isOnline(user._id));
 
   const handleFollowToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -25,6 +26,7 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
       const result = await toggleFollowUser(user._id);
       setIsFollowing(result.following);
       setFollowersCount(result.followersCount);
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
       if (onFollowStateChange) {
         onFollowStateChange(user._id, result.following);
       }
@@ -62,11 +64,6 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
               initialLetter
             )}
           </Link>
-          <span
-            className={`chat-presence-dot ${isOnline ? "online" : "offline"}`}
-            style={{ width: "10px", height: "10px", bottom: "-1px", right: "-1px" }}
-            title={isOnline ? "Online" : "Offline"}
-          />
         </div>
         <div className="user-details">
           <div className="user-meta-row">

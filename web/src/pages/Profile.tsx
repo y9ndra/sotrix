@@ -7,7 +7,6 @@ import { toggleFollowUser } from "../services/follow.service";
 import { getOrCreateConversation } from "../services/chat.service";
 import { queryKeys } from "../lib/queryKeys";
 import { useAuthStore } from "../store/authStore";
-import { usePresenceStore } from "../store/presenceStore";
 import { getUserPosts } from "../services/post.service";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
@@ -98,7 +97,6 @@ const Profile = () => {
   const currentUserId = currentUser?._id || currentUser?.id || null;
   const isOwnProfile =
     user && (user._id === currentUserId || user.id === currentUserId || id === currentUserId);
-  const isUserOnline = usePresenceStore((state) => state.isOnline(user?._id || user?.id || id));
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -224,6 +222,7 @@ const Profile = () => {
         isFollowing: result.following,
         followersCount: result.followersCount,
       }));
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
     } catch (err: any) {
       console.error("Failed to toggle follow status", err);
     } finally {
@@ -414,27 +413,14 @@ const Profile = () => {
                             getInitial(user.name, user.username)
                           )}
                         </div>
-                        <span
-                          className={`chat-presence-dot ${isUserOnline ? "online" : "offline"}`}
-                          style={{ width: "14px", height: "14px", bottom: "-2px", right: "-2px", borderWidth: "2.5px" }}
-                          title={isUserOnline ? "Online" : "Offline"}
-                        />
                       </div>
                       <div>
                         <h1 className="profile-name">
                           {user.name || user.username}
                         </h1>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
-                          <p className="profile-handle">
-                            @{user.username}
-                          </p>
-                          <span
-                            className={`status-indicator ${isUserOnline ? "online" : "offline"}`}
-                            style={{ fontSize: "11px", fontWeight: 600 }}
-                          >
-                            • {isUserOnline ? "ONLINE" : "OFFLINE"}
-                          </span>
-                        </div>
+                        <p className="profile-handle" style={{ marginTop: "2px" }}>
+                          @{user.username}
+                        </p>
                       </div>
                     </div>
 

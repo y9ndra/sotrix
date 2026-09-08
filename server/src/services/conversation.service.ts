@@ -21,7 +21,7 @@ export const createParticipantKey = (
 export const getOrCreateConversation = async (
   userA: string,
   userB: string
-): Promise<IConversation> => {
+): Promise<any> => {
   if (!mongoose.Types.ObjectId.isValid(userA) || !mongoose.Types.ObjectId.isValid(userB)) {
     throw new Error("Invalid user ID");
   }
@@ -37,52 +37,70 @@ export const getOrCreateConversation = async (
     "name username profilePicUrl"
   );
 
-  if (existing) {
-    return existing;
-  }
+  let convToReturn = existing;
 
-  // Only followers can initiate a conversation with a user
-  const isFollower = await Follow.exists({
-    $or: [
-      {
-        follower: new mongoose.Types.ObjectId(userA),
-        following: new mongoose.Types.ObjectId(userB),
-      },
-      {
-        follower: new mongoose.Types.ObjectId(userB),
-        following: new mongoose.Types.ObjectId(userA),
-      },
-    ],
-  });
-
-  if (!isFollower) {
-    throw new Error("Only followers can message this user");
-  }
-
-  try {
-    const newConversation = await Conversation.create({
-      participants: [userA, userB],
-      participantKey,
+  if (!convToReturn) {
+    // Only followers can initiate a conversation with a user
+    const isFollower = await Follow.exists({
+      $or: [
+        {
+          follower: new mongoose.Types.ObjectId(userA),
+          following: new mongoose.Types.ObjectId(userB),
+        },
+        {
+          follower: new mongoose.Types.ObjectId(userB),
+          following: new mongoose.Types.ObjectId(userA),
+        },
+      ],
     });
 
-    return await newConversation.populate(
-      "participants",
-      "name username profilePicUrl"
-    );
-  } catch (error: any) {
-    // Handle duplicate key error (code 11000) from concurrent creation race
-    if (error.code === 11000) {
-      const raceExisting = await Conversation.findOne({ participantKey }).populate(
+    if (!isFollower) {
+      throw new Error("Only followers can message this user");
+    }
+
+    try {
+      const newConversation = await Conversation.create({
+        participants: [userA, userB],
+        participantKey,
+      });
+
+      convToReturn = await newConversation.populate(
         "participants",
         "name username profilePicUrl"
       );
-      if (raceExisting) {
-        return raceExisting;
+    } catch (error: any) {
+      // Handle duplicate key error (code 11000) from concurrent creation race
+      if (error.code === 11000) {
+        const raceExisting = await Conversation.findOne({ participantKey }).populate(
+          "participants",
+          "name username profilePicUrl"
+        );
+        if (raceExisting) {
+          convToReturn = raceExisting;
+        } else {
+          throw error;
+        }
+      } else {
+        throw error;
       }
     }
-
-    throw error;
   }
+
+  const isFollowingB = await Follow.exists({
+    follower: userA,
+    following: userB,
+  });
+
+  const convObj: any = convToReturn.toObject ? convToReturn.toObject() : convToReturn;
+  convObj.participants = (convObj.participants || []).map((p: any) => {
+    const pObj = p.toObject ? p.toObject() : p;
+    return {
+      ...pObj,
+      isFollowing: (pObj._id || pObj).toString() === userB.toString() ? Boolean(isFollowingB) : false,
+    };
+  });
+
+  return convObj;
 };
 
 /**
@@ -107,7 +125,7 @@ export const getConversationById = async (
 export const getConversationForUser = async (
   conversationId: string,
   userId: string
-): Promise<IConversation | null> => {
+): Promise<any | null> => {
   if (
     !mongoose.Types.ObjectId.isValid(conversationId) ||
     !mongoose.Types.ObjectId.isValid(userId)
@@ -115,10 +133,32 @@ export const getConversationForUser = async (
     throw new Error("Invalid ID format");
   }
 
-  return Conversation.findOne({
+  const conversation = await Conversation.findOne({
     _id: conversationId,
     participants: userId,
   }).populate("participants", "name username profilePicUrl");
+
+  if (!conversation) return null;
+
+  const convObj: any = conversation.toObject();
+  const otherParticipants = (convObj.participants || []).filter(
+    (p: any) => (p._id || p).toString() !== userId.toString()
+  );
+  const otherIds = otherParticipants.map((p: any) => p._id || p);
+
+  const followings = await Follow.find({
+    follower: userId,
+    following: { $in: otherIds },
+  }).select("following");
+
+  const followingSet = new Set(followings.map((f) => f.following.toString()));
+
+  convObj.participants = (convObj.participants || []).map((p: any) => ({
+    ...p,
+    isFollowing: followingSet.has((p._id || p).toString()),
+  }));
+
+  return convObj;
 };
 
 /**
@@ -126,14 +166,36 @@ export const getConversationForUser = async (
  */
 export const getUserConversations = async (
   userId: string
-): Promise<IConversation[]> => {
+): Promise<any[]> => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error("Invalid user ID");
   }
 
-  return Conversation.find({
+  const conversations = await Conversation.find({
     participants: userId,
   })
     .populate("participants", "name username profilePicUrl")
     .sort({ updatedAt: -1 });
+
+  const otherUserIds = conversations.flatMap((c) =>
+    (c.participants || [])
+      .filter((p: any) => (p._id || p).toString() !== userId.toString())
+      .map((p: any) => p._id || p)
+  );
+
+  const followings = await Follow.find({
+    follower: userId,
+    following: { $in: otherUserIds },
+  }).select("following");
+
+  const followingSet = new Set(followings.map((f) => f.following.toString()));
+
+  return conversations.map((conv) => {
+    const convObj: any = conv.toObject();
+    convObj.participants = (convObj.participants || []).map((p: any) => ({
+      ...p,
+      isFollowing: followingSet.has((p._id || p).toString()),
+    }));
+    return convObj;
+  });
 };

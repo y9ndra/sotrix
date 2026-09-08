@@ -3,6 +3,7 @@ export interface ChatUser {
   name?: string;
   username: string;
   profilePicUrl?: string;
+  isFollowing?: boolean;
 }
 
 export interface Conversation {
