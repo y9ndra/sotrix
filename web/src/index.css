@@ -3399,4 +3399,158 @@ button, input, textarea, select {
   line-height: 1.5;
 }
 
+/* ==========================================================================
+   Rubik's Cube Custom Cursor (Static Colors, Zero Glow, 3D Isometric)
+   ========================================================================== */
+@media (pointer: fine) {
+  body,
+  a,
+  button,
+  [role="button"],
+  .chat-inbox-item,
+  .profile-edit-btn,
+  .post-action-btn,
+  select {
+    cursor: none !important;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    cursor: text !important;
+  }
+}
+
+.rubiks-cursor-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  z-index: 9999999;
+  perspective: 700px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  will-change: transform;
+}
+
+.rubiks-cursor-wrapper.visible {
+  opacity: 1;
+}
+
+.rubiks-cursor-wrapper.hidden {
+  opacity: 0;
+}
+
+/* Precision pointer target dot for button aiming */
+.rubiks-pointer-target {
+  position: absolute;
+  left: 13px;
+  top: 2px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.rubiks-pointer-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  background-color: #10b981;
+  border: 1px solid #000000;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(16, 185, 129, 0.4);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.18s ease;
+}
+
+.rubiks-cursor-wrapper.clickable-hover .rubiks-pointer-dot {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* 3D Anchor for smooth gliding & scaling (Preserves 3D context, zero flattening) */
+.rubiks-cube-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  transform-style: preserve-3d;
+  transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1);
+  transition: transform 0.26s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+.rubiks-cursor-wrapper.clickable-hover .rubiks-cube-anchor {
+  transform: translate3d(16px, -12px, 0px) scale3d(0.55, 0.55, 0.55);
+}
+
+/* 3D Isometric Scene - strictly locked angle in true 3D space */
+.rubiks-cube-scene {
+  width: 26px;
+  height: 26px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-26deg) rotateY(38deg);
+}
+
+.rubiks-slice {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Individual Cubie (7px x 7px x 7px) */
+.rubiks-cubie {
+  position: absolute;
+  top: 9.5px;
+  left: 9.5px;
+  width: 7px;
+  height: 7px;
+  transform-style: preserve-3d;
+}
+
+/* Cubie faces with sharp black plastic seams (zero glow) */
+.cubie-face {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 0.8px solid #000000;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+}
+
+.cubie-face.face-f {
+  transform: translateZ(3.5px);
+}
+
+.cubie-face.face-b {
+  transform: rotateY(180deg) translateZ(3.5px);
+}
+
+.cubie-face.face-r {
+  transform: rotateY(90deg) translateZ(3.5px);
+}
+
+.cubie-face.face-l {
+  transform: rotateY(-90deg) translateZ(3.5px);
+}
+
+.cubie-face.face-u {
+  transform: rotateX(90deg) translateZ(3.5px);
+}
+
+.cubie-face.face-d {
+  transform: rotateX(-90deg) translateZ(3.5px);
+}
+
 

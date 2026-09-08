@@ -10,6 +10,7 @@ import AuthInitializer from './components/AuthInitializer';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import DeckLayout from './components/DeckLayout';
+import RubiksCursor from './components/RubiksCursor';
 
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -220,6 +221,7 @@ function App() {
 
   return (
     <>
+      <RubiksCursor />
       <AuthInitializer />
       <Routes>
         {/* Unprotected Auth Routes */}
