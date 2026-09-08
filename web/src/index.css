@@ -2793,16 +2793,20 @@ button, input, textarea, select {
 }
 
 .chat-sidebar-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.04em;
   color: #10b981;
   background-color: rgba(16, 185, 129, 0.12);
   border: 1px solid rgba(16, 185, 129, 0.35);
-  border-radius: 6px;
-  padding: 2px 7px;
-  line-height: 1.2;
+  border-radius: 9999px;
+  padding: 0 6px;
+  line-height: 1;
 }
 
 .chat-inbox-list {
@@ -3109,6 +3113,39 @@ button, input, textarea, select {
   background-color: #000000;
   background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+/* Date Divider between days in chat feed */
+.chat-date-divider-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0 6px 0;
+  width: 100%;
+}
+
+.chat-date-divider-line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-default);
+  opacity: 0.5;
+}
+
+.chat-date-divider-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background-color: #0d0d0e;
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 3px 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  user-select: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .chat-message-bubble-row {

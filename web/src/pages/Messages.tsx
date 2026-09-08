@@ -13,6 +13,83 @@ import {
 } from "../services/chat.service";
 import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.types";
 
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+};
+
+const formatDateDivider = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (targetDate.getTime() === today.getTime()) {
+    return "TODAY";
+  }
+
+  if (targetDate.getTime() === yesterday.getTime()) {
+    return "YESTERDAY";
+  }
+
+  const weekday = date.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+  const month = date.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
+  const day = String(date.getDate()).padStart(2, "0");
+
+  if (date.getFullYear() === now.getFullYear()) {
+    return `${weekday}, ${month} ${day}`;
+  }
+
+  return `${month} ${day}, ${date.getFullYear()}`;
+};
+
+const formatSidebarTimestamp = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (targetDate.getTime() === today.getTime()) {
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  if (targetDate.getTime() === yesterday.getTime()) {
+    return "Yesterday";
+  }
+
+  const diffDays = Math.round((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 7 && diffDays > 0) {
+    return date.toLocaleDateString(undefined, { weekday: "short" });
+  }
+
+  if (date.getFullYear() === now.getFullYear()) {
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 const Messages: React.FC = () => {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
@@ -375,7 +452,7 @@ const Messages: React.FC = () => {
               className="chat-sidebar-unread-badge"
               title={`${unreadConversationsCount} unread`}
             >
-              [ {unreadConversationsCount} ]
+              {unreadConversationsCount}
             </span>
           )}
         </div>
@@ -434,10 +511,7 @@ const Messages: React.FC = () => {
                           <span className="chat-unread-dot" title="Unread message" />
                         )}
                         <span className="chat-inbox-time">
-                          {new Date(conv.updatedAt).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {formatSidebarTimestamp(conv.updatedAt)}
                         </span>
                       </div>
                     </div>
@@ -529,26 +603,52 @@ const Messages: React.FC = () => {
                   <small className="chat-empty-subtitle">no messages yet. send a transmission to start the conversation.</small>
                 </div>
               ) : (
-                displayMessages.map((msg) => {
+                displayMessages.map((msg, idx) => {
                   const isSender =
                     msg.sender?._id === currentUserId ||
                     (typeof msg.sender === "string" && msg.sender === currentUserId);
 
+                  const prevMsg = idx > 0 ? displayMessages[idx - 1] : null;
+                  const showDateDivider =
+                    !prevMsg ||
+                    !isSameDay(new Date(prevMsg.createdAt), new Date(msg.createdAt));
+
+                  const fullTimestampTooltip = new Date(msg.createdAt).toLocaleString(
+                    undefined,
+                    {
+                      dateStyle: "full",
+                      timeStyle: "short",
+                    }
+                  );
+
                   return (
-                    <div
-                      key={msg._id}
-                      className={`chat-message-bubble-row ${isSender ? "outgoing" : "incoming"}`}
-                    >
-                      <div className={`chat-message-bubble ${isSender ? "mine" : "theirs"}`}>
-                        <p className="chat-message-text">{msg.content}</p>
-                        <span className="chat-message-timestamp">
-                          {new Date(msg.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                    <React.Fragment key={msg._id}>
+                      {showDateDivider && (
+                        <div className="chat-date-divider-row">
+                          <span className="chat-date-divider-line" />
+                          <span className="chat-date-divider-pill">
+                            {formatDateDivider(msg.createdAt)}
+                          </span>
+                          <span className="chat-date-divider-line" />
+                        </div>
+                      )}
+                      <div
+                        className={`chat-message-bubble-row ${isSender ? "outgoing" : "incoming"}`}
+                      >
+                        <div className={`chat-message-bubble ${isSender ? "mine" : "theirs"}`}>
+                          <p className="chat-message-text">{msg.content}</p>
+                          <span
+                            className="chat-message-timestamp"
+                            title={fullTimestampTooltip}
+                          >
+                            {new Date(msg.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })
               )}
