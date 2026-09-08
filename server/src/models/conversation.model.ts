@@ -3,6 +3,12 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IConversation extends Document {
   participants: mongoose.Types.ObjectId[];
   participantKey: string;
+  lastMessage?: {
+    content: string;
+    sender: mongoose.Types.ObjectId;
+    createdAt: Date;
+  };
+  lastRead?: Map<string, Date>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +28,18 @@ const conversationSchema = new Schema<IConversation>(
       required: true,
       unique: true,
       index: true,
+    },
+
+    lastMessage: {
+      content: { type: String },
+      sender: { type: Schema.Types.ObjectId, ref: "User" },
+      createdAt: { type: Date },
+    },
+
+    lastRead: {
+      type: Map,
+      of: Date,
+      default: () => new Map(),
     },
   },
   {

@@ -5,6 +5,7 @@ import {
   getUserConversations,
   getConversation,
   getConversationMessages,
+  markAsRead,
 } from "../controllers/conversation.controller";
 
 const router = Router();
@@ -20,6 +21,9 @@ router.get("/", getUserConversations);
 
 // Get a specific conversation by ID (with participant authorization)
 router.get("/:id", getConversation);
+
+// Mark conversation messages as read
+router.patch("/:id/read", markAsRead);
 
 // Get cursor-paginated messages for a conversation
 router.get("/:id/messages", getConversationMessages);

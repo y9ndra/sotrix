@@ -56,8 +56,21 @@ export const createMessage = async (
     content: trimmedContent,
   });
 
-  // Touch conversation timestamp so recent active chats appear at top of inbox
-  conversation.updatedAt = new Date();
+  const messageDate = message.createdAt || new Date();
+
+  // Touch conversation timestamp and update lastMessage & sender's lastRead
+  conversation.updatedAt = messageDate;
+  conversation.lastMessage = {
+    content: trimmedContent,
+    sender: new mongoose.Types.ObjectId(senderId),
+    createdAt: messageDate,
+  } as any;
+
+  if (!conversation.lastRead) {
+    conversation.lastRead = new Map();
+  }
+  conversation.lastRead.set(senderId.toString(), messageDate);
+  conversation.markModified("lastRead");
   await conversation.save();
 
   await message.populate("sender", "name username profilePicUrl");

@@ -99,6 +99,7 @@ export const getOrCreateConversation = async (
       isFollowing: (pObj._id || pObj).toString() === userB.toString() ? Boolean(isFollowingB) : false,
     };
   });
+  convObj.hasUnread = false;
 
   return convObj;
 };
@@ -158,6 +159,26 @@ export const getConversationForUser = async (
     isFollowing: followingSet.has((p._id || p).toString()),
   }));
 
+  // Determine unread status for requesting user
+  let hasUnread = false;
+  if (convObj.lastMessage && convObj.lastMessage.sender) {
+    const senderId = (convObj.lastMessage.sender._id || convObj.lastMessage.sender).toString();
+    const currentUserIdStr = userId.toString();
+    if (senderId !== currentUserIdStr) {
+      let lastReadDate: Date | undefined;
+      if (conversation.lastRead instanceof Map) {
+        lastReadDate = conversation.lastRead.get(currentUserIdStr);
+      } else if (convObj.lastRead) {
+        lastReadDate = convObj.lastRead[currentUserIdStr];
+      }
+      const messageCreatedAt = new Date(convObj.lastMessage.createdAt);
+      if (!lastReadDate || new Date(lastReadDate) < messageCreatedAt) {
+        hasUnread = true;
+      }
+    }
+  }
+  convObj.hasUnread = hasUnread;
+
   return convObj;
 };
 
@@ -196,6 +217,64 @@ export const getUserConversations = async (
       ...p,
       isFollowing: followingSet.has((p._id || p).toString()),
     }));
+
+    // Determine unread status for requesting user
+    let hasUnread = false;
+    if (convObj.lastMessage && convObj.lastMessage.sender) {
+      const senderId = (convObj.lastMessage.sender._id || convObj.lastMessage.sender).toString();
+      const currentUserIdStr = userId.toString();
+      if (senderId !== currentUserIdStr) {
+        let lastReadDate: Date | undefined;
+        if (conv.lastRead instanceof Map) {
+          lastReadDate = conv.lastRead.get(currentUserIdStr);
+        } else if (convObj.lastRead) {
+          lastReadDate = convObj.lastRead[currentUserIdStr];
+        }
+        const messageCreatedAt = new Date(convObj.lastMessage.createdAt);
+        if (!lastReadDate || new Date(lastReadDate) < messageCreatedAt) {
+          hasUnread = true;
+        }
+      }
+    }
+    convObj.hasUnread = hasUnread;
+
     return convObj;
   });
+};
+
+/**
+ * Marks a conversation as read for a given user by updating lastRead to now
+ */
+export const markConversationAsRead = async (
+  conversationId: string,
+  userId: string
+): Promise<any> => {
+  if (
+    !mongoose.Types.ObjectId.isValid(conversationId) ||
+    !mongoose.Types.ObjectId.isValid(userId)
+  ) {
+    throw new Error("Invalid ID format");
+  }
+
+  const now = new Date();
+  const conversation = await Conversation.findOneAndUpdate(
+    {
+      _id: conversationId,
+      participants: userId,
+    },
+    {
+      $set: {
+        [`lastRead.${userId}`]: now,
+      },
+    },
+    { new: true }
+  ).populate("participants", "name username profilePicUrl");
+
+  if (!conversation) {
+    throw new Error("Conversation not found");
+  }
+
+  const convObj: any = conversation.toObject();
+  convObj.hasUnread = false;
+  return convObj;
 };

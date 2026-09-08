@@ -3,6 +3,7 @@ import {
   getOrCreateConversation,
   getUserConversations as getUserConversationsService,
   getConversationForUser,
+  markConversationAsRead,
 } from "../services/conversation.service";
 import { getMessages as getMessagesService } from "../services/message.service";
 
@@ -110,6 +111,29 @@ export const getConversationMessages = async (
     return res.status(200).json({
       success: true,
       ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const markAsRead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { id } = req.params;
+    const conversation = await markConversationAsRead(id, userId);
+
+    return res.status(200).json({
+      success: true,
+      data: conversation,
     });
   } catch (error) {
     next(error);

@@ -2,6 +2,7 @@ import { Server as SocketIOServer, Socket } from "socket.io";
 import mongoose from "mongoose";
 import Conversation from "../models/conversation.model";
 import { createMessage } from "../services/message.service";
+import { markConversationAsRead } from "../services/conversation.service";
 import { getUserRoom } from "./socketRooms";
 
 export const registerChatHandlers = (
@@ -37,6 +38,10 @@ export const registerChatHandlers = (
 
       socket.join(conversationId);
       socket.emit("conversation:joined", { conversationId });
+
+      // Mark conversation as read upon joining
+      markConversationAsRead(conversationId, userId).catch(() => {});
+
       console.log(`Socket ${socket.id} (user: ${userId}) joined room: ${conversationId}`);
     } catch (error: any) {
       socket.emit("chat:error", {
@@ -44,6 +49,23 @@ export const registerChatHandlers = (
       });
     }
   });
+
+  // Handle marking conversation as read explicitly
+  socket.on(
+    "conversation:read",
+    async (payload: { conversationId: string }) => {
+      try {
+        if (!userId) return;
+        const { conversationId } = payload || {};
+        if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
+          return;
+        }
+        await markConversationAsRead(conversationId, userId);
+      } catch (error) {
+        console.error("Error handling conversation:read event:", error);
+      }
+    }
+  );
 
   // Handle leaving a conversation room
   socket.on("conversation:leave", (conversationId: string) => {
