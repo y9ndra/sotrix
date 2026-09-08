@@ -195,6 +195,18 @@ Welcome to the refined learning path for Sotrix. As a backend-focused full-stack
 
 ### Day 46
 - Automated deployment to cloud providers (AWS EC2, DigitalOcean, or Render)
+  - **Option 1: The Smart PaaS Stack (Vercel + Render + Upstash + Uptime Ping)**
+    *(Easiest setup, 100% free tier, zero Linux management)*
+
+    | Component | Free Platform | How it works for free |
+    | :--- | :--- | :--- |
+    | **Frontend** | **Vercel** | 100% free. Connect GitHub repo, builds `web/dist`, serves globally on CDN with free SSL. |
+    | **Backend API** | **Render** (Web Service) | 100% free tier. |
+    | **Background Worker** | **Render** (Merged into backend) | **The trick:** Instead of a paid separate worker service, we run the worker inside the same Node.js process as the API server (or use `concurrently` to run both `server.js` and `worker.js` in the same container). |
+    | **Keep-Alive (No Sleep)** | **UptimeRobot** / **Cron-job.org** | A free ping service that hits `https://your-api.onrender.com/health` every 10 minutes. This keeps Render awake 24/7 so workers never stop! |
+    | **Redis** | **Upstash** | 100% free serverless Redis (10,000 commands/day). Permanent, never expires or sleeps (unlike Render's Redis which expires after 25 days). |
+    | **Database** | **MongoDB Atlas** | 100% free (M0 cluster, 512MB) — already set up in your `.env`. |
+    | **Media** | **Cloudinary** | 100% free tier — already set up. |
 
 ### Day 47
 - Logging and Monitoring: Pino output logs, Prometheus metrics, and Grafana boards
