@@ -28,3 +28,10 @@ export const getMessages = async (
   });
   return response.data;
 };
+
+export const markConversationAsRead = async (
+  id: string
+): Promise<Conversation> => {
+  const response = await api.patch(`/conversations/${id}/read`);
+  return response.data.data;
+};

@@ -2792,6 +2792,19 @@ button, input, textarea, select {
   padding: 2px 8px;
 }
 
+.chat-sidebar-unread-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 6px;
+  padding: 2px 7px;
+  line-height: 1.2;
+}
+
 .chat-inbox-list {
   flex: 1;
   overflow-y: auto;
@@ -2877,7 +2890,8 @@ button, input, textarea, select {
 .chat-inbox-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 8px;
 }
 
 .chat-inbox-name {
@@ -2887,6 +2901,25 @@ button, input, textarea, select {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-inbox-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.chat-unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 7px rgba(16, 185, 129, 0.7);
+  flex-shrink: 0;
+  display: inline-block;
 }
 
 .chat-inbox-time {

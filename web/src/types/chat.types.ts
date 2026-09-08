@@ -10,6 +10,12 @@ export interface Conversation {
   _id: string;
   participants: ChatUser[];
   participantKey: string;
+  lastMessage?: {
+    content: string;
+    sender: string | ChatUser;
+    createdAt: string;
+  };
+  hasUnread?: boolean;
   createdAt: string;
   updatedAt: string;
 }

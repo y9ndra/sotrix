@@ -18,7 +18,7 @@ import { useNotificationStore } from "./store/notification.store";
 import { usePresenceStore } from "./store/presenceStore";
 import { queryKeys } from "./lib/queryKeys";
 import type { Notification } from "./types/notification.types";
-import type { ChatMessage, MessagesResponse } from "./types/chat.types";
+import type { ChatMessage, MessagesResponse, Conversation } from "./types/chat.types";
 
 import { useAuthStore } from "./store/authStore";
 
@@ -155,8 +155,40 @@ function App() {
           }
         );
 
-        // Invalidate conversations list so sidebar snippet and order updates immediately
-        queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
+        // Optimistically update conversations list cache: bump to top and mark hasUnread
+        queryClient.setQueryData<Conversation[]>(
+          queryKeys.conversations.all,
+          (old = []) => {
+            const currentUserId = user?._id || (user as any)?.id;
+            const senderId =
+              typeof newMsg.sender === "string"
+                ? newMsg.sender
+                : newMsg.sender?._id || (newMsg.sender as any)?.id;
+            const isSentByMe = senderId === currentUserId;
+
+            return old
+              .map((conv) => {
+                if (conv._id === newMsg.conversation) {
+                  return {
+                    ...conv,
+                    updatedAt: newMsg.createdAt,
+                    lastMessage: {
+                      content: newMsg.content,
+                      sender: newMsg.sender,
+                      createdAt: newMsg.createdAt,
+                    },
+                    hasUnread: isSentByMe ? false : true,
+                  };
+                }
+                return conv;
+              })
+              .sort(
+                (a, b) =>
+                  new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+              );
+          }
+        );
+
         queryClient.invalidateQueries({
           queryKey: queryKeys.conversations.detail(newMsg.conversation),
         });

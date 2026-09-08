@@ -5,7 +5,12 @@ import { useAuthStore } from "../store/authStore";
 import { usePresenceStore } from "../store/presenceStore";
 import { getSocket } from "../services/socket.service";
 import { queryKeys } from "../lib/queryKeys";
-import { getConversations, getConversation, getMessages } from "../services/chat.service";
+import {
+  getConversations,
+  getConversation,
+  getMessages,
+  markConversationAsRead,
+} from "../services/chat.service";
 import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.types";
 
 const Messages: React.FC = () => {
@@ -149,6 +154,8 @@ const Messages: React.FC = () => {
 
     // Handle new incoming canonical message
     const handleNewMessage = (newMsg: ChatMessage) => {
+      const isCurrentConversation = newMsg.conversation === selectedConversationId;
+
       queryClient.setQueryData<MessagesResponse>(
         queryKeys.conversations.messages(newMsg.conversation),
         (oldData) => {
@@ -170,8 +177,48 @@ const Messages: React.FC = () => {
         }
       );
 
-      // Invalidate conversations list to bubble up updatedAt timestamp
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
+      // Update conversations list cache: bump to top and update hasUnread & lastMessage
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) => {
+          const senderId =
+            typeof newMsg.sender === "string"
+              ? newMsg.sender
+              : newMsg.sender?._id || (newMsg.sender as any)?.id;
+          const isSentByMe = senderId === currentUserId;
+
+          return old
+            .map((conv) => {
+              if (conv._id === newMsg.conversation) {
+                return {
+                  ...conv,
+                  updatedAt: newMsg.createdAt,
+                  lastMessage: {
+                    content: newMsg.content,
+                    sender: newMsg.sender,
+                    createdAt: newMsg.createdAt,
+                  },
+                  hasUnread: isSentByMe
+                    ? false
+                    : isCurrentConversation
+                    ? false
+                    : true,
+                };
+              }
+              return conv;
+            })
+            .sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            );
+        }
+      );
+
+      // If we are actively viewing this conversation, mark as read on backend
+      if (isCurrentConversation) {
+        markConversationAsRead(newMsg.conversation).catch(console.error);
+        socket.emit("conversation:read", { conversationId: newMsg.conversation });
+      }
     };
 
     // Handle typing events
@@ -262,7 +309,42 @@ const Messages: React.FC = () => {
   const handleSelectConversation = (id: string) => {
     setSelectedConversationId(id);
     setSearchParams({ conversationId: id });
+
+    // Mark as read in local cache immediately
+    queryClient.setQueryData<Conversation[]>(
+      queryKeys.conversations.all,
+      (old = []) =>
+        old.map((c) => (c._id === id ? { ...c, hasUnread: false } : c))
+    );
+
+    // Call backend API and emit socket event
+    markConversationAsRead(id).catch(console.error);
+    const socket = getSocket();
+    if (socket) {
+      socket.emit("conversation:read", { conversationId: id });
+    }
   };
+
+  // Auto-mark selected conversation as read if it has unread messages
+  useEffect(() => {
+    if (selectedConversationId) {
+      const activeConv = conversations.find((c) => c._id === selectedConversationId);
+      if (activeConv?.hasUnread) {
+        queryClient.setQueryData<Conversation[]>(
+          queryKeys.conversations.all,
+          (old = []) =>
+            old.map((c) =>
+              c._id === selectedConversationId ? { ...c, hasUnread: false } : c
+            )
+        );
+        markConversationAsRead(selectedConversationId).catch(console.error);
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("conversation:read", { conversationId: selectedConversationId });
+        }
+      }
+    }
+  }, [selectedConversationId, conversations, queryClient]);
 
   const handleBackToList = () => {
     setSelectedConversationId(null);
@@ -276,6 +358,8 @@ const Messages: React.FC = () => {
     isFollowingOther && otherParticipantId && onlineUserIds.has(otherParticipantId)
   );
 
+  const unreadConversationsCount = conversations.filter((c) => c.hasUnread).length;
+
   return (
     <div
       className={`chat-page-layout ${
@@ -286,7 +370,14 @@ const Messages: React.FC = () => {
       <aside className="chat-sidebar">
         <div className="chat-sidebar-header">
           <h3 className="chat-sidebar-title">MESSAGES</h3>
-          <span className="chat-sidebar-count">({conversations.length})</span>
+          {unreadConversationsCount > 0 && (
+            <span
+              className="chat-sidebar-unread-badge"
+              title={`${unreadConversationsCount} unread`}
+            >
+              [ {unreadConversationsCount} ]
+            </span>
+          )}
         </div>
 
         <div className="chat-inbox-list">
@@ -338,14 +429,18 @@ const Messages: React.FC = () => {
                       <span className="chat-inbox-name">
                         {other?.name || other?.username || "Unknown"}
                       </span>
-                      <span className="chat-inbox-time">
-                        {new Date(conv.updatedAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
+                      <div className="chat-inbox-meta">
+                        {conv.hasUnread && (
+                          <span className="chat-unread-dot" title="Unread message" />
+                        )}
+                        <span className="chat-inbox-time">
+                          {new Date(conv.updatedAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
                     </div>
-                    <span className="chat-inbox-username">@{other?.username}</span>
                   </div>
                 </div>
               );
@@ -411,14 +506,13 @@ const Messages: React.FC = () => {
                   >
                     {otherParticipant.name || otherParticipant.username}
                   </Link>
-                  <div className="chat-header-status">
-                    {isFollowingOther && (
+                  {isFollowingOther && (
+                    <div className="chat-header-status">
                       <span className={`status-indicator ${isOtherUserOnline ? "online" : "offline"}`}>
                         {isOtherUserOnline ? "ONLINE" : "OFFLINE"}
                       </span>
-                    )}
-                    <span className="chat-header-handle">@{otherParticipant.username}</span>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </header>
@@ -431,7 +525,7 @@ const Messages: React.FC = () => {
                 </div>
               ) : displayMessages.length === 0 ? (
                 <div className="chat-empty-conversation">
-                  <p className="chat-empty-title">[ channel with @{otherParticipant.username} ]</p>
+                  <p className="chat-empty-title">[ channel with {otherParticipant.name || otherParticipant.username} ]</p>
                   <small className="chat-empty-subtitle">no messages yet. send a transmission to start the conversation.</small>
                 </div>
               ) : (
@@ -464,7 +558,7 @@ const Messages: React.FC = () => {
                 <div className="chat-message-bubble-row incoming">
                   <div className="chat-typing-indicator-bubble">
                     <span className="chat-typing-text">
-                      @{otherParticipant.username} is typing
+                      {otherParticipant.name || otherParticipant.username} is typing
                     </span>
                     <span className="chat-typing-dots">
                       <span className="typing-dot" />
@@ -482,7 +576,7 @@ const Messages: React.FC = () => {
                 type="text"
                 value={inputContent}
                 onChange={handleInputChange}
-                placeholder={`message @${otherParticipant.username}...`}
+                placeholder={`message ${otherParticipant.name || otherParticipant.username}...`}
                 className="chat-input-field"
               />
               <button
