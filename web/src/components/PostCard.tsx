@@ -7,7 +7,12 @@ import CommentList from "./CommentList";
 import { useAuthStore } from "../store/authStore";
 import { toggleFollowUser } from "../services/follow.service";
 import { queryKeys } from "../lib/queryKeys";
-import { updateAuthorInAllInfiniteCaches } from "../lib/queryCache";
+import {
+  updateAuthorInAllInfiniteCaches,
+  updatePostInAllInfiniteCaches,
+  removePostFromAllInfiniteCaches,
+} from "../lib/queryCache";
+import { updatePost, deletePost } from "../services/post.service";
 import { useLikePost } from "../hooks/useLikePost";
 
 interface PostCardProps {
@@ -18,7 +23,7 @@ interface PostCardProps {
   onFollowToggle?: (authorId: string, isFollowing: boolean) => void;
 }
 
-const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: PostCardProps) => {
+const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
@@ -45,6 +50,14 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
 
   const currentUser = useAuthStore((state) => state.user);
   const currentUserId = currentUser?._id || currentUser?.id || null;
+
+  const authorId = typeof post.author === "string"
+    ? post.author
+    : post.author?._id || (post.author as any)?.id;
+
+  const isPostOwner = typeof isOwner === "boolean"
+    ? isOwner
+    : Boolean(currentUserId && authorId && currentUserId.toString() === authorId.toString());
 
   const queryClient = useQueryClient();
   const likeMutation = useLikePost();
@@ -121,11 +134,20 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
   };
 
   const handleSaveEdit = async () => {
-    if (!onEdit || !editContent.trim()) return;
+    const trimmed = editContent.trim();
+    if (!trimmed) return;
     try {
       setLoading(true);
       setError(null);
-      await onEdit(post._id, editContent.trim());
+      if (onEdit) {
+        await onEdit(post._id, trimmed);
+      } else {
+        await updatePost(post._id, trimmed);
+        updatePostInAllInfiniteCaches(queryClient, post._id, (old) => ({
+          ...old,
+          content: trimmed,
+        }));
+      }
       setIsEditing(false);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to update post");
@@ -135,11 +157,15 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
   };
 
   const handleConfirmDelete = async () => {
-    if (!onDelete) return;
     try {
       setLoading(true);
       setError(null);
-      await onDelete(post._id);
+      if (onDelete) {
+        await onDelete(post._id);
+      } else {
+        await deletePost(post._id);
+        removePostFromAllInfiniteCaches(queryClient, post._id);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to delete post");
       setLoading(false);
@@ -175,7 +201,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
             </h3>
           </Link>
 
-          {!isOwner && post.author?._id && currentUserId !== post.author._id && !isFollowing && (
+          {!isPostOwner && post.author?._id && currentUserId !== post.author._id && !isFollowing && (
             <button
               onClick={handleToggleFollow}
               disabled={followMutation.isPending}
@@ -186,7 +212,7 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
           )}
         </div>
 
-        {isOwner && (
+        {isPostOwner && (
           <div className="post-action-link-group">
             {isDeletingConfirm ? (
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -209,17 +235,69 @@ const PostCard = ({ post, isOwner = false, onEdit, onDelete, onFollowToggle }: P
             ) : (
               <>
                 <button
-                  onClick={() => setIsEditing(!isEditing)}
+                  onClick={() => {
+                    if (isEditing) {
+                      setEditContent(post.content);
+                      setIsEditing(false);
+                    } else {
+                      setIsEditing(true);
+                    }
+                  }}
                   className="post-btn-text post-btn-text-edit"
+                  title={isEditing ? "Cancel edit" : "Edit post"}
+                  aria-label={isEditing ? "Cancel edit" : "Edit post"}
                 >
-                  {isEditing ? "cancel" : "edit"}
+                  {isEditing ? (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 1 1 3.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  )}
                 </button>
                 <button
                   onClick={() => setIsDeletingConfirm(true)}
                   disabled={loading}
                   className="post-btn-text post-btn-text-delete"
+                  title="Delete post"
+                  aria-label="Delete post"
                 >
-                  delete
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
                 </button>
               </>
             )}

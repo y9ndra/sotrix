@@ -1051,9 +1051,17 @@ button, input, textarea, select {
   font-size: 11px;
   text-transform: lowercase;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   transition: all var(--transition-fast);
+}
+
+.post-btn-text svg {
+  display: block;
 }
 
 .post-btn-text-edit {
@@ -1417,9 +1425,17 @@ button, input, textarea, select {
   font-size: 11px;
   text-transform: lowercase;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   transition: all var(--transition-fast);
+}
+
+.comment-action-btn svg {
+  display: block;
 }
 
 .comment-action-edit {

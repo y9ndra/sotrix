@@ -7,7 +7,8 @@ import { toggleFollowUser } from "../services/follow.service";
 import { getOrCreateConversation } from "../services/chat.service";
 import { queryKeys } from "../lib/queryKeys";
 import { useAuthStore } from "../store/authStore";
-import { getUserPosts } from "../services/post.service";
+import { getUserPosts, deletePost } from "../services/post.service";
+import { removePostFromAllInfiniteCaches } from "../lib/queryCache";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
 
@@ -573,7 +574,23 @@ const Profile = () => {
 
                       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                         {posts.map((post) => (
-                          <PostCard key={post._id} post={post} />
+                          <PostCard
+                            key={post._id}
+                            post={post}
+                            isOwner={isOwnProfile}
+                            onDelete={async (postId) => {
+                              await deletePost(postId);
+                              removePostFromAllInfiniteCaches(queryClient, postId);
+                              setUser((prev: any) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      postsCount: Math.max(0, (prev.postsCount ?? 1) - 1),
+                                    }
+                                  : prev
+                              );
+                            }}
+                          />
                         ))}
                       </div>
 
