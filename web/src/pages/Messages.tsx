@@ -41,11 +41,16 @@ const Messages: React.FC = () => {
     enabled: !!currentUserId,
   });
 
-  // Automatically select the first conversation in state if none selected
+  // Automatically select the first conversation on desktop screens if none selected.
+  // On mobile screens (<= 768px), keep inbox list visible by default.
   useEffect(() => {
-    if (!selectedConversationId && conversations.length > 0) {
-      const defaultId = activeConversationId || conversations[0]._id;
-      setSelectedConversationId(defaultId);
+    if (activeConversationId) {
+      setSelectedConversationId(activeConversationId);
+    } else if (!selectedConversationId && conversations.length > 0) {
+      const isMobile = window.innerWidth <= 768;
+      if (!isMobile) {
+        setSelectedConversationId(conversations[0]._id);
+      }
     }
   }, [conversations, selectedConversationId, activeConversationId]);
 
@@ -253,6 +258,11 @@ const Messages: React.FC = () => {
     setSearchParams({ conversationId: id });
   };
 
+  const handleBackToList = () => {
+    setSelectedConversationId(null);
+    setSearchParams({});
+  };
+
   const otherParticipantId =
     otherParticipant?._id?.toString() || (otherParticipant as any)?.id?.toString() || "";
   const isOtherUserOnline = Boolean(
@@ -260,7 +270,11 @@ const Messages: React.FC = () => {
   );
 
   return (
-    <div className="chat-page-layout">
+    <div
+      className={`chat-page-layout ${
+        selectedConversationId ? "has-active-chat" : "no-active-chat"
+      }`}
+    >
       {/* Sidebar: Conversation List */}
       <aside className="chat-sidebar">
         <div className="chat-sidebar-header">
@@ -337,6 +351,27 @@ const Messages: React.FC = () => {
             {/* Chat Header */}
             <header className="chat-header">
               <div className="chat-header-user">
+                <button
+                  type="button"
+                  onClick={handleBackToList}
+                  className="chat-back-btn"
+                  aria-label="Back to conversations list"
+                  title="Back to conversations"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                  </svg>
+                </button>
                 <div className="chat-avatar-wrapper">
                   {otherParticipant.profilePicUrl ? (
                     <img

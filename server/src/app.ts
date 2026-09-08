@@ -51,7 +51,7 @@ app.get('/', (req: Request, res: Response) => {
   res.status(200).send("Welcome to Sotrix");
 });
 
-app.get('/health', (req: Request, res: Response) => {
+app.get(['/health', '/api/health'], (req: Request, res: Response) => {
   res.status(200).json({
     status: 'success',
     message: 'Sotrix Backend is running smoothly',

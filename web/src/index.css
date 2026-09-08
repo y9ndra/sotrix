@@ -2449,6 +2449,111 @@ button, input, textarea, select {
   .post-action-text {
     display: none !important;
   }
+
+  /* ==========================================================================
+     Messages / Chat Mobile Layout
+     ========================================================================== */
+  .chat-page-layout {
+    height: calc(100% - 56px) !important;
+    width: 100% !important;
+    position: relative;
+  }
+
+  /* When no chat is selected on mobile: show inbox list full-width */
+  .chat-page-layout.no-active-chat .chat-sidebar {
+    display: flex !important;
+    width: 100% !important;
+    border-right: none;
+  }
+  .chat-page-layout.no-active-chat .chat-main-panel {
+    display: none !important;
+  }
+
+  /* When an active chat is selected on mobile: hide sidebar, show chat panel full-width */
+  .chat-page-layout.has-active-chat .chat-sidebar {
+    display: none !important;
+  }
+  .chat-page-layout.has-active-chat .chat-main-panel {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  /* Mobile back button visible in chat header */
+  .chat-back-btn {
+    display: flex !important;
+  }
+
+  .chat-header {
+    padding: 10px 12px;
+  }
+
+  .chat-header-user {
+    gap: 10px;
+  }
+
+  .chat-avatar-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .chat-avatar-fallback {
+    font-size: 14px;
+  }
+
+  .chat-header-name {
+    font-size: 14px;
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chat-header-status {
+    font-size: 10px;
+    gap: 6px;
+  }
+
+  .chat-messages-container {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .chat-message-bubble {
+    max-width: 85%;
+    padding: 8px 12px;
+  }
+
+  .chat-message-text {
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  .chat-input-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .chat-input-field {
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+
+  .chat-send-btn {
+    padding: 9px 14px;
+    font-size: 11px;
+  }
+
+  .chat-inbox-item {
+    padding: 12px 14px;
+  }
+
+  .chat-inbox-name {
+    font-size: 13.5px;
+  }
+
+  .chat-inbox-username {
+    font-size: 11.5px;
+  }
 }
 
 /* Enlarged Avatar Modal Styles */
@@ -2514,7 +2619,7 @@ button, input, textarea, select {
    ========================================================================== */
 .chat-page-layout {
   display: flex;
-  height: calc(100vh - 64px);
+  height: 100%;
   width: 100%;
   overflow: hidden;
   background-color: var(--bg-matrix);
@@ -2702,6 +2807,25 @@ button, input, textarea, select {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.chat-back-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  margin-left: -4px;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.chat-back-btn:hover {
+  color: var(--accent-matrix);
+  background-color: var(--bg-hover);
 }
 
 .chat-header-user {
