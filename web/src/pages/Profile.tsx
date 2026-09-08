@@ -390,7 +390,7 @@ const Profile = () => {
                 <>
                   {/* Header Row: Avatar, Name, Handle on the left; Action on the right */}
                   <div className="profile-header-row">
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <div className="profile-header-left">
                       <div
                         className="profile-avatar-large"
                         style={{
@@ -415,7 +415,7 @@ const Profile = () => {
                           )}
                         </div>
                       </div>
-                      <div>
+                      <div className="profile-header-user-meta">
                         <h1 className="profile-name">
                           {user.name || user.username}
                         </h1>
@@ -426,9 +426,14 @@ const Profile = () => {
                     </div>
 
                     {/* Action Button: Edit Profile (for self) or Follow/Unfollow (for others) */}
-                    <div>
+                    <div className="profile-header-actions">
                       {isOwnProfile ? (
-                        <button onClick={handleStartEdit} className="profile-action-btn">
+                        <button
+                          onClick={handleStartEdit}
+                          className="profile-action-btn profile-edit-btn"
+                          title="Edit profile"
+                          aria-label="Edit profile"
+                        >
                           <svg
                             style={{ width: "14px", height: "14px", stroke: "currentColor" }}
                             fill="none"
@@ -441,7 +446,7 @@ const Profile = () => {
                               d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
                             />
                           </svg>
-                          edit profile
+                          <span className="profile-btn-text">edit profile</span>
                         </button>
                       ) : (
                         <button

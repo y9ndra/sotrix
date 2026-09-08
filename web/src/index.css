@@ -2154,8 +2154,28 @@ button, input, textarea, select {
 .profile-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 16px;
+  gap: 16px;
+}
+
+.profile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-header-user-meta {
+  min-width: 0;
+}
+
+.profile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .profile-avatar-large {
@@ -2187,9 +2207,11 @@ button, input, textarea, select {
   text-transform: lowercase;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  line-height: 1;
   transition: all var(--transition-fast);
 }
 
@@ -2441,14 +2463,61 @@ button, input, textarea, select {
 
   /* Profile page responsive wrapping */
   .profile-header-row {
-    flex-direction: column;
+    flex-direction: row !important;
+    justify-content: space-between !important;
     align-items: flex-start !important;
-    gap: 16px;
+    gap: 12px !important;
+  }
+
+  .profile-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .profile-avatar-large {
+    width: 76px;
+    height: 76px;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  .profile-name {
+    font-size: 18px;
+  }
+
+  .profile-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .profile-action-btn {
-    width: 100%;
+    width: auto;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .profile-action-btn.profile-edit-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
     justify-content: center;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .profile-action-btn.profile-edit-btn .profile-btn-text {
+    display: none !important;
+  }
+
+  .profile-action-btn.profile-edit-btn svg {
+    width: 15px;
+    height: 15px;
   }
 
   .profile-stats-bar {
