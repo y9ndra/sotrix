@@ -416,8 +416,8 @@ const Messages: React.FC = () => {
                 </div>
               ) : displayMessages.length === 0 ? (
                 <div className="chat-empty-conversation">
-                  <p>Encrypted channel opened with @{otherParticipant.username}.</p>
-                  <small>Send a message to initiate communication.</small>
+                  <p className="chat-empty-title">[ channel with @{otherParticipant.username} ]</p>
+                  <small className="chat-empty-subtitle">no messages yet. send a transmission to start the conversation.</small>
                 </div>
               ) : (
                 displayMessages.map((msg) => {
@@ -467,7 +467,7 @@ const Messages: React.FC = () => {
                 type="text"
                 value={inputContent}
                 onChange={handleInputChange}
-                placeholder={`Message @${otherParticipant.username}...`}
+                placeholder={`message @${otherParticipant.username}...`}
                 className="chat-input-field"
               />
               <button
@@ -475,15 +475,31 @@ const Messages: React.FC = () => {
                 disabled={!inputContent.trim()}
                 className="chat-send-btn"
               >
-                SEND
+                Send
               </button>
             </form>
           </>
         ) : (
           <div className="chat-placeholder-state">
-            <div className="chat-placeholder-icon">💬</div>
-            <h3>SELECT A CONVERSATION</h3>
-            <p>Choose an ongoing transmission from the left or message a creator to begin.</p>
+            <div className="chat-placeholder-box">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="chat-placeholder-svg"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <h3 className="chat-placeholder-title">[ select conversation ]</h3>
+              <p className="chat-placeholder-desc">
+                Choose an ongoing channel from the sidebar or message a creator to begin communication.
+              </p>
+            </div>
           </div>
         )}
       </main>
