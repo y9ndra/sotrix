@@ -64,7 +64,7 @@ function Homepage() {
       <div className="dashboard-container">
         {/* Welcome Section */}
         <div className="home-welcome">
-          <h2>Yo <span className="welcome-highlight">@{user.username}</span>, what we got tdy?</h2>
+          <h2>Yo <span className="welcome-highlight">{user.name?.trim() || user.username}</span>, what's on your mind?</h2>
         </div>
 
         {/* Create Post composer */}

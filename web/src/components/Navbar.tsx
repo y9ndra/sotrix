@@ -62,16 +62,16 @@ function Navbar() {
                 
                 <ul className="nav-spaces">
                     <li>
-                        <Link to="/" className="nav-space-link">home</Link>
+                        <Link to="/" className={`nav-space-link ${location.pathname === "/" ? "active" : ""}`}>home</Link>
                     </li>
                     {isAuthenticated && (
                         <li>
-                            <Link to="/explore" className="nav-space-link">discover</Link>
+                            <Link to="/explore" className={`nav-space-link ${location.pathname.startsWith("/explore") ? "active" : ""}`}>discover</Link>
                         </li>
                     )}
                     {isAuthenticated && (
                         <li>
-                            <Link to="/search" className="nav-space-link">search</Link>
+                            <Link to="/search" className={`nav-space-link ${location.pathname.startsWith("/search") ? "active" : ""}`}>search</Link>
                         </li>
                     )}
                     {isAuthenticated && (
@@ -81,7 +81,7 @@ function Navbar() {
                     )}
                     {isAuthenticated && (
                         <li>
-                            <Link to={currentUserId ? `/profile/${currentUserId}` : "/"} className="nav-space-link">profile</Link>
+                            <Link to={currentUserId ? `/profile/${currentUserId}` : "/"} className={`nav-space-link ${location.pathname.startsWith("/profile") ? "active" : ""}`}>profile</Link>
                         </li>
                     )}
                 </ul>
@@ -89,7 +89,7 @@ function Navbar() {
                 <ul className="nav-utilities">
                     {isAuthenticated && (
                         <li>
-                            <Link to="/notifications" className="nav-utility-link" title="Notifications">
+                            <Link to="/notifications" className={`nav-utility-link ${location.pathname.startsWith("/notifications") ? "active" : ""}`} title="Notifications">
                                 <span className="nav-icon">🔔</span>
                                 {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
                             </Link>
@@ -103,8 +103,8 @@ function Navbar() {
                         </li>
                     ) : (
                         <>
-                            <li><Link to="/login" className="nav-space-link">login</Link></li>
-                            <li><Link to="/signup" className="nav-space-link">signup</Link></li>
+                            <li><Link to="/login" className={`nav-space-link ${location.pathname === "/login" ? "active" : ""}`}>login</Link></li>
+                            <li><Link to="/signup" className={`nav-space-link ${location.pathname === "/signup" ? "active" : ""}`}>signup</Link></li>
                         </>
                     )}
                 </ul>
