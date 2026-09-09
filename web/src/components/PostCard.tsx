@@ -356,19 +356,21 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
             onClick={handleToggleLike}
             disabled={likeMutation.isPending}
             className={`post-action-btn ${liked ? "liked" : ""}`}
+            title={liked ? "Unlike" : "Like"}
+            aria-label={liked ? "Unlike post" : "Like post"}
           >
-            <span>{liked ? "❤️" : "♡"}</span>
-            <span className="post-action-text" style={{ marginLeft: "4px", marginRight: "2px" }}>like</span>
-            <span>({likeCount})</span>
+            <span className="post-action-icon">{liked ? "❤️" : "♡"}</span>
+            <span className="post-action-count">{likeCount}</span>
           </button>
 
           <button
             onClick={() => setShowComments(!showComments)}
             className={`post-action-btn ${showComments ? "comments-active" : ""}`}
+            title="Comments"
+            aria-label="Toggle comments"
           >
-            <span>💬</span>
-            <span className="post-action-text" style={{ marginLeft: "4px", marginRight: "2px" }}>comments</span>
-            <span>({commentCount})</span>
+            <span className="post-action-icon">💬</span>
+            <span className="post-action-count">{commentCount}</span>
           </button>
         </div>
       </div>
