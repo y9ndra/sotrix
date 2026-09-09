@@ -329,12 +329,12 @@ const Profile = () => {
 
                   {/* Profile Picture Upload & Live Preview Row */}
                   <div className="profile-form-group" style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "20px" }}>
-                    <div className="profile-avatar-large" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
+                    <div className="profile-avatar-large" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px", borderRadius: "50%" }}>
                       {profilePicPreview ? (
                         <img
                           src={profilePicPreview}
                           alt="Avatar preview"
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
                         />
                       ) : (
                         getInitial(editForm.name, editForm.username)
@@ -418,16 +418,17 @@ const Profile = () => {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
+                          borderRadius: "50%",
                           cursor: user.profilePicUrl ? "pointer" : "default"
                         }}
                         onClick={() => user.profilePicUrl && setIsAvatarEnlarged(true)}
                       >
-                        <div style={{ width: "100%", height: "100%", borderRadius: "10px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           {user.profilePicUrl ? (
                             <img
                               src={user.profilePicUrl}
                               alt={user.username}
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
                             />
                           ) : (
                             getInitial(user.name, user.username)
@@ -666,6 +667,7 @@ const Profile = () => {
                 crop={crop}
                 zoom={zoom}
                 aspect={1}
+                cropShape="round"
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
