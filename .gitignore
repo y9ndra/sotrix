@@ -26,6 +26,16 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Internal Planning & Development Notes
+Roadmap.md
+UI_Design_Ideas.md
+DEPLOYMENT_CHECKLIST.md
+
+# API Testing (keep local records)
+*.postman_collection.json
+*.postman_environment.json
+postman/
+
 # IDEs/Editors
 .vscode/
 .idea/
