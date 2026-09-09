@@ -1,5 +1,34 @@
+# Dependencies & Builds
 node_modules
 dist
+build
+
+# Git & CI
 .git
+.gitignore
+.github
+
+# Environment variables
 .env
+.env.*
+!.env.example
+
+# Tests & Coverage
+tests
+jest.config.js
+coverage
+*.lcov
+
+# Temporary files & logs
+uploads/*
+!uploads/.gitkeep
+logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Documentation & Meta
+README.md
+Dockerfile
+.dockerignore

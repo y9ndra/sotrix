@@ -1,7 +1,7 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HTTPServer } from "http";
 import IORedis from "ioredis";
-import { config } from "../config/env";
+import { config, allowedOrigins } from "../config/env";
 import { authenticateSocket } from "./middleware/authenticate.socket";
 import { setSocketIO } from "./socket.manager";
 import { getUserRoom } from "./socketRooms";
@@ -19,7 +19,18 @@ export const initializeSocket = (
 ): SocketIOServer => {
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: config.CLIENT_URL,
+      origin: (requestOrigin, callback) => {
+        if (!requestOrigin) return callback(null, true);
+        const normalized = requestOrigin.replace(/\/+$/, "");
+        if (
+          allowedOrigins.includes(normalized) ||
+          allowedOrigins.includes("*") ||
+          process.env.NODE_ENV !== "production"
+        ) {
+          return callback(null, true);
+        }
+        return callback(new Error("CORS origin not allowed for socket"));
+      },
       credentials: true,
     },
   });

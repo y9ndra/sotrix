@@ -18,15 +18,21 @@ async function startServer() {
     await connectDB();
     await connectRedis();
 
-    const PORT = process.env.PORT || 5000;
+    // Start inline workers if configured (e.g. single-container deployment on Render free tier)
+    if (process.env.RUN_INLINE_WORKER === "true") {
+      console.log("Starting inline BullMQ workers within server process...");
+      await import("./workers");
+    }
 
-    httpServer.listen(PORT, () => {
-      console.log(`Server is running in development mode on port ${PORT}`);
+    const PORT = Number(process.env.PORT) || 5000;
+
+    httpServer.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server is running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`);
 
       startCleanupJob();
     });
   } catch (err) {
-    console.log(err);
+    console.error("Failed to start server:", err);
     process.exit(1);
   }
 }

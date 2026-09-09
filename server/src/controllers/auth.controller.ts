@@ -6,7 +6,7 @@ import { config } from "../config/env";
 const refreshTokenCookieOptions = {
   httpOnly: true,
   secure: config.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite: (config.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/api/auth",
 };
@@ -161,10 +161,10 @@ export const logout = async (
     }
 
     res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: config.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/api/auth",
+      httpOnly: refreshTokenCookieOptions.httpOnly,
+      secure: refreshTokenCookieOptions.secure,
+      sameSite: refreshTokenCookieOptions.sameSite,
+      path: refreshTokenCookieOptions.path,
     });
 
     return res.status(200).json({
