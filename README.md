@@ -55,6 +55,7 @@
 - [Testing](#testing)
 - [Security](#security)
 - [Production Cloud Deployment](#production-cloud-deployment)
+- [Support](#support)
 - [License & Author](#license--author)
 
 ---
@@ -275,8 +276,21 @@ Sotrix is ready for zero-cost cloud deployment across free-tier providers:
 
 ---
 
+## Support
+
+If you find this project helpful or interesting, please consider giving it a star on GitHub!
+
+<p align="left">
+  <a href="https://github.com/y9ndra/sotrix">
+    <img src="https://img.shields.io/github/stars/y9ndra/sotrix?style=social" alt="Star on GitHub" />
+  </a>
+</p>
+
+---
+
 ## License & Author
 
 Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 Developed by **[Yugendhra (y9ndra)](https://github.com/y9ndra)**.
+
