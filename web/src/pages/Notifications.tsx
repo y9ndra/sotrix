@@ -208,38 +208,61 @@ const Notifications = () => {
         {error && <p style={{ color: "#ef4444", marginBottom: "16px", fontFamily: "var(--font-mono)", fontSize: "13px" }}>Failed to load notifications</p>}
 
         <div className="notifications-list">
-          {notifications.map((notification: Notification) => (
-            <div
-              key={notification._id}
-              onClick={() => handleNotificationClick(notification)}
-              className={`notification-item ${notification.read ? "read" : "unread"}`}
-            >
-              <div className="notification-content">
-                <div className="notification-avatar">
-                  {notification.actor?.username?.charAt(0).toUpperCase() || "?"}
-                </div>
-                <div className="notification-details">
-                  <div className="notification-text">
-                    <span className="notification-actor">
-                      @{notification.actor?.username || "someone"}
-                    </span>{" "}
-                    <span className="notification-action-text">
-                      {getActionText(notification.type)}
+          {notifications.map((notification: Notification) => {
+            const actorName =
+              notification.actor?.name?.trim() ||
+              notification.actor?.username ||
+              "someone";
+            const actorInitial = actorName.charAt(0).toUpperCase();
+
+            return (
+              <div
+                key={notification._id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleNotificationClick(notification)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleNotificationClick(notification);
+                  }
+                }}
+                className={`notification-item ${notification.read ? "read" : "unread"}`}
+              >
+                <div className="notification-content">
+                  <div className="notification-avatar">
+                    {notification.actor?.profilePicUrl ? (
+                      <img
+                        src={notification.actor.profilePicUrl}
+                        alt={actorName}
+                      />
+                    ) : (
+                      actorInitial
+                    )}
+                  </div>
+                  <div className="notification-details">
+                    <div className="notification-text">
+                      <span className="notification-actor">
+                        {actorName}
+                      </span>{" "}
+                      <span className="notification-action-text">
+                        {getActionText(notification.type)}
+                      </span>
+                    </div>
+                    <span className="notification-time">
+                      {new Date(notification.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <span className="notification-time">
-                    {new Date(notification.createdAt).toLocaleString()}
-                  </span>
                 </div>
-              </div>
 
-              {!notification.read && (
-                <div className="notification-status">
-                  <div className="notification-dot"></div>
-                </div>
-              )}
-            </div>
-          ))}
+                {!notification.read && (
+                  <div className="notification-status">
+                    <div className="notification-dot"></div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {notifications.length === 0 && !isLoading && (

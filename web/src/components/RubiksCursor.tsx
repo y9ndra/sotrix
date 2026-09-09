@@ -336,7 +336,7 @@ export const RubiksCursor: React.FC = () => {
 
         const isClickable = Boolean(
           target.closest(
-            "button, a, [role='button'], .chat-inbox-item, select, label, .post-action-btn, .profile-edit-btn, .nav-item, input[type='checkbox'], input[type='radio']"
+            "button, a, [role='button'], .notification-item, .chat-inbox-item, select, label, .post-action-btn, .profile-edit-btn, .profile-action-btn, .nav-item, .nav-space-link, .explore-tab-btn, input[type='checkbox'], input[type='radio'], input[type='submit'], input[type='button'], [tabindex='0']"
           )
         );
         setIsClickableHovered(isClickable);
