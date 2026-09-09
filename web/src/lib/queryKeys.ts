@@ -20,6 +20,8 @@ export const queryKeys = {
     detail: (userId: string) =>
       ["users", userId] as const,
     suggested: ["users", "suggested"] as const,
+    search: (query: string) =>
+      ["users", "search", query] as const,
   },
 
   notifications: {

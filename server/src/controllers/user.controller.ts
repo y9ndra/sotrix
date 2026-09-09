@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { getUserById, updateUserProfile, searchUsersService } from "../services/user.service";
 import { UpdateProfileInput } from "../schemas/user.schema";
-import { IdParam, SearchQuery } from "../schemas/common.schema";
+import { IdParam, SearchUsersQuery } from "../schemas/common.schema";
 
 export const getUserProfile = async (
   req: Request<IdParam>,
@@ -34,13 +34,11 @@ export const updateMyProfile = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const updatedUser = await updateUserProfile(
-      userId,
-      req.body,
-      req.file?.buffer
-    );
+    const file = req.file;
+    const updatedUser = await updateUserProfile(userId, req.body, file?.buffer);
 
     return res.status(200).json({
+      message: "Profile updated successfully",
       success: true,
       data: updatedUser,
     });
@@ -50,23 +48,24 @@ export const updateMyProfile = async (
 };
 
 export const searchUsers = async (
-  req: Request<{}, {}, {}, SearchQuery>,
+  req: Request<{}, {}, {}, any>,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
   try {
-    const { q } = req.query;
+    const { q, limit, cursor } = req.query as SearchUsersQuery;
     const currentUserId = req.user?.id;
     if (!currentUserId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const users = await searchUsersService(q, currentUserId);
+    const result = await searchUsersService(q, currentUserId, limit, cursor);
 
     return res.status(200).json({
-      users,
       success: true,
-      data: users,
+      data: result.data || result,
+      pagination: result.pagination,
+      users: result.data || result,
     });
   } catch (error) {
     next(error);

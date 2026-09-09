@@ -4,6 +4,7 @@ import Follow from "../models/follow.model";
 import redisClient from "../config/redis";
 import Post from "../models/post.model";
 import { uploadImage, deleteFromCloudinary } from "./cloudinary.service";
+import { decodeCursor, encodeCursor } from "../utils/cursor";
 
 export interface UpdateProfileInput {
   name?: string;
@@ -115,7 +116,9 @@ export const updateUserProfile = async (
 
 export const searchUsersService = async (
   query: string,
-  currentUserId: string
+  currentUserId: string,
+  limit: number = 10,
+  cursor?: string
 ) => {
   const search = query.trim().toLowerCase();
   const escapedSearch = search.replace(
@@ -127,31 +130,88 @@ export const searchUsersService = async (
     "i"
   );
 
-  const users = await User.find({
-    _id: { $ne: currentUserId },
-    $or: [
-      { username: regex },
-      { name: regex }
-    ]
-  })
-    .select("_id username name bio followersCount profilePicUrl")
-    .limit(10);
+  const filter: any = {
+    $and: [
+      { _id: { $ne: currentUserId } },
+      {
+        $or: [
+          { username: regex },
+          { name: regex },
+        ],
+      },
+    ],
+  };
+
+  if (cursor) {
+    const decoded = decodeCursor(cursor);
+    if (decoded) {
+      filter.$and.push({
+        $or: [
+          {
+            createdAt: {
+              $lt: new Date(decoded.createdAt),
+            },
+          },
+          {
+            createdAt: new Date(decoded.createdAt),
+            _id: {
+              $lt: decoded.id,
+            },
+          },
+        ],
+      });
+    }
+  }
+
+  const users = await User.find(filter)
+    .select("_id username name bio followersCount profilePicUrl createdAt")
+    .sort({
+      createdAt: -1,
+      _id: -1,
+    })
+    .limit(limit + 1);
+
+  const hasMore = users.length > limit;
+  const rawData = users.slice(0, limit);
+
+  let nextCursor: string | null = null;
+  if (hasMore && rawData.length > 0) {
+    const lastUser = rawData[rawData.length - 1];
+    const createdAtDate = (lastUser as any).createdAt
+      ? new Date((lastUser as any).createdAt)
+      : (lastUser._id as any).getTimestamp();
+    nextCursor = encodeCursor({
+      createdAt: createdAtDate.toISOString(),
+      id: lastUser._id.toString(),
+    });
+  }
 
   const followedUsers = await Follow.find({
     follower: currentUserId,
-    following: { $in: users.map((u) => u._id) },
+    following: { $in: rawData.map((u) => u._id) },
   }).select("following");
 
   const followedSet = new Set(
     followedUsers.map((f) => f.following.toString())
   );
 
-  return users.map((u) => {
+  const data = rawData.map((u) => {
     const userObj = u.toObject();
     return {
       ...userObj,
       isFollowing: followedSet.has(u._id.toString()),
     };
   });
+
+  const pagination = {
+    hasMore,
+    nextCursor,
+  };
+
+  const result: any = data;
+  result.data = data;
+  result.pagination = pagination;
+
+  return result;
 };
 

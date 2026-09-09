@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
 import UserCard from "../components/UserCard";
 import { getSuggestedUsers } from "../services/explore.service";
 import type { SuggestedUser } from "../services/explore.service";
 import { searchUsers } from "../services/user.service";
+import type { SearchUsersResponse } from "../services/user.service";
+import { queryKeys } from "../lib/queryKeys";
 
 const Search = () => {
+  const queryClient = useQueryClient();
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const lastScrollTop = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,10 +42,7 @@ const Search = () => {
 
   // State for Searching Users
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SuggestedUser[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [isSearched, setIsSearched] = useState(false);
+  const [activeSearchQuery, setActiveSearchQuery] = useState("");
 
   const fetchSuggestedUsers = async () => {
     try {
@@ -58,7 +60,7 @@ const Search = () => {
   };
 
   const loadMoreSuggestedUsers = async () => {
-    if (!usersNextCursor || !usersHasMore) return;
+    if (!usersNextCursor || !usersHasMore || usersLoading) return;
     try {
       setUsersLoading(true);
       setUsersError(null);
@@ -73,35 +75,100 @@ const Search = () => {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
+  // Infinite query for searching users
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    error: searchErrorObj,
+    fetchNextPage: loadMoreSearchUsers,
+    hasNextPage: searchHasMore,
+    isFetchingNextPage: isFetchingNextSearchPage,
+  } = useInfiniteQuery({
+    queryKey: queryKeys.users.search(activeSearchQuery),
+    queryFn: ({ pageParam }) => searchUsers(activeSearchQuery, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.nextCursor ?? undefined;
+    },
+    enabled: !!activeSearchQuery,
+  });
+
+  const searchResults = searchData?.pages.flatMap((page) => page.data) ?? [];
+  const isSearched = !!activeSearchQuery;
+  const searchError = searchErrorObj ? "Failed to search users. Please try again." : null;
+
+  // IntersectionObserver for searching users
+  const searchLoadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const element = searchLoadMoreRef.current;
+    if (!element || !searchHasMore || isFetchingNextSearchPage || !isSearched) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreSearchUsers();
+        }
+      },
+      { rootMargin: "500px" }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [searchHasMore, isFetchingNextSearchPage, loadMoreSearchUsers, isSearched]);
+
+  // IntersectionObserver for suggested users
+  const suggestedLoadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const element = suggestedLoadMoreRef.current;
+    if (!element || !usersHasMore || usersLoading || isSearched) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreSuggestedUsers();
+        }
+      },
+      { rootMargin: "500px" }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [usersHasMore, usersLoading, isSearched, usersNextCursor]);
+
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-
-    try {
-      setSearchLoading(true);
-      setSearchError(null);
-      setIsSearched(true);
-      const response = await searchUsers(searchQuery);
-      setSearchResults(response.data);
-    } catch (err) {
-      setSearchError("Failed to search users. Please try again.");
-    } finally {
-      setSearchLoading(false);
-    }
+    setActiveSearchQuery(searchQuery.trim());
   };
 
   const handleClearSearch = () => {
     setSearchQuery("");
-    setSearchResults([]);
-    setSearchError(null);
-    setIsSearched(false);
+    setActiveSearchQuery("");
   };
 
   const handleUserFollowChange = (userId: string, isFollowing: boolean) => {
     if (isFollowing) {
-      // Filter out user from suggested users list once followed
       setUsers((prev) => prev.filter((u) => u._id !== userId));
-      setSearchResults((prev) => prev.filter((u) => u._id !== userId));
+    }
+    if (activeSearchQuery) {
+      queryClient.setQueryData<InfiniteData<SearchUsersResponse>>(
+        queryKeys.users.search(activeSearchQuery),
+        (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              data: isFollowing
+                ? page.data.filter((u) => u._id !== userId)
+                : page.data.map((u) => (u._id === userId ? { ...u, isFollowing } : u)),
+            })),
+          };
+        }
+      );
     }
   };
 
@@ -157,7 +224,7 @@ const Search = () => {
           </div>
 
           {searchError && <p className="error-text">{searchError}</p>}
-          {searchLoading && <p className="explore-loading">searching users...</p>}
+          {searchLoading && !isFetchingNextSearchPage && <p className="explore-loading">searching users...</p>}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {searchResults.map((user) => (
@@ -169,9 +236,18 @@ const Search = () => {
             ))}
           </div>
 
+          {/* Infinite scroll sentinel for user search */}
+          <div ref={searchLoadMoreRef} style={{ height: "20px", margin: "10px 0" }} />
+
+          {isFetchingNextSearchPage && (
+            <p className="explore-loading" style={{ margin: "16px 0", textAlign: "center" }}>
+              loading more users...
+            </p>
+          )}
+
           {searchResults.length === 0 && !searchLoading && !searchError && (
             <p className="explore-empty-msg">
-              no users found matching "{searchQuery}"
+              no users found matching "{activeSearchQuery}"
             </p>
           )}
         </div>
@@ -195,16 +271,13 @@ const Search = () => {
             </p>
           )}
 
-          {usersLoading && <p className="explore-loading">loading users...</p>}
+          {/* Infinite scroll sentinel for suggested users */}
+          <div ref={suggestedLoadMoreRef} style={{ height: "20px", margin: "10px 0" }} />
 
-          {users.length > 0 && usersHasMore && (
-            <button
-              onClick={loadMoreSuggestedUsers}
-              disabled={usersLoading}
-              className="explore-loadmore-btn"
-            >
-              {usersLoading ? "loading..." : "load more users"}
-            </button>
+          {usersLoading && (
+            <p className="explore-loading" style={{ margin: "16px 0", textAlign: "center" }}>
+              loading users...
+            </p>
           )}
         </div>
       )}

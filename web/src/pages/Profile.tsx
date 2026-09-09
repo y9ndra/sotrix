@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
@@ -127,14 +127,36 @@ const Profile = () => {
     hasNextPage: postsHasMore,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["posts", "user", id],
+    queryKey: queryKeys.posts.userPosts(id!),
     queryFn: ({ pageParam }) => getUserPosts(id!, pageParam),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.nextCursor ?? undefined;
+    },
     enabled: !!id,
   });
 
   const posts = postsData?.pages.flatMap((page) => page.data) ?? [];
+
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const element = loadMoreRef.current;
+    if (!element || !postsHasMore || isFetchingNextPage || activeSubTab !== "posts") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreUserPosts();
+        }
+      },
+      { rootMargin: "500px" }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [postsHasMore, isFetchingNextPage, loadMoreUserPosts, activeSubTab]);
 
   const handleStartEdit = () => {
     setEditForm({
@@ -609,14 +631,13 @@ const Profile = () => {
                         <p className="explore-loading">loading posts...</p>
                       )}
 
-                      {posts.length > 0 && postsHasMore && (
-                        <button
-                          onClick={() => loadMoreUserPosts()}
-                          disabled={postsLoading || isFetchingNextPage}
-                          className="explore-loadmore-btn"
-                        >
-                          {postsLoading || isFetchingNextPage ? "loading..." : "load more posts"}
-                        </button>
+                      {/* Infinite scroll sentinel */}
+                      <div ref={loadMoreRef} style={{ height: "20px", margin: "10px 0" }} />
+
+                      {isFetchingNextPage && (
+                        <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", textAlign: "center", margin: "16px 0" }}>
+                          loading more posts...
+                        </p>
                       )}
                     </div>
                   )}

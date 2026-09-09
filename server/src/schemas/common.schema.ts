@@ -35,9 +35,25 @@ export const searchQuerySchema = z.object({
     .max(50, "Search query is too long"),
 });
 
+export const searchUsersQuerySchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .min(1, "Search query cannot be empty")
+    .max(50, "Search query is too long"),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(10),
+  cursor: z.string().optional(),
+});
+
 export type IdParam = z.infer<typeof idParamSchema>;
 export type PostIdParam = z.infer<typeof postIdParamSchema>;
 export type CommentIdParam = z.infer<typeof commentIdParamSchema>;
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
+export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;
 
