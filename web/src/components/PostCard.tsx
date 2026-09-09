@@ -55,9 +55,12 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
     ? post.author
     : post.author?._id || (post.author as any)?.id;
 
-  const isPostOwner = typeof isOwner === "boolean"
-    ? isOwner
-    : Boolean(currentUserId && authorId && currentUserId.toString() === authorId.toString());
+  const isAuthor = Boolean(
+    currentUserId && authorId && currentUserId.toString() === authorId.toString()
+  );
+
+  // Allow post management (edit/delete) only when explicitly enabled (e.g. on Profile page)
+  const canManage = Boolean(isOwner);
 
   const queryClient = useQueryClient();
   const likeMutation = useLikePost();
@@ -201,7 +204,7 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
             </h3>
           </Link>
 
-          {!isPostOwner && post.author?._id && currentUserId !== post.author._id && !isFollowing && (
+          {!isAuthor && post.author?._id && currentUserId !== post.author._id && !isFollowing && (
             <button
               onClick={handleToggleFollow}
               disabled={followMutation.isPending}
@@ -212,7 +215,7 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
           )}
         </div>
 
-        {isPostOwner && (
+        {canManage && (
           <div className="post-action-link-group">
             {isDeletingConfirm ? (
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>

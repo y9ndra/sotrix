@@ -83,18 +83,11 @@ export const getHomeFeed = async (
   const follows = await Follow.find({ follower: currentUserId }).select("following");
   const followedUserIds = follows.map((f) => f.following);
 
-  if (followedUserIds.length === 0) {
-    return {
-      data: [],
-      pagination: {
-        hasMore: false,
-        nextCursor: null,
-      },
-    };
-  }
+  // Include current user's own posts along with followed accounts
+  const authorIds = [...followedUserIds, currentUserId];
 
   const query: any = {
-    author: { $in: followedUserIds },
+    author: { $in: authorIds },
   };
 
   if (cursor) {

@@ -6,7 +6,7 @@ import { getHomeFeed } from "../controllers/feed.controller";
 
 const router = Router();
 
-// GET /api/feed -> Posts from followed users only (Authenticated)
+// GET /api/feed -> Posts from followed users and self (Authenticated)
 router.get("/", authenticate, validate(paginationQuerySchema, "query"), getHomeFeed);
 
 export default router;

@@ -47,7 +47,23 @@ function Homepage() {
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handlePostCreated = (_newPost: Post) => {
+  const handlePostCreated = (newPost: Post) => {
+    queryClient.setQueryData(queryKeys.feed, (oldData: any) => {
+      if (!oldData || !oldData.pages || oldData.pages.length === 0) {
+        return {
+          pages: [{ data: [newPost], pagination: { hasMore: false, nextCursor: null } }],
+          pageParams: [undefined],
+        };
+      }
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page: any, index: number) =>
+          index === 0
+            ? { ...page, data: [newPost, ...page.data.filter((p: any) => p._id !== newPost._id)] }
+            : page
+        ),
+      };
+    });
     queryClient.invalidateQueries({ queryKey: queryKeys.feed });
     queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
   };
