@@ -21,7 +21,7 @@ const loginSignupLimiter = rateLimit({
 // Relaxed limiter for token refreshes (authenticated by HTTP cookie)
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: isTest ? 5000 : 2, // Max 500 refresh requests per 15 minutes per IP (relaxed in tests)
+  limit: isTest ? 5000 : 100, // Max 100 refresh requests per 15 minutes per IP (relaxed in tests)
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { message: "Too many session refresh requests. Please try again later." },
