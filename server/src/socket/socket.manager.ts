@@ -8,8 +8,12 @@ let redisPub: IORedis | null = null;
 const getRedisPub = (): IORedis | null => {
   if (!redisPub && process.env.NODE_ENV !== "test") {
     try {
+      const rawRedisUrl = (process.env.REDIS_URL || "redis://localhost:6379")
+        .trim()
+        .replace(/^["']|["']$/g, "");
+
       redisPub = new IORedis(
-        process.env.REDIS_URL || "redis://localhost:6379",
+        rawRedisUrl,
         {
           maxRetriesPerRequest: 1,
           lazyConnect: false,

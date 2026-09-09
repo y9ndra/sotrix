@@ -40,8 +40,12 @@ export const initializeSocket = (
   // Setup Redis subscriber for cross-process worker event broadcasting
   if (process.env.NODE_ENV !== "test") {
     try {
+      const rawRedisUrl = (process.env.REDIS_URL || "redis://localhost:6379")
+        .trim()
+        .replace(/^["']|["']$/g, "");
+
       const redisSub = new IORedis(
-        process.env.REDIS_URL || "redis://localhost:6379",
+        rawRedisUrl,
         {
           maxRetriesPerRequest: 1,
         }
