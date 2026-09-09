@@ -65,13 +65,12 @@ Sotrix is a full-stack social web platform engineered for real-time messaging, a
 
 The application is structured into clearly separated layers: an Express REST and WebSocket gateway, background worker processes managed by BullMQ and Redis, MongoDB Atlas for persistence, and a React 19 single-page application built on Vite and TanStack Query.
 
-<!-- Screenshot Showcase Placeholder: Replace with actual UI screenshots or demo GIF -->
 <details open>
   <summary><strong>Interface Preview (Click to toggle)</strong></summary>
   <br />
   <p align="center">
-    <img src="https://images.unsplash.com/photo-1522542550221-31fd19575a2d?q=80&w=1000&auto=format&fit=crop" alt="Feed Interface Preview" width="48%" style="border-radius: 8px; margin-right: 2%;" />
-    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop" alt="Messaging Preview" width="48%" style="border-radius: 8px;" />
+    <img src="web/public/preview-feed.png" alt="Home Feed & Post Composer" width="49%" style="border-radius: 8px; margin-right: 1%;" />
+    <img src="web/public/preview-explore.png" alt="Discover & Explore Feed" width="49%" style="border-radius: 8px;" />
   </p>
 </details>
 
