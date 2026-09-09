@@ -595,12 +595,12 @@ const Messages: React.FC = () => {
             <div ref={chatMessagesContainerRef} className="chat-messages-container">
               {messagesLoading ? (
                 <div className="chat-loading-wrap">
-                  <p className="chat-loading-label">fetching transmission history...</p>
+                  <p className="chat-loading-label">loading messages...</p>
                 </div>
               ) : displayMessages.length === 0 ? (
                 <div className="chat-empty-conversation">
-                  <p className="chat-empty-title">[ channel with {otherParticipant.name || otherParticipant.username} ]</p>
-                  <small className="chat-empty-subtitle">no messages yet. send a transmission to start the conversation.</small>
+                  <p className="chat-empty-title">No messages yet</p>
+                  <small className="chat-empty-subtitle">Send a message to start the conversation.</small>
                 </div>
               ) : (
                 displayMessages.map((msg, idx) => {

@@ -90,9 +90,6 @@ const Profile = () => {
   // Lightbox Enlarged Avatar State
   const [isAvatarEnlarged, setIsAvatarEnlarged] = useState<boolean>(false);
 
-  // Sub-tabs State
-  const [activeSubTab, setActiveSubTab] = useState<"posts" | "media" | "activity">("posts");
-
   const currentUser = useAuthStore((state) => state.user);
   const setAuthUser = useAuthStore((state) => state.setUser);
   const currentUserId = currentUser?._id || currentUser?.id || null;
@@ -143,7 +140,7 @@ const Profile = () => {
 
   useEffect(() => {
     const element = loadMoreRef.current;
-    if (!element || !postsHasMore || isFetchingNextPage || activeSubTab !== "posts") return;
+    if (!element || !postsHasMore || isFetchingNextPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -156,7 +153,7 @@ const Profile = () => {
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [postsHasMore, isFetchingNextPage, loadMoreUserPosts, activeSubTab]);
+  }, [postsHasMore, isFetchingNextPage, loadMoreUserPosts]);
 
   const handleStartEdit = () => {
     setEditForm({
@@ -570,89 +567,58 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  {/* Sub-tabs Selection: POSTS, MEDIA, ACTIVITY */}
-                  <div className="explore-tabs-header" style={{ marginBottom: "24px" }}>
-                    <div className="explore-tab-nav" style={{ gap: "32px" }}>
-                      <button
-                        onClick={() => setActiveSubTab("posts")}
-                        className={`explore-tab-btn ${activeSubTab === "posts" ? "active" : ""}`}
-                      >
-                        posts
-                      </button>
-                      <button
-                        onClick={() => setActiveSubTab("media")}
-                        className={`explore-tab-btn ${activeSubTab === "media" ? "active" : ""}`}
-                      >
-                        media
-                      </button>
-                      <button
-                        onClick={() => setActiveSubTab("activity")}
-                        className={`explore-tab-btn ${activeSubTab === "activity" ? "active" : ""}`}
-                      >
-                        activity
-                      </button>
-                    </div>
+                  {/* Left-Aligned Profile Posts Header */}
+                  <div className="profile-posts-header">
+                    <h3 className="profile-posts-heading">
+                      posts
+                    </h3>
                   </div>
 
-                  {/* Tab Contents */}
-                  {activeSubTab === "posts" && (
-                    <div>
-                      {postsError && <p className="error-text">failed to load posts.</p>}
+                  {/* User Posts Timeline */}
+                  <div style={{ marginTop: "20px" }}>
+                    {postsError && <p className="error-text">failed to load posts.</p>}
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        {posts.map((post) => (
-                          <PostCard
-                            key={post._id}
-                            post={post}
-                            isOwner={isOwnProfile}
-                            onDelete={async (postId) => {
-                              await deletePost(postId);
-                              removePostFromAllInfiniteCaches(queryClient, postId);
-                              setUser((prev: any) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      postsCount: Math.max(0, (prev.postsCount ?? 1) - 1),
-                                    }
-                                  : prev
-                              );
-                            }}
-                          />
-                        ))}
-                      </div>
-
-                      {posts.length === 0 && !postsLoading && !postsError && (
-                        <p className="explore-empty-msg" style={{ marginTop: "16px" }}>
-                          no posts to display yet.
-                        </p>
-                      )}
-
-                      {postsLoading && !isFetchingNextPage && (
-                        <p className="explore-loading">loading posts...</p>
-                      )}
-
-                      {/* Infinite scroll sentinel */}
-                      <div ref={loadMoreRef} style={{ height: "20px", margin: "10px 0" }} />
-
-                      {isFetchingNextPage && (
-                        <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", textAlign: "center", margin: "16px 0" }}>
-                          loading more posts...
-                        </p>
-                      )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {posts.map((post) => (
+                        <PostCard
+                          key={post._id}
+                          post={post}
+                          isOwner={isOwnProfile}
+                          onDelete={async (postId) => {
+                            await deletePost(postId);
+                            removePostFromAllInfiniteCaches(queryClient, postId);
+                            setUser((prev: any) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    postsCount: Math.max(0, (prev.postsCount ?? 1) - 1),
+                                  }
+                                : prev
+                            );
+                          }}
+                        />
+                      ))}
                     </div>
-                  )}
 
-                  {activeSubTab === "media" && (
-                    <p className="explore-empty-msg" style={{ marginTop: "16px" }}>
-                      no media available yet.
-                    </p>
-                  )}
+                    {posts.length === 0 && !postsLoading && !postsError && (
+                      <p className="explore-empty-msg" style={{ marginTop: "24px" }}>
+                        no posts to display yet.
+                      </p>
+                    )}
 
-                  {activeSubTab === "activity" && (
-                    <p className="explore-empty-msg" style={{ marginTop: "16px" }}>
-                      no recent activity to display.
-                    </p>
-                  )}
+                    {postsLoading && !isFetchingNextPage && (
+                      <p className="explore-loading">loading posts...</p>
+                    )}
+
+                    {/* Infinite scroll sentinel */}
+                    <div ref={loadMoreRef} style={{ height: "20px", margin: "10px 0" }} />
+
+                    {isFetchingNextPage && (
+                      <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", textAlign: "center", margin: "16px 0" }}>
+                        loading more posts...
+                      </p>
+                    )}
+                  </div>
                 </>
               )}
             </div>
