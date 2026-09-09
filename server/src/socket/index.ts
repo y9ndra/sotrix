@@ -25,6 +25,7 @@ export const initializeSocket = (
         if (
           allowedOrigins.includes(normalized) ||
           allowedOrigins.includes("*") ||
+          normalized.endsWith(".vercel.app") ||
           process.env.NODE_ENV !== "production"
         ) {
           return callback(null, true);

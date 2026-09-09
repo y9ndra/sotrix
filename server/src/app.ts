@@ -32,6 +32,7 @@ app.use(
       if (
         allowedOrigins.includes(normalizedOrigin) ||
         allowedOrigins.includes("*") ||
+        normalizedOrigin.endsWith(".vercel.app") ||
         process.env.NODE_ENV !== "production"
       ) {
         return callback(null, true);
