@@ -34,9 +34,8 @@
 
 </div>
 
-<!-- Project Banner Placeholder: Replace with your custom banner (e.g. assets/banner.png or URL) -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/y9ndra/sotrix/main/web/src/assets/hero.png" alt="Sotrix Banner" width="100%" style="border-radius: 8px; max-height: 380px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop'" />
+  <img src="web/public/banner.png" alt="Sotrix Banner" width="100%" style="border-radius: 10px; max-height: 400px; object-fit: cover;" />
 </p>
 
 ---
