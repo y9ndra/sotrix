@@ -112,6 +112,34 @@ const rotateX_pos90 = (c: Cubie): Cubie => ({
   },
 });
 
+// 5. rotateZ(+90deg): Turns front/back face clockwise (looking from front)
+const rotateZ_pos90 = (c: Cubie): Cubie => ({
+  ...c,
+  x: -c.y,
+  y: c.x,
+  colors: {
+    ...c.colors,
+    R: c.colors.U,
+    D: c.colors.R,
+    L: c.colors.D,
+    U: c.colors.L,
+  },
+});
+
+// 6. rotateZ(-90deg): Turns front/back face counter-clockwise (looking from front)
+const rotateZ_neg90 = (c: Cubie): Cubie => ({
+  ...c,
+  x: c.y,
+  y: -c.x,
+  colors: {
+    ...c.colors,
+    L: c.colors.U,
+    D: c.colors.L,
+    R: c.colors.D,
+    U: c.colors.R,
+  },
+});
+
 interface MoveDef {
   id: string;
   name: string;
@@ -124,7 +152,7 @@ interface MoveDef {
 const MOVES: MoveDef[] = [
   {
     id: "TOP_CW",
-    name: "Top Row Clockwise",
+    name: "Top Row Clockwise (U)",
     match: (c) => c.y === -1,
     transform: "rotateY(-90deg)",
     apply: rotateY_neg90,
@@ -132,7 +160,7 @@ const MOVES: MoveDef[] = [
   },
   {
     id: "TOP_CCW",
-    name: "Top Row Counter-Clockwise",
+    name: "Top Row Counter-Clockwise (U')",
     match: (c) => c.y === -1,
     transform: "rotateY(90deg)",
     apply: rotateY_pos90,
@@ -140,7 +168,7 @@ const MOVES: MoveDef[] = [
   },
   {
     id: "BOTTOM_CW",
-    name: "Bottom Row Clockwise",
+    name: "Bottom Row Clockwise (D)",
     match: (c) => c.y === 1,
     transform: "rotateY(90deg)",
     apply: rotateY_pos90,
@@ -148,7 +176,7 @@ const MOVES: MoveDef[] = [
   },
   {
     id: "BOTTOM_CCW",
-    name: "Bottom Row Counter-Clockwise",
+    name: "Bottom Row Counter-Clockwise (D')",
     match: (c) => c.y === 1,
     transform: "rotateY(-90deg)",
     apply: rotateY_neg90,
@@ -156,7 +184,7 @@ const MOVES: MoveDef[] = [
   },
   {
     id: "RIGHT_DOWN",
-    name: "Right Column Down",
+    name: "Right Column Down (R')",
     match: (c) => c.x === 1,
     transform: "rotateX(-90deg)",
     apply: rotateX_neg90,
@@ -164,7 +192,7 @@ const MOVES: MoveDef[] = [
   },
   {
     id: "RIGHT_UP",
-    name: "Right Column Up",
+    name: "Right Column Up (R)",
     match: (c) => c.x === 1,
     transform: "rotateX(90deg)",
     apply: rotateX_pos90,
@@ -172,7 +200,7 @@ const MOVES: MoveDef[] = [
   },
   {
     id: "LEFT_UP",
-    name: "Left Column Up",
+    name: "Left Column Up (L')",
     match: (c) => c.x === -1,
     transform: "rotateX(90deg)",
     apply: rotateX_pos90,
@@ -180,11 +208,43 @@ const MOVES: MoveDef[] = [
   },
   {
     id: "LEFT_DOWN",
-    name: "Left Column Down",
+    name: "Left Column Down (L)",
     match: (c) => c.x === -1,
     transform: "rotateX(-90deg)",
     apply: rotateX_neg90,
     oppositeIdx: 6,
+  },
+  {
+    id: "FRONT_CW",
+    name: "Front Face Clockwise (F)",
+    match: (c) => c.z === 1,
+    transform: "rotateZ(90deg)",
+    apply: rotateZ_pos90,
+    oppositeIdx: 9,
+  },
+  {
+    id: "FRONT_CCW",
+    name: "Front Face Counter-Clockwise (F')",
+    match: (c) => c.z === 1,
+    transform: "rotateZ(-90deg)",
+    apply: rotateZ_neg90,
+    oppositeIdx: 8,
+  },
+  {
+    id: "BACK_CW",
+    name: "Back Face Clockwise (B)",
+    match: (c) => c.z === -1,
+    transform: "rotateZ(-90deg)",
+    apply: rotateZ_neg90,
+    oppositeIdx: 11,
+  },
+  {
+    id: "BACK_CCW",
+    name: "Back Face Counter-Clockwise (B')",
+    match: (c) => c.z === -1,
+    transform: "rotateZ(90deg)",
+    apply: rotateZ_pos90,
+    oppositeIdx: 10,
   },
 ];
 
