@@ -80,6 +80,10 @@ The application is structured into clearly separated layers: an Express REST and
 
 ## Key Features
 
+### REST API Surface
+- 35+ REST endpoints organized across 9 domain modules (Auth, Users, Posts, Feed & Explore, Comments, Likes, Conversations, Notifications, Health).
+- Interactive OpenAPI 3.0 schema inspection via Swagger UI at `/api-docs`.
+
 ### Authentication & Sessions
 - Dual-token setup: short-lived 15-minute access tokens with 7-day rotating refresh tokens stored in HttpOnly, secure cookies.
 - Cryptographic password hashing using bcrypt with 10 salt rounds.
