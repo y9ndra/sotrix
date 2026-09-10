@@ -3751,6 +3751,19 @@ button, input, textarea, select {
   transform: translate3d(16px, -12px, 0px) scale3d(0.55, 0.55, 0.55);
 }
 
+/* When hovering over the solve symbol button or during solving: preserve prominent size (no shrink) */
+.rubiks-cursor-wrapper.on-solve-btn .rubiks-cube-anchor,
+.rubiks-cursor-wrapper.is-solving .rubiks-cube-anchor {
+  transform: translate3d(0px, 0px, 0px) scale3d(1.18, 1.18, 1.18) !important;
+  transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.rubiks-cursor-wrapper.on-solve-btn .rubiks-pointer-dot,
+.rubiks-cursor-wrapper.is-solving .rubiks-pointer-dot {
+  transform: translate(-50%, -50%) scale(0) !important;
+  opacity: 0 !important;
+}
+
 /* 3D Isometric Scene - strictly locked angle in true 3D space */
 .rubiks-cube-scene {
   width: 26px;
@@ -3812,6 +3825,112 @@ button, input, textarea, select {
 
 .cubie-face.face-d {
   transform: rotateX(-90deg) translateZ(3.5px);
+}
+
+/* ==========================================================================
+   Rubik's Cursor Floating Solve Symbol Button (Zero Glow, Clean Minimalist)
+   ========================================================================== */
+.rubiks-solve-symbol-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 998;
+  padding: 0;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), transform 0.25s ease, opacity 0.2s ease;
+  user-select: none;
+}
+
+/* Disabled state when cube is already solved */
+.rubiks-solve-symbol-btn:disabled,
+.rubiks-solve-symbol-btn.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--border-default);
+  background-color: var(--bg-card);
+  transform: none !important;
+  pointer-events: auto;
+}
+
+.rubiks-solve-symbol-btn:disabled .rubiks-solve-symbol-icon,
+.rubiks-solve-symbol-btn.is-disabled .rubiks-solve-symbol-icon {
+  color: var(--text-muted);
+}
+
+/* Scrambled state when solve is available */
+.rubiks-solve-symbol-btn.is-scrambled {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.rubiks-solve-symbol-btn.is-scrambled:hover {
+  border-color: var(--accent-matrix);
+  background-color: var(--bg-hover);
+  transform: scale(1.08);
+}
+
+.rubiks-solve-symbol-btn.is-scrambled:active {
+  transform: scale(0.94);
+}
+
+.rubiks-solve-symbol-btn.is-scrambled:hover .rubiks-solve-symbol-icon {
+  color: var(--accent-matrix);
+}
+
+@keyframes rubiks-solve-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rubiks-solve-symbol-btn.is-solving .rubiks-solve-symbol-icon {
+  animation: rubiks-solve-spin 0.7s linear infinite;
+  color: var(--accent-matrix);
+}
+
+.rubiks-solve-symbol-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), color var(--transition-fast);
+}
+
+.rubiks-solve-symbol-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* Subtle emerald notification dot when scrambled */
+.rubiks-solve-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-matrix);
+  pointer-events: none;
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 768px) {
+  .rubiks-solve-symbol-btn {
+    display: none !important;
+  }
 }
 
 /* Settings button hover micro-interaction */

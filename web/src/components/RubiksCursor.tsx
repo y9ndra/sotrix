@@ -263,21 +263,45 @@ export const RubiksCursor: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isInputHovered, setIsInputHovered] = useState(false);
 
+  // Solve tracking state
+  const [moveCount, setMoveCount] = useState<number>(0);
+  const [isSolving, setIsSolving] = useState<boolean>(false);
+  const [isOnSolveBtn, setIsOnSolveBtn] = useState<boolean>(false);
+
   const isBusyRef = useRef(false);
-  const lastMoveIndexRef = useRef<number>(-1);
+  const isMountedRef = useRef(true);
+  const moveHistoryRef = useRef<number[]>([]);
+  const solveStepDurationRef = useRef<number>(180);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const triggerSlowMove = useCallback(() => {
-    // Cooldown lock: do not interrupt an ongoing smooth mechanical turn
+    // Cooldown lock: do not interrupt an ongoing smooth mechanical turn or solve
     if (isBusyRef.current) return;
     isBusyRef.current = true;
 
-    // Pick a move (avoid immediate inverse so it progressively scrambles & preserves state)
+    const history = moveHistoryRef.current;
     let moveIdx = Math.floor(Math.random() * MOVES.length);
-    const lastIdx = lastMoveIndexRef.current;
-    if (lastIdx !== -1 && (moveIdx === lastIdx || moveIdx === MOVES[lastIdx].oppositeIdx)) {
-      moveIdx = (moveIdx + 2) % MOVES.length;
+
+    // Keep scramble depth controlled (~6 to 9 moves) so unwinding is smooth and never endless:
+    // If already deeply scrambled (>= 8 moves), 60% chance to unwind a recent move
+    if (history.length >= 8 && Math.random() < 0.6) {
+      const lastIdx = history.pop()!;
+      moveIdx = MOVES[lastIdx].oppositeIdx;
+    } else {
+      // Normal scramble move: avoid immediate inverse of top of stack
+      const lastIdx = history.length > 0 ? history[history.length - 1] : -1;
+      if (lastIdx !== -1 && (moveIdx === lastIdx || moveIdx === MOVES[lastIdx].oppositeIdx)) {
+        moveIdx = (moveIdx + 2) % MOVES.length;
+      }
+      history.push(moveIdx);
     }
-    lastMoveIndexRef.current = moveIdx;
+
     const move = MOVES[moveIdx];
 
     // Compute exact next positions and preserved face colors
@@ -289,25 +313,107 @@ export const RubiksCursor: React.FC = () => {
     setActiveMove(move);
     setIsAnimating(false);
 
-    // Step 2: Next frame, start the slow, smooth 520ms CSS transition
+    // Step 2: Next frame, start the slow, smooth CSS transition
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        if (!isMountedRef.current) return;
         setIsAnimating(true);
 
-        // Step 3: Exactly when the 520ms rotation completes, commit new positions & colors
+        // Step 3: Exactly when rotation completes, commit new positions & colors
         setTimeout(() => {
+          if (!isMountedRef.current) return;
           setCubies(nextCubies);
           cubiesRef.current = nextCubies;
           setIsAnimating(false);
           setActiveMove(null);
+          setMoveCount(moveHistoryRef.current.length);
 
-          // Cooltime: settling pause before next move is allowed
+          // Settling pause before next move is allowed
           setTimeout(() => {
+            if (!isMountedRef.current) return;
             isBusyRef.current = false;
           }, SETTLING_COOLDOWN_MS);
         }, ANIMATION_DURATION_MS);
       });
     });
+  }, []);
+
+  // Full Speedcuber Solve: smoothly unwinds every single scramble step until 100% solved
+  const solveCube = useCallback(() => {
+    const history = [...moveHistoryRef.current];
+    if (isBusyRef.current || history.length === 0) return;
+    isBusyRef.current = true;
+    setIsSolving(true);
+
+    // Build the exact inverse sequence from last move to first move
+    const steps: MoveDef[] = [];
+    for (let i = history.length - 1; i >= 0; i--) {
+      const origIdx = history[i];
+      const inverseIdx = MOVES[origIdx].oppositeIdx;
+      steps.push(MOVES[inverseIdx]);
+    }
+
+    // Dynamic duration per move for responsive, smooth speedcuber flow
+    // 1-2 moves: ~210ms each, 3-5 moves: ~175ms each, 6+ moves: ~145ms each
+    const stepDuration = Math.max(135, Math.min(220, Math.round(1100 / Math.max(steps.length, 4))));
+    solveStepDurationRef.current = stepDuration;
+
+    const executeStep = (stepIdx: number) => {
+      if (!isMountedRef.current) return;
+
+      // When all inverse steps have played, the cube is completely solved!
+      if (stepIdx >= steps.length) {
+        const initial = createInitialCubies();
+        setCubies(initial);
+        cubiesRef.current = initial;
+        setActiveMove(null);
+        setIsAnimating(false);
+        setMoveCount(0);
+        moveHistoryRef.current = [];
+
+        // Hold the completed solid cube at prominent scale so user can admire it
+        setTimeout(() => {
+          if (!isMountedRef.current) return;
+          setIsSolving(false);
+          isBusyRef.current = false;
+        }, 260);
+        return;
+      }
+
+      const move = steps[stepIdx];
+
+      // Step 1: Mount the active rotating slice at rest
+      setActiveMove(move);
+      setIsAnimating(false);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!isMountedRef.current) return;
+          setIsAnimating(true);
+
+          setTimeout(() => {
+            if (!isMountedRef.current) return;
+
+            // Commit rotated positions and face colors
+            const nextCubies = cubiesRef.current.map((c) =>
+              move.match(c) ? move.apply(c) : c
+            );
+            cubiesRef.current = nextCubies;
+            setCubies(nextCubies);
+            setActiveMove(null);
+            setIsAnimating(false);
+            setMoveCount(steps.length - 1 - stepIdx);
+
+            // Brief 25ms breather frame between turns for crisp mechanical feel
+            setTimeout(() => {
+              executeStep(stepIdx + 1);
+            }, 25);
+          }, stepDuration);
+        });
+      });
+    };
+
+    executeStep(0);
   }, []);
 
   const lastMousePosRef = useRef<{ x: number; y: number }>({ x: -100, y: -100 });
@@ -421,7 +527,11 @@ export const RubiksCursor: React.FC = () => {
           target.isContentEditable;
         setIsInputHovered(isInput);
 
-        const isClickable = Boolean(
+        const onSolveBtn = Boolean(target.closest(".rubiks-solve-symbol-btn"));
+        setIsOnSolveBtn(onSolveBtn);
+
+        // Do not trigger clickable-hover shrink when hovering over the solve symbol button
+        const isClickable = !onSolveBtn && Boolean(
           target.closest(
             "button, a, [role='button'], .notification-item, .chat-inbox-item, select, label, .post-action-btn, .profile-edit-btn, .profile-action-btn, .nav-item, .nav-space-link, .explore-tab-btn, input[type='checkbox'], input[type='radio'], input[type='submit'], input[type='button'], [tabindex='0']"
           )
@@ -431,6 +541,15 @@ export const RubiksCursor: React.FC = () => {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
+      // Middle click (scroll wheel click) = instant solve shortcut (only when scrambled)
+      if (e.button === 1) {
+        e.preventDefault();
+        if (moveHistoryRef.current.length > 0) {
+          solveCube();
+        }
+        return;
+      }
+
       const target = e.target as HTMLElement | null;
       if (target) {
         const isInput =
@@ -438,8 +557,27 @@ export const RubiksCursor: React.FC = () => {
           target.tagName === "TEXTAREA" ||
           target.isContentEditable;
         if (isInput) return;
+        // Do not scramble when clicking on or around the solve symbol button
+        if (target.closest(".rubiks-solve-symbol-btn")) return;
       }
       triggerSlowMove();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "s" || e.key === "S") {
+        const target = e.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+        if (moveHistoryRef.current.length > 0) {
+          solveCube();
+        }
+      }
     };
 
     const handleMouseLeave = () => {
@@ -452,16 +590,18 @@ export const RubiksCursor: React.FC = () => {
 
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("keydown", handleKeyDown);
     document.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("mouseenter", handleMouseEnter);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("mouseenter", handleMouseEnter);
     };
-  }, [isEnabled, isMobileDevice, triggerSlowMove]);
+  }, [isEnabled, isMobileDevice, triggerSlowMove, solveCube]);
 
   const renderCubie = (cubie: Cubie) => {
     const x = cubie.x * 8.2;
@@ -492,43 +632,84 @@ export const RubiksCursor: React.FC = () => {
   if (!isEnabled || isMobileDevice) return null;
 
   return (
-    <div
-      ref={cursorWrapperRef}
-      className={`rubiks-cursor-wrapper ${
-        isVisible && !isInputHovered ? "visible" : "hidden"
-      } ${isClickableHovered ? "clickable-hover" : ""}`}
-      aria-hidden="true"
-    >
-      {/* Precision pointer target dot for button aiming */}
-      <div className="rubiks-pointer-target">
-        <div className="rubiks-pointer-dot" />
-      </div>
+    <>
+      <div
+        ref={cursorWrapperRef}
+        className={`rubiks-cursor-wrapper ${
+          isVisible && !isInputHovered ? "visible" : "hidden"
+        } ${isClickableHovered ? "clickable-hover" : ""} ${
+          isOnSolveBtn ? "on-solve-btn" : ""
+        } ${isSolving ? "is-solving" : ""}`}
+        aria-hidden="true"
+      >
+        {/* Precision pointer target dot for button aiming */}
+        <div className="rubiks-pointer-target">
+          <div className="rubiks-pointer-dot" />
+        </div>
 
-      {/* 3D Anchor for smooth gliding & scale3d (preserves true 3D perspective) */}
-      <div className="rubiks-cube-anchor">
-        <div className="rubiks-cube-scene">
-          {/* Stationary cubies */}
-          <div className="rubiks-slice static-slice">
-            {staticCubies.map(renderCubie)}
-          </div>
-
-          {/* Slow, mechanical rotating slice with cooltime and preserved sticker positions */}
-          {activeMove && (
-            <div
-              className="rubiks-slice active-rotating-slice"
-              style={{
-                transform: isAnimating ? activeMove.transform : "none",
-                transition: isAnimating
-                  ? `transform ${ANIMATION_DURATION_MS}ms cubic-bezier(0.35, 0.05, 0.15, 1)`
-                  : "none",
-              }}
-            >
-              {rotatingCubies.map(renderCubie)}
+        {/* 3D Anchor for smooth gliding & scale3d (preserves true 3D perspective) */}
+        <div className="rubiks-cube-anchor">
+          <div className="rubiks-cube-scene">
+            {/* Stationary cubies */}
+            <div className="rubiks-slice static-slice">
+              {staticCubies.map(renderCubie)}
             </div>
-          )}
+
+            {/* Smooth mechanical or speedcuber slice rotation */}
+            {activeMove && (
+              <div
+                className="rubiks-slice active-rotating-slice"
+                style={{
+                  transform: isAnimating ? activeMove.transform : "none",
+                  transition: isAnimating
+                    ? `transform ${isSolving ? solveStepDurationRef.current : ANIMATION_DURATION_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`
+                    : "none",
+                }}
+              >
+                {rotatingCubies.map(renderCubie)}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Floating Single Symbol Solve Button (Desktop Only, Clickable only when scrambled) */}
+      <button
+        type="button"
+        disabled={moveCount === 0 || isSolving}
+        className={`rubiks-solve-symbol-btn ${isSolving ? "is-solving" : ""} ${
+          moveCount > 0 ? "is-scrambled" : "is-disabled"
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (moveCount > 0 && !isSolving) {
+            solveCube();
+          }
+        }}
+        title={
+          moveCount > 0
+            ? "Solve Rubik's cube (or press 'S' / middle-click)"
+            : "Cube is solved (click anywhere to scramble)"
+        }
+        aria-label={moveCount > 0 ? "Solve Rubik's cube" : "Cube is solved"}
+      >
+        <span className="rubiks-solve-symbol-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="12 2.5 20.5 7.4 20.5 16.6 12 21.5 3.5 16.6 3.5 7.4" />
+            <line x1="12" y1="12" x2="12" y2="21.5" />
+            <line x1="12" y1="12" x2="20.5" y2="7.4" />
+            <line x1="12" y1="12" x2="3.5" y2="7.4" />
+            <line x1="7.75" y1="4.95" x2="16.25" y2="9.7" />
+            <line x1="16.25" y1="4.95" x2="7.75" y2="9.7" />
+            <line x1="7.75" y1="9.7" x2="7.75" y2="19.05" />
+            <line x1="3.5" y1="12" x2="12" y2="16.75" />
+            <line x1="16.25" y1="9.7" x2="16.25" y2="19.05" />
+            <line x1="12" y1="16.75" x2="20.5" y2="12" />
+          </svg>
+        </span>
+        {moveCount > 0 && <span className="rubiks-solve-dot" />}
+      </button>
+    </>
   );
 };
 
