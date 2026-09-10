@@ -593,6 +593,40 @@ button, input, textarea, select {
   opacity: 0.5;
 }
 
+.nav-messages-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 9999px;
+  padding: 0 5px;
+  margin-left: 6px;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
+}
+
+.nav-space-link:hover .nav-messages-badge {
+  background-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #34d399;
+}
+
+.nav-space-link.active .nav-messages-badge {
+  background-color: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+}
+
 .nav-utilities {
   display: flex;
   align-items: center;
@@ -2656,18 +2690,58 @@ button, input, textarea, select {
 
   .mobile-nav-link {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
     text-decoration: none;
     text-transform: lowercase;
-    padding: 8px 12px;
+    padding: 8px 8px;
     transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+    position: relative;
   }
 
   .mobile-nav-link.active {
     color: var(--text-primary);
     font-weight: 600;
     border-bottom: 2px solid var(--accent-matrix);
+  }
+
+  .mobile-messages-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 9999px;
+    padding: 0 4px;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 380px) {
+    .mobile-nav-link {
+      font-size: 11px;
+      padding: 8px 4px;
+      gap: 3px;
+    }
+    .mobile-messages-badge {
+      min-width: 14px;
+      height: 14px;
+      font-size: 8.5px;
+      padding: 0 3px;
+    }
   }
 
   /* Notifications cover full screen width on mobile devices */

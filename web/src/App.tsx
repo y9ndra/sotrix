@@ -165,6 +165,14 @@ function App() {
               typeof newMsg.sender === "string"
                 ? newMsg.sender
                 : newMsg.sender?._id || (newMsg.sender as any)?.id;
+            const exists = old.some((conv) => conv._id === newMsg.conversation);
+            if (!exists) {
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.conversations.all,
+              });
+              return old;
+            }
+
             const isSentByMe = senderId === currentUserId;
 
             return old

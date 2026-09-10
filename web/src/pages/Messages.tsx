@@ -479,14 +479,6 @@ const Messages: React.FC = () => {
       <aside className="chat-sidebar">
         <div className="chat-sidebar-header">
           <h3 className="chat-sidebar-title">MESSAGES</h3>
-          {unreadConversationsCount > 0 && (
-            <span
-              className="chat-sidebar-unread-badge"
-              title={`${unreadConversationsCount} unread`}
-            >
-              {unreadConversationsCount}
-            </span>
-          )}
         </div>
 
         <div className="chat-inbox-list">

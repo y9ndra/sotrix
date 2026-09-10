@@ -5,6 +5,8 @@ import { useNotificationStore } from '../store/notification.store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
 import { getUnreadCount } from '../services/notification.service';
+import { getConversations } from '../services/chat.service';
+import type { Conversation } from '../types/chat.types';
 
 function Navbar() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -23,6 +25,15 @@ function Navbar() {
         enabled: isAuthenticated,
         refetchInterval: 5000,
     });
+
+    const { data: conversations = [] } = useQuery<Conversation[]>({
+        queryKey: queryKeys.conversations.all,
+        queryFn: getConversations,
+        enabled: isAuthenticated,
+        staleTime: 1000 * 30,
+    });
+
+    const unreadMessagesCount = conversations.filter((c) => c.hasUnread).length;
 
     useEffect(() => {
         if (typeof unreadData?.data?.unreadCount === "number") {
@@ -58,7 +69,14 @@ function Navbar() {
                     )}
                     {isAuthenticated && (
                         <li>
-                            <Link to="/messages" className={`nav-space-link ${location.pathname.startsWith("/messages") ? "active" : ""}`}>messages</Link>
+                            <Link to="/messages" className={`nav-space-link ${location.pathname.startsWith("/messages") ? "active" : ""}`}>
+                                <span>messages</span>
+                                {unreadMessagesCount > 0 && (
+                                    <span className="nav-messages-badge" title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? 's' : ''}`}>
+                                        {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                                    </span>
+                                )}
+                            </Link>
                         </li>
                     )}
                     {isAuthenticated && (
@@ -98,7 +116,12 @@ function Navbar() {
                         search
                     </Link>
                     <Link to="/messages" className={`mobile-nav-link ${location.pathname.startsWith("/messages") ? "active" : ""}`}>
-                        messages
+                        <span>messages</span>
+                        {unreadMessagesCount > 0 && (
+                            <span className="mobile-messages-badge" title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? 's' : ''}`}>
+                                {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                            </span>
+                        )}
                     </Link>
                     <Link to={currentUserId ? `/profile/${currentUserId}` : "/"} className={`mobile-nav-link ${location.pathname.startsWith("/profile") ? "active" : ""}`}>
                         profile
