@@ -182,14 +182,6 @@ function Signup() {
         <div className="auth-link-group">
           Already have an account? <Link to="/login">Log In</Link>
         </div>
-
-        <div className="auth-back-container">
-          <button onClick={() => navigate(-1)} className="auth-back-button">
-            Back
-          </button>
-          <span>|</span>
-          <Link to="/">Back to Home</Link>
-        </div>
       </div>
     </div>
   );
