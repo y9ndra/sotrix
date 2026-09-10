@@ -12,7 +12,7 @@ import { removePostFromAllInfiniteCaches } from "../lib/queryCache";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
 import { logout } from "../api/auth.api";
-import { disconnectSocket } from "../services/socket.service";
+import { disconnectSocket, getSocket } from "../services/socket.service";
 import { removeToken } from "../services/token.service";
 import { useNotificationStore } from "../store/notification.store";
 import { useTheme } from "../context/ThemeContext";
@@ -343,6 +343,11 @@ const Profile = () => {
         }
       );
       queryClient.setQueryData(queryKeys.conversations.detail(conv._id), conv);
+
+      const socket = getSocket();
+      if (socket && conv?._id) {
+        socket.emit("conversation:join", conv._id);
+      }
 
       navigate(`/messages?conversationId=${conv._id}`);
     } catch (err: any) {

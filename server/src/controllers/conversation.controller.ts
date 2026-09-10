@@ -6,6 +6,8 @@ import {
   markConversationAsRead,
 } from "../services/conversation.service";
 import { getMessages as getMessagesService } from "../services/message.service";
+import { getSocketIO } from "../socket/socket.manager";
+import { getUserRoom } from "../socket/socketRooms";
 
 export const createOrGetConversation = async (
   req: Request,
@@ -29,6 +31,22 @@ export const createOrGetConversation = async (
     }
 
     const conversation = await getOrCreateConversation(userId, participantId);
+
+    // Broadcast new conversation to online participants and auto-join their active sockets
+    try {
+      const io = getSocketIO();
+      const convIdStr = (conversation._id || conversation.id).toString();
+      const u1Str = userId.toString();
+      const u2Str = participantId.toString();
+
+      // Auto-join active sockets of both users to conversation room
+      io.in(u1Str).in(getUserRoom(u1Str)).in(u2Str).in(getUserRoom(u2Str)).socketsJoin(convIdStr);
+
+      // Emit conversation:new event to both participants
+      io.to(u1Str).to(getUserRoom(u1Str)).to(u2Str).to(getUserRoom(u2Str)).emit("conversation:new", conversation);
+    } catch (socketErr) {
+      console.warn("Could not broadcast conversation:new event:", socketErr);
+    }
 
     return res.status(200).json({
       success: true,

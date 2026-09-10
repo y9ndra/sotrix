@@ -6,6 +6,7 @@ import { authenticateSocket } from "./middleware/authenticate.socket";
 import { setSocketIO } from "./socket.manager";
 import { getUserRoom } from "./socketRooms";
 import { registerChatHandlers } from "./chat.handler";
+import Conversation from "../models/conversation.model";
 import {
   addUserSocket,
   removeUserSocket,
@@ -90,6 +91,21 @@ export const initializeSocket = (
     console.log(
       `Socket ${socket.id} joined room: ${getUserRoom(userId)}`
     );
+
+    // Auto-join all conversation rooms the user is a participant of
+    if (userId) {
+      Conversation.find({ participants: userId })
+        .select("_id")
+        .lean()
+        .then((userConvs) => {
+          for (const conv of userConvs) {
+            socket.join((conv._id as any).toString());
+          }
+        })
+        .catch((err) => {
+          console.warn("Error auto-joining user conversation rooms:", err);
+        });
+    }
 
     // Multi-socket presence tracking
     if (userId) {

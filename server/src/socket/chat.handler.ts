@@ -122,7 +122,7 @@ export const registerChatHandlers = (
     }
   );
 
-  // Handle typing:start event (broadcast to others in room)
+  // Handle typing:start event (broadcast to conversation room and peer user rooms)
   socket.on(
     "typing:start",
     async (payload: { conversationId: string }) => {
@@ -144,8 +144,16 @@ export const registerChatHandlers = (
           return;
         }
 
-        // Broadcast only to OTHER participants in the conversation room
-        socket.to(conversationId).emit("typing:start", {
+        // Broadcast to conversation room AND each other participant's personal room
+        const participantIds = conversation.participants || [];
+        let emitter: any = socket.to(conversationId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          if (pIdStr !== userId) {
+            emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+          }
+        }
+        emitter.emit("typing:start", {
           conversationId,
           userId,
         });
@@ -155,7 +163,7 @@ export const registerChatHandlers = (
     }
   );
 
-  // Handle typing:stop event (broadcast to others in room)
+  // Handle typing:stop event (broadcast to conversation room and peer user rooms)
   socket.on(
     "typing:stop",
     async (payload: { conversationId: string }) => {
@@ -177,8 +185,16 @@ export const registerChatHandlers = (
           return;
         }
 
-        // Broadcast only to OTHER participants in the conversation room
-        socket.to(conversationId).emit("typing:stop", {
+        // Broadcast to conversation room AND each other participant's personal room
+        const participantIds = conversation.participants || [];
+        let emitter: any = socket.to(conversationId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          if (pIdStr !== userId) {
+            emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+          }
+        }
+        emitter.emit("typing:stop", {
           conversationId,
           userId,
         });

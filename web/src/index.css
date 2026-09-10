@@ -3520,6 +3520,27 @@ button, input, textarea, select {
   }
 }
 
+/* Sidebar Inbox Typing Status */
+.chat-inbox-typing-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-matrix);
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+}
+
+.chat-typing-dots.mini {
+  gap: 2px;
+}
+
+.chat-typing-dots.mini .typing-dot {
+  width: 3px;
+  height: 3px;
+}
+
 /* Chat Input Bar */
 .chat-input-bar {
   padding: 14px 18px;

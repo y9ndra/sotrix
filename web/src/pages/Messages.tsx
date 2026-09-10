@@ -104,6 +104,7 @@ const Messages: React.FC = () => {
   );
   const [inputContent, setInputContent] = useState("");
   const [remoteTypingUserId, setRemoteTypingUserId] = useState<string | null>(null);
+  const [typingConversations, setTypingConversations] = useState<Record<string, string>>({});
 
   const isTypingEmittedRef = useRef(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -229,6 +230,14 @@ const Messages: React.FC = () => {
     // Join the conversation room
     socket.emit("conversation:join", selectedConversationId);
 
+    // Re-join room on socket reconnection
+    const handleSocketConnect = () => {
+      if (selectedConversationId) {
+        socket.emit("conversation:join", selectedConversationId);
+      }
+    };
+    socket.on("connect", handleSocketConnect);
+
     // Handle new incoming canonical message
     const handleNewMessage = (newMsg: ChatMessage) => {
       const isCurrentConversation = newMsg.conversation === selectedConversationId;
@@ -306,8 +315,14 @@ const Messages: React.FC = () => {
       conversationId: string;
       userId: string;
     }) => {
-      if (conversationId === selectedConversationId && userId !== currentUserId) {
-        setRemoteTypingUserId(userId);
+      if (userId !== currentUserId) {
+        setTypingConversations((prev) => ({
+          ...prev,
+          [conversationId]: userId,
+        }));
+        if (conversationId === selectedConversationId) {
+          setRemoteTypingUserId(userId);
+        }
       }
     };
 
@@ -318,8 +333,15 @@ const Messages: React.FC = () => {
       conversationId: string;
       userId: string;
     }) => {
-      if (conversationId === selectedConversationId && userId !== currentUserId) {
-        setRemoteTypingUserId(null);
+      if (userId !== currentUserId) {
+        setTypingConversations((prev) => {
+          const next = { ...prev };
+          delete next[conversationId];
+          return next;
+        });
+        if (conversationId === selectedConversationId) {
+          setRemoteTypingUserId(null);
+        }
       }
     };
 
@@ -330,12 +352,22 @@ const Messages: React.FC = () => {
     return () => {
       // Leave room on cleanup
       socket.emit("conversation:leave", selectedConversationId);
+      socket.off("connect", handleSocketConnect);
       socket.off("message:new", handleNewMessage);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
       setRemoteTypingUserId(null);
     };
   }, [selectedConversationId, currentUserId, queryClient]);
+
+  // Sync active remote typing indicator when selected conversation changes
+  useEffect(() => {
+    if (selectedConversationId && typingConversations[selectedConversationId]) {
+      setRemoteTypingUserId(typingConversations[selectedConversationId]);
+    } else {
+      setRemoteTypingUserId(null);
+    }
+  }, [selectedConversationId, typingConversations]);
 
   // Debounced Typing input change handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -474,6 +506,7 @@ const Messages: React.FC = () => {
               const isSelected = conv._id === selectedConversationId;
               const isFollowing = Boolean(other?.isFollowing);
               const isOnline = Boolean(isFollowing && otherId && onlineUserIds.has(otherId));
+              const isTypingHere = Boolean(typingConversations[conv._id]);
 
               return (
                 <div
@@ -510,9 +543,20 @@ const Messages: React.FC = () => {
                         {conv.hasUnread && (
                           <span className="chat-unread-dot" title="Unread message" />
                         )}
-                        <span className="chat-inbox-time">
-                          {formatSidebarTimestamp(conv.updatedAt)}
-                        </span>
+                        {isTypingHere ? (
+                          <span className="chat-inbox-typing-status" title="Typing...">
+                            typing
+                            <span className="chat-typing-dots mini">
+                              <span className="typing-dot" />
+                              <span className="typing-dot" />
+                              <span className="typing-dot" />
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="chat-inbox-time">
+                            {formatSidebarTimestamp(conv.updatedAt)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

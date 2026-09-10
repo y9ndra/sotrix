@@ -195,7 +195,28 @@ function App() {
         });
       };
 
+      const handleGlobalConversationNew = (newConv: Conversation) => {
+        console.log("💬 Real-time conversation:new received:", newConv?._id);
+        queryClient.setQueryData<Conversation[]>(
+          queryKeys.conversations.all,
+          (old = []) => {
+            if (old.some((c) => c._id === newConv._id)) {
+              return old;
+            }
+            return [newConv, ...old];
+          }
+        );
+        queryClient.setQueryData(
+          queryKeys.conversations.detail(newConv._id),
+          newConv
+        );
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.conversations.all,
+        });
+      };
+
       socket.on("message:new", handleGlobalMessageNew);
+      socket.on("conversation:new", handleGlobalConversationNew);
 
       socket.on("disconnect", () => {
         console.log("Disconnected from Socket.IO server");
@@ -209,6 +230,7 @@ function App() {
         socket.off("presence:offline", handlePresenceOffline);
         socket.off("notification:new");
         socket.off("message:new", handleGlobalMessageNew);
+        socket.off("conversation:new", handleGlobalConversationNew);
         socket.off("disconnect");
         disconnectSocket();
       };
