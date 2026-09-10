@@ -37,7 +37,10 @@ function Navbar() {
     return (
         <>
             <nav className="nav-control-center">
-                <Link to="/" className="nav-logo">SOTRIX</Link>
+                <Link to="/" className="nav-logo">
+                    <img src="/sotrix-logo.svg" alt="Sotrix Logo" className="nav-logo-img" />
+                    <span>SOTRIX</span>
+                </Link>
                 
                 <ul className="nav-spaces">
                     <li>
