@@ -46,6 +46,9 @@ const Explore = () => {
     queryFn: ({ pageParam }) => getExplorePosts(pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -100,14 +103,26 @@ const Explore = () => {
     setIsPostSearched(false);
   };
 
-  const handleFollowToggleInCache = (authorId: string) => {
+  const handleFollowToggleInCache = (authorId: string, isFollowing: boolean) => {
     queryClient.setQueryData<InfiniteData<PostsResponse>>(queryKeys.posts.explore, (oldData) => {
       if (!oldData) return oldData;
       return {
         ...oldData,
         pages: oldData.pages.map((page) => ({
           ...page,
-          data: page.data.filter((p) => p.author?._id !== authorId),
+          data: page.data.map((p) => {
+            const currentAuthorId = p.author?._id || (p.author as any)?.id;
+            if (currentAuthorId === authorId && p.author) {
+              return {
+                ...p,
+                author: {
+                  ...p.author,
+                  isFollowing,
+                },
+              };
+            }
+            return p;
+          }),
         })),
       };
     });
@@ -168,11 +183,24 @@ const Explore = () => {
               <PostCard
                 key={post._id}
                 post={post}
+                showFollowToggle={true}
                 onFollowToggle={(authorId, isFollowing) => {
-                  if (isFollowing) {
-                    setPostSearchResults((prev) => prev.filter((p) => p.author?._id !== authorId));
-                    handleFollowToggleInCache(authorId);
-                  }
+                  setPostSearchResults((prev) =>
+                    prev.map((p) => {
+                      const currentAuthorId = p.author?._id || (p.author as any)?.id;
+                      if (currentAuthorId === authorId && p.author) {
+                        return {
+                          ...p,
+                          author: {
+                            ...p.author,
+                            isFollowing,
+                          },
+                        };
+                      }
+                      return p;
+                    })
+                  );
+                  handleFollowToggleInCache(authorId, isFollowing);
                 }}
               />
             ))}
@@ -193,10 +221,9 @@ const Explore = () => {
               <PostCard
                 key={post._id}
                 post={post}
+                showFollowToggle={true}
                 onFollowToggle={(authorId, isFollowing) => {
-                  if (isFollowing) {
-                    handleFollowToggleInCache(authorId);
-                  }
+                  handleFollowToggleInCache(authorId, isFollowing);
                 }}
               />
             ))}

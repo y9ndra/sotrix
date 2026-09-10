@@ -18,12 +18,20 @@ import { useLikePost } from "../hooks/useLikePost";
 interface PostCardProps {
   post: Post;
   isOwner?: boolean;
+  showFollowToggle?: boolean;
   onEdit?: (postId: string, newContent: string) => Promise<void>;
   onDelete?: (postId: string) => Promise<void>;
   onFollowToggle?: (authorId: string, isFollowing: boolean) => void;
 }
 
-const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardProps) => {
+const PostCard = ({
+  post,
+  isOwner,
+  showFollowToggle = false,
+  onEdit,
+  onDelete,
+  onFollowToggle,
+}: PostCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
@@ -75,7 +83,7 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
 
   const followMutation = useMutation({
     mutationFn: toggleFollowUser,
-    onMutate: async (authorId) => {
+    onMutate: async (targetAuthorId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.posts.all });
       await queryClient.cancelQueries({ queryKey: queryKeys.feed });
@@ -90,15 +98,15 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
       const previousQueries = [...previousPostQueries, ...previousFeedQueries];
 
       // Optimistically update follow status for all posts of this author across all infinite caches
-      updateAuthorInAllInfiniteCaches(queryClient, authorId, (author) => ({
+      updateAuthorInAllInfiniteCaches(queryClient, targetAuthorId, (author) => ({
         ...author,
-        isFollowing: !author.isFollowing,
+        isFollowing: !isFollowing,
       }));
 
       // Optimistically update local follow state
       setIsFollowing((prev) => !prev);
 
-      return { previousQueries };
+      return { previousQueries, previousIsFollowing: isFollowing };
     },
     onError: (err: any, _authorId, context) => {
       // Rollback all caches to their snapshots
@@ -109,31 +117,34 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
       }
 
       // Rollback local follow state
-      setIsFollowing(post.author?.isFollowing ?? false);
+      setIsFollowing(context?.previousIsFollowing ?? (post.author?.isFollowing ?? false));
 
       console.error("Failed to toggle follow author, rolled back:", err);
     },
-    onSuccess: (res, authorId) => {
+    onSuccess: (res, targetAuthorId) => {
+      setIsFollowing(res.following);
       if (onFollowToggle) {
-        onFollowToggle(authorId, res.following);
+        onFollowToggle(targetAuthorId, res.following);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.posts.all,
-      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.feed,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.users.suggested,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.all,
+      });
     },
   });
 
-  const handleToggleFollow = () => {
-    if (!post.author?._id || followMutation.isPending) return;
-    followMutation.mutate(post.author._id);
+  const handleToggleFollow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!authorId || followMutation.isPending) return;
+    followMutation.mutate(authorId);
   };
 
   const handleSaveEdit = async () => {
@@ -185,7 +196,7 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
       <div className="post-header">
         <div className="post-author-info">
           <Link
-            to={`/profile/${post.author?._id}`}
+            to={`/profile/${authorId || ""}`}
             className="post-author-link"
             style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", textDecoration: "none" }}
           >
@@ -204,13 +215,13 @@ const PostCard = ({ post, isOwner, onEdit, onDelete, onFollowToggle }: PostCardP
             </h3>
           </Link>
 
-          {!isAuthor && post.author?._id && currentUserId !== post.author._id && !isFollowing && (
+          {showFollowToggle && !isAuthor && authorId && (
             <button
               onClick={handleToggleFollow}
               disabled={followMutation.isPending}
-              className="post-follow-btn follow-action-unfollowed"
+              className={`post-follow-btn ${isFollowing ? "follow-action-following" : "follow-action-unfollowed"}`}
             >
-              {followMutation.isPending ? "..." : "follow"}
+              {followMutation.isPending ? "..." : isFollowing ? "following" : "follow"}
             </button>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toggleFollowUser } from "../services/follow.service";
@@ -12,23 +12,30 @@ interface UserCardProps {
 
 const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
   const queryClient = useQueryClient();
-  const [isFollowing, setIsFollowing] = useState(user.isFollowing || false);
+  const targetUserId = user._id || (user as any).id || "";
+  const [isFollowing, setIsFollowing] = useState(Boolean(user.isFollowing));
   const [followersCount, setFollowersCount] = useState(user.followersCount || 0);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setIsFollowing(Boolean(user.isFollowing));
+    setFollowersCount(user.followersCount || 0);
+  }, [user.isFollowing, user.followersCount]);
 
   const handleFollowToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (loading) return;
+    if (loading || !targetUserId) return;
 
     try {
       setLoading(true);
-      const result = await toggleFollowUser(user._id);
+      const result = await toggleFollowUser(targetUserId);
       setIsFollowing(result.following);
       setFollowersCount(result.followersCount);
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.feed });
       if (onFollowStateChange) {
-        onFollowStateChange(user._id, result.following);
+        onFollowStateChange(targetUserId, result.following);
       }
     } catch (err) {
       console.error("Failed to toggle follow status", err);
@@ -53,7 +60,7 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
     <div className="user-card">
       <div className="user-card-left">
         <div style={{ position: "relative", display: "inline-block" }}>
-          <Link to={`/profile/${user._id}`} className="user-avatar" style={{ textDecoration: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Link to={`/profile/${targetUserId}`} className="user-avatar" style={{ textDecoration: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {user.profilePicUrl ? (
               <img
                 src={user.profilePicUrl}
@@ -67,7 +74,7 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
         </div>
         <div className="user-details">
           <div className="user-meta-row">
-            <Link to={`/profile/${user._id}`} className="user-display-name" style={{ textDecoration: "none" }}>
+            <Link to={`/profile/${targetUserId}`} className="user-display-name" style={{ textDecoration: "none" }}>
               {user.name || user.username}
             </Link>
             <span className="user-username-tag">

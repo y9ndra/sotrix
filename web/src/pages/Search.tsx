@@ -150,9 +150,22 @@ const Search = () => {
   };
 
   const handleUserFollowChange = (userId: string, isFollowing: boolean) => {
-    if (isFollowing) {
-      setUsers((prev) => prev.filter((u) => u._id !== userId));
-    }
+    setUsers((prev) =>
+      prev.map((u) => {
+        const currentId = u._id || (u as any).id;
+        if (currentId === userId) {
+          const delta = isFollowing ? 1 : -1;
+          const currentCount = u.followersCount ?? 0;
+          return {
+            ...u,
+            isFollowing,
+            followersCount: Math.max(0, currentCount + delta),
+          };
+        }
+        return u;
+      })
+    );
+
     if (activeSearchQuery) {
       queryClient.setQueryData<InfiniteData<SearchUsersResponse>>(
         queryKeys.users.search(activeSearchQuery),
@@ -162,9 +175,19 @@ const Search = () => {
             ...oldData,
             pages: oldData.pages.map((page) => ({
               ...page,
-              data: isFollowing
-                ? page.data.filter((u) => u._id !== userId)
-                : page.data.map((u) => (u._id === userId ? { ...u, isFollowing } : u)),
+              data: page.data.map((u) => {
+                const currentId = u._id || (u as any).id;
+                if (currentId === userId) {
+                  const delta = isFollowing ? 1 : -1;
+                  const currentCount = u.followersCount ?? 0;
+                  return {
+                    ...u,
+                    isFollowing,
+                    followersCount: Math.max(0, currentCount + delta),
+                  };
+                }
+                return u;
+              }),
             })),
           };
         }

@@ -65,7 +65,8 @@ export const updateAuthorInAllInfiniteCaches = (
       pages: oldData.pages.map((page) => ({
         ...page,
         data: page.data.map((post) => {
-          if (post.author?._id !== authorId) {
+          const postAuthorId = post.author?._id || (post.author as any)?.id;
+          if (!postAuthorId || postAuthorId.toString() !== authorId.toString() || !post.author) {
             return post;
           }
           return {

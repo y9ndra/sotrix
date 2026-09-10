@@ -299,6 +299,8 @@ const Profile = () => {
         followersCount: result.followersCount,
       }));
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.feed });
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.userPosts(targetId) });
     } catch (err: any) {
       console.error("Failed to toggle follow status", err);
     } finally {
@@ -682,6 +684,21 @@ const Profile = () => {
                                   }
                                 : prev
                             );
+                          }}
+                          onFollowToggle={(authorId, isFollowing) => {
+                            const profileId = user?._id || user?.id || id;
+                            if (profileId && profileId.toString() === authorId.toString()) {
+                              setUser((prev: any) => {
+                                if (!prev) return prev;
+                                const delta = isFollowing ? 1 : -1;
+                                const currentCount = prev.followersCount ?? 0;
+                                return {
+                                  ...prev,
+                                  isFollowing,
+                                  followersCount: Math.max(0, currentCount + delta),
+                                };
+                              });
+                            }
                           }}
                         />
                       ))}
