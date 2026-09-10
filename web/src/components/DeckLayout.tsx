@@ -65,8 +65,8 @@ const DeckLayout = () => {
     navigate(-1);
   };
 
-  // Guard Profile space with delayed unmount matching slide transition
-  const isProfileActive = pathname.startsWith("/profile");
+  // Guard Profile space: keep rendered when on profile, or when notifications sheet is open over profile
+  const isProfileActive = pathname.startsWith("/profile") || (isNotificationsActive && activeSlot === 4);
   const [renderProfile, setRenderProfile] = useState(isProfileActive);
 
   useEffect(() => {
@@ -131,8 +131,26 @@ const DeckLayout = () => {
             <>
               <div className="sheet-header">
                 <div className="sheet-header-left">
-                  <button className="sheet-close-btn" onClick={handleCloseNotifications}>
-                    ←
+                  <button
+                    type="button"
+                    className="sheet-close-btn"
+                    onClick={handleCloseNotifications}
+                    aria-label="Back"
+                    title="Back"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="19" y1="12" x2="5" y2="12" />
+                      <polyline points="12 19 5 12 12 5" />
+                    </svg>
                   </button>
                   <h2 className="sheet-title">activity</h2>
                 </div>

@@ -1845,23 +1845,29 @@ button, input, textarea, select {
 }
 
 .sheet-close-btn {
-  background: none;
-  border: none;
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 20px;
   cursor: pointer;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  margin: 0;
+  margin-left: -6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .sheet-close-btn:hover {
   color: var(--text-primary);
-  background: none;
+  background-color: var(--bg-hover);
+  border-color: var(--border-default);
+}
+
+.sheet-close-btn:active {
+  transform: scale(0.94);
 }
 
 .sheet-title {

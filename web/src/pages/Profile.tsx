@@ -68,7 +68,12 @@ const getCroppedImg = async (
 };
 
 const Profile = () => {
-  const { id } = useParams();
+  const { id: paramId } = useParams();
+  const lastIdRef = useRef<string | undefined>(paramId);
+  if (paramId) {
+    lastIdRef.current = paramId;
+  }
+  const id = paramId || lastIdRef.current;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<any>(null);
