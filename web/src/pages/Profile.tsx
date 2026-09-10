@@ -15,6 +15,7 @@ import { logout } from "../api/auth.api";
 import { disconnectSocket } from "../services/socket.service";
 import { removeToken } from "../services/token.service";
 import { useNotificationStore } from "../store/notification.store";
+import { useTheme } from "../context/ThemeContext";
 
 // Canvas Helper Utilities for Image Cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -98,6 +99,9 @@ const Profile = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  // Theme State
+  const { theme, setTheme } = useTheme();
+
   const [cursorEnabled, setCursorEnabled] = useState<boolean>(() => {
     return localStorage.getItem("sotrix_rubiks_cursor") !== "false";
   });
@@ -731,7 +735,7 @@ const Profile = () => {
           >
             <h3 style={{ margin: 0, fontSize: "15px", fontFamily: "var(--font-mono)", color: "var(--text-primary)", fontWeight: 600 }}>adjust profile photo</h3>
             
-            <div style={{ position: "relative", width: "100%", height: "280px", backgroundColor: "#121212", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ position: "relative", width: "100%", height: "280px", backgroundColor: "var(--bg-hover)", borderRadius: "10px", overflow: "hidden" }}>
               <Cropper
                 image={imageToCrop}
                 crop={crop}
@@ -818,6 +822,65 @@ const Profile = () => {
                   </div>
                 </div>
 
+                {/* Appearance Section (Both Desktop & Mobile) */}
+                <div className="settings-group">
+                  <h4 className="settings-group-title">appearance</h4>
+                  <div className="settings-group-box">
+                    <div className="settings-row">
+                      <div>
+                        <span className="settings-row-label" style={{ display: "block" }}>interface theme</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          {theme === "light" ? "Alabaster Light Mode" : "Obsidian Dark Mode"}
+                        </span>
+                      </div>
+                      <div className="settings-theme-segmented">
+                        <button
+                          type="button"
+                          onClick={() => setTheme("dark")}
+                          className={`settings-theme-pill ${theme === "dark" ? "active" : ""}`}
+                          title="Obsidian Dark Theme"
+                          aria-label="Obsidian Dark Theme"
+                        >
+                          <svg
+                            style={{ width: "12px", height: "12px", stroke: "currentColor" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                            />
+                          </svg>
+                          <span>dark</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTheme("light")}
+                          className={`settings-theme-pill ${theme === "light" ? "active" : ""}`}
+                          title="Alabaster Light Theme"
+                          aria-label="Alabaster Light Theme"
+                        >
+                          <svg
+                            style={{ width: "12px", height: "12px", stroke: "currentColor" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                            />
+                          </svg>
+                          <span>light</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Preferences Section (Desktop Only) */}
                 <div className="settings-group desktop-only-setting">
                   <h4 className="settings-group-title">preferences</h4>
@@ -849,7 +912,9 @@ const Profile = () => {
                     </div>
                     <div className="settings-row">
                       <span className="settings-row-label">platform</span>
-                      <span className="settings-row-value">Sotrix Obsidian</span>
+                      <span className="settings-row-value">
+                        {theme === "light" ? "Sotrix Alabaster" : "Sotrix Obsidian"}
+                      </span>
                     </div>
                   </div>
                 </div>

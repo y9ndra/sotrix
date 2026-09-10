@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Colors */
+  /* Colors (Default: Obsidian Dark) */
   --bg-matrix: #000000;
   --bg-card: #0a0a0a;
   --bg-hover: #161616;
@@ -11,6 +11,12 @@
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
   --text-muted: #52525b;
+
+  --matrix-dot-color: rgba(255, 255, 255, 0.075);
+  --modal-backdrop: rgba(0, 0, 0, 0.78);
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --input-bg: #030303;
+  --input-bg-focus: #060606;
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -24,6 +30,25 @@
   --max-width-content: 600px;
 }
 
+[data-theme="light"] {
+  /* Colors (Alabaster Light) */
+  --bg-matrix: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-hover: #f1f5f9;
+  --border-default: #e2e8f0;
+  --border-active: #cbd5e1;
+  --accent-matrix: #059669; /* rich emerald with strong contrast on white */
+  --text-primary: #0f172a;  /* deep charcoal slate */
+  --text-secondary: #475569; /* readable slate */
+  --text-muted: #94a3b8;    /* crisp muted slate */
+
+  --matrix-dot-color: rgba(0, 0, 0, 0.065);
+  --modal-backdrop: rgba(15, 23, 42, 0.45);
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --input-bg: #f8fafc;
+  --input-bg-focus: #ffffff;
+}
+
 /* Reset and Foundations */
 * {
   box-sizing: border-box;
@@ -33,7 +58,7 @@
 
 html, body {
   background-color: var(--bg-matrix);
-  background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px);
+  background-image: radial-gradient(var(--matrix-dot-color) 1px, transparent 1px);
   background-size: 24px 24px;
   background-attachment: fixed;
   color: var(--text-primary);
@@ -304,7 +329,7 @@ button, input, textarea, select {
 .input-field {
   width: 100%;
   padding: 10px 12px;
-  background-color: #030303;
+  background-color: var(--input-bg);
   border: 1px solid var(--border-default);
   border-radius: 10px;
   color: var(--text-primary);
@@ -318,7 +343,7 @@ button, input, textarea, select {
 
 .input-field:focus {
   border-color: var(--border-active);
-  background-color: #060606;
+  background-color: var(--input-bg-focus);
 }
 
 .input-field:focus-visible {
@@ -709,7 +734,7 @@ button, input, textarea, select {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: #030303;
+  background-color: var(--bg-hover);
   border: 1px solid var(--border-default);
   display: flex;
   align-items: center;
@@ -1192,7 +1217,7 @@ button, input, textarea, select {
 
 .post-edit-textarea {
   width: 100%;
-  background-color: #030303;
+  background-color: var(--input-bg);
   border: 1px solid var(--border-default);
   border-radius: 10px;
   padding: 10px;
@@ -1674,8 +1699,8 @@ button, input, textarea, select {
   max-width: 100%;
   overflow: hidden;
   position: relative;
-  background-color: #000000;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px);
+  background-color: var(--bg-matrix);
+  background-image: radial-gradient(var(--matrix-dot-color) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -1777,7 +1802,7 @@ button, input, textarea, select {
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-default);
-  background-color: #0a0a0a;
+  background-color: var(--bg-card);
 }
 
 .sheet-header-left {
@@ -1819,8 +1844,8 @@ button, input, textarea, select {
 .sheet-content {
   flex: 1;
   overflow-y: auto;
-  background-color: #000000;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px);
+  background-color: var(--bg-matrix);
+  background-image: radial-gradient(var(--matrix-dot-color) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -1935,7 +1960,7 @@ button, input, textarea, select {
   position: sticky;
   top: -1px;
   z-index: 10;
-  background-color: #000000;
+  background-color: var(--bg-matrix);
   padding: 16px 0;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
 }
@@ -1978,7 +2003,7 @@ button, input, textarea, select {
 
 .explore-search-input:focus {
   border-color: var(--border-active);
-  background-color: #000000;
+  background-color: var(--bg-matrix);
 }
 
 .explore-search-clear {
@@ -2125,7 +2150,7 @@ button, input, textarea, select {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: #121212;
+  background-color: var(--bg-hover);
   border: 1px solid var(--border-default);
   color: var(--text-primary);
   display: flex;
@@ -2203,15 +2228,14 @@ button, input, textarea, select {
 }
 
 .user-follow-btn.unfollowed {
-  background-color: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
+  background-color: var(--text-primary);
+  color: var(--bg-matrix);
+  border-color: var(--text-primary);
   font-weight: 600;
 }
 
 .user-follow-btn.unfollowed:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.85);
-  border-color: rgba(255, 255, 255, 0.85);
+  opacity: 0.9;
 }
 
 .user-follow-btn.following {
@@ -2281,7 +2305,7 @@ button, input, textarea, select {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background-color: #1a1a1a;
+  background-color: var(--bg-hover);
   border: 1px solid var(--border-default);
   color: var(--text-primary);
   display: flex;
@@ -2291,7 +2315,7 @@ button, input, textarea, select {
   font-size: 36px;
   font-weight: 700;
   margin-top: 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: var(--card-shadow);
   z-index: 2;
   overflow: hidden;
 }
@@ -2328,15 +2352,14 @@ button, input, textarea, select {
 }
 
 .profile-action-btn.primary {
-  background-color: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
+  background-color: var(--text-primary);
+  color: var(--bg-matrix);
+  border-color: var(--text-primary);
   font-weight: 600;
 }
 
 .profile-action-btn.primary:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.85);
-  border-color: rgba(255, 255, 255, 0.85);
+  opacity: 0.9;
 }
 
 .profile-info {
@@ -2402,7 +2425,7 @@ button, input, textarea, select {
   line-height: 1.6;
   margin-top: 16px;
   margin-bottom: 0;
-  background-color: #121212;
+  background-color: var(--bg-hover);
   border: 1px solid var(--border-default);
   padding: 12px 16px;
   border-radius: 10px;
@@ -2459,7 +2482,7 @@ button, input, textarea, select {
 
 .profile-form-input:focus {
   border-color: var(--border-active);
-  background-color: #000000;
+  background-color: var(--bg-matrix);
 }
 
 .profile-form-textarea {
@@ -2478,7 +2501,7 @@ button, input, textarea, select {
 
 .profile-form-textarea:focus {
   border-color: var(--border-active);
-  background-color: #000000;
+  background-color: var(--bg-matrix);
 }
 
 .profile-edit-actions {
@@ -2583,7 +2606,7 @@ button, input, textarea, select {
     left: 0;
     right: 0;
     height: 56px;
-    background-color: #000000;
+    background-color: var(--bg-card);
     border-top: 1px solid var(--border-default);
     z-index: 100;
     justify-content: space-around;
@@ -3059,7 +3082,7 @@ button, input, textarea, select {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  background-color: #121212;
+  background-color: var(--bg-hover);
   border: 1px solid var(--border-default);
 }
 
@@ -3318,8 +3341,8 @@ button, input, textarea, select {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background-color: #000000;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px);
+  background-color: var(--bg-matrix);
+  background-image: radial-gradient(var(--matrix-dot-color) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -3346,14 +3369,14 @@ button, input, textarea, select {
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  background-color: #0d0d0e;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-default);
   border-radius: 20px;
   padding: 3px 12px;
   text-transform: uppercase;
   white-space: nowrap;
   user-select: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--card-shadow);
 }
 
 .chat-message-bubble-row {
@@ -3476,7 +3499,7 @@ button, input, textarea, select {
 
 .chat-input-field {
   flex: 1;
-  background-color: #000000;
+  background-color: var(--input-bg);
   border: 1px solid var(--border-default);
   border-radius: 10px;
   padding: 11px 16px;
@@ -3489,8 +3512,8 @@ button, input, textarea, select {
 
 .chat-input-field:focus {
   border-color: var(--border-active);
-  background-color: #000000;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background-color: var(--input-bg-focus);
+  box-shadow: 0 0 0 1px var(--accent-matrix);
 }
 
 .chat-input-field::placeholder {
@@ -3537,8 +3560,8 @@ button, input, textarea, select {
   justify-content: center;
   text-align: center;
   padding: 32px 20px;
-  background-color: #000000;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px);
+  background-color: var(--bg-matrix);
+  background-image: radial-gradient(var(--matrix-dot-color) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -3791,7 +3814,7 @@ button, input, textarea, select {
 .settings-modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.78);
+  background-color: var(--modal-backdrop);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
@@ -3805,10 +3828,10 @@ button, input, textarea, select {
 .settings-modal-card {
   width: 100%;
   max-width: 440px;
-  background-color: #0c0c0c;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-default);
   border-radius: 14px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35), 0 0 1px rgba(255, 255, 255, 0.12);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -3832,7 +3855,7 @@ button, input, textarea, select {
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-default);
-  background-color: #121212;
+  background-color: var(--bg-hover);
 }
 
 .settings-modal-title {
@@ -3892,7 +3915,7 @@ button, input, textarea, select {
 }
 
 .settings-group-box {
-  background-color: #131313;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-default);
   border-radius: 10px;
   overflow: hidden;
@@ -3903,7 +3926,7 @@ button, input, textarea, select {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid var(--border-default);
   font-family: var(--font-mono);
   font-size: 13px;
 }
@@ -3919,6 +3942,45 @@ button, input, textarea, select {
 .settings-row-value {
   color: var(--text-primary);
   font-weight: 500;
+}
+
+/* Theme Segmented Control */
+.settings-theme-segmented {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.settings-theme-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.settings-theme-pill:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+.settings-theme-pill.active {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-active);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* Custom toggle switch */
@@ -3939,7 +4001,7 @@ button, input, textarea, select {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: #242424;
+  background-color: var(--border-default);
   border: 1px solid var(--border-default);
   border-radius: 24px;
   transition: all 0.25s ease;
@@ -3952,7 +4014,7 @@ button, input, textarea, select {
   width: 16px;
   left: 3px;
   bottom: 3px;
-  background-color: #a1a1aa;
+  background-color: var(--text-secondary);
   border-radius: 50%;
   transition: all 0.25s ease;
 }
@@ -3964,7 +4026,7 @@ button, input, textarea, select {
 
 .settings-toggle-switch input:checked + .settings-slider:before {
   transform: translateX(18px);
-  background-color: #000000;
+  background-color: #ffffff;
 }
 
 /* Logout Button & Confirmation Box */
