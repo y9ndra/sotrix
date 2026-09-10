@@ -310,7 +310,10 @@ export const RubiksCursor: React.FC = () => {
     });
   }, []);
 
+  const lastMousePosRef = useRef<{ x: number; y: number }>({ x: -100, y: -100 });
+
   const [isEnabled, setIsEnabled] = useState<boolean>(() => {
+    // Default is Rubik's cursor (only false if explicitly set to "false")
     return localStorage.getItem("sotrix_rubiks_cursor") !== "false";
   });
 
@@ -322,6 +325,15 @@ export const RubiksCursor: React.FC = () => {
       window.matchMedia("(pointer: coarse)").matches
     );
   });
+
+  // Track global mouse position so cursor can instantly position itself when toggled on
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener("mousemove", handleGlobalMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleGlobalMouseMove);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -335,6 +347,7 @@ export const RubiksCursor: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Listen for cursor toggle custom event and storage event across tabs
   useEffect(() => {
     const handleToggle = (e: Event) => {
       const customEvent = e as CustomEvent<boolean>;
@@ -343,27 +356,54 @@ export const RubiksCursor: React.FC = () => {
           ? customEvent.detail
           : localStorage.getItem("sotrix_rubiks_cursor") !== "false";
       setIsEnabled(val);
-      if (!val) {
-        document.body.classList.add("disable-custom-cursor");
-      } else {
-        document.body.classList.remove("disable-custom-cursor");
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "sotrix_rubiks_cursor") {
+        setIsEnabled(e.newValue !== "false");
       }
     };
 
-    if (localStorage.getItem("sotrix_rubiks_cursor") === "false") {
-      document.body.classList.add("disable-custom-cursor");
-    }
-
     window.addEventListener("sotrix_cursor_toggle", handleToggle);
-    return () => window.removeEventListener("sotrix_cursor_toggle", handleToggle);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("sotrix_cursor_toggle", handleToggle);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
+  // Synchronize disable-custom-cursor class to document body & html
   useEffect(() => {
-    if (!isEnabled || isMobileDevice) return;
+    if (!isEnabled || isMobileDevice) {
+      document.documentElement.classList.add("disable-custom-cursor");
+      document.body.classList.add("disable-custom-cursor");
+    } else {
+      document.documentElement.classList.remove("disable-custom-cursor");
+      document.body.classList.remove("disable-custom-cursor");
+    }
+  }, [isEnabled, isMobileDevice]);
+
+  // Handle active cursor movement and hover interactions
+  useEffect(() => {
+    if (!isEnabled || isMobileDevice) {
+      setIsVisible(false);
+      return;
+    }
+
     const isFinePointer = window.matchMedia("(pointer: fine)").matches;
     if (!isFinePointer) return;
 
+    // Immediately snap cursor to the user's current mouse position if known
+    if (lastMousePosRef.current.x > 0 && cursorWrapperRef.current) {
+      const x = lastMousePosRef.current.x - 13;
+      const y = lastMousePosRef.current.y - 2;
+      cursorWrapperRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      setIsVisible(true);
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+
       if (!cursorWrapperRef.current) return;
 
       // Position top-front apex right under mouse pointer
@@ -371,9 +411,7 @@ export const RubiksCursor: React.FC = () => {
       const y = e.clientY - 2;
       cursorWrapperRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
 
-      if (!isVisible) {
-        setIsVisible(true);
-      }
+      setIsVisible(true);
 
       const target = e.target as HTMLElement | null;
       if (target) {
@@ -423,7 +461,7 @@ export const RubiksCursor: React.FC = () => {
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("mouseenter", handleMouseEnter);
     };
-  }, [isVisible, triggerSlowMove]);
+  }, [isEnabled, isMobileDevice, triggerSlowMove]);
 
   const renderCubie = (cubie: Cubie) => {
     const x = cubie.x * 8.2;

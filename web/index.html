@@ -10,11 +10,16 @@
     <script>
       (function() {
         try {
-          var saved = localStorage.getItem('sotrix_theme');
-          if (saved === 'light' || saved === 'dark') {
-            document.documentElement.setAttribute('data-theme', saved);
+          var savedTheme = localStorage.getItem('sotrix_theme');
+          if (savedTheme === 'light' || savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', savedTheme);
           } else {
             document.documentElement.setAttribute('data-theme', 'dark');
+          }
+
+          var savedCursor = localStorage.getItem('sotrix_rubiks_cursor');
+          if (savedCursor === 'false') {
+            document.documentElement.classList.add('disable-custom-cursor');
           }
         } catch (e) {}
       })();

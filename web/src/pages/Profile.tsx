@@ -100,19 +100,31 @@ const Profile = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   // Theme State
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   const [cursorEnabled, setCursorEnabled] = useState<boolean>(() => {
     return localStorage.getItem("sotrix_rubiks_cursor") !== "false";
   });
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "sotrix_rubiks_cursor") {
+        setCursorEnabled(e.newValue !== "false");
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const handleToggleCursor = () => {
     const nextVal = !cursorEnabled;
     setCursorEnabled(nextVal);
     localStorage.setItem("sotrix_rubiks_cursor", nextVal ? "true" : "false");
     if (!nextVal) {
+      document.documentElement.classList.add("disable-custom-cursor");
       document.body.classList.add("disable-custom-cursor");
     } else {
+      document.documentElement.classList.remove("disable-custom-cursor");
       document.body.classList.remove("disable-custom-cursor");
     }
     window.dispatchEvent(new CustomEvent("sotrix_cursor_toggle", { detail: nextVal }));
@@ -828,55 +840,44 @@ const Profile = () => {
                   <div className="settings-group-box">
                     <div className="settings-row">
                       <div>
-                        <span className="settings-row-label" style={{ display: "block" }}>interface theme</span>
+                        <span className="settings-row-label" style={{ display: "block" }}>Theme</span>
                         <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                          {theme === "light" ? "Alabaster Light Mode" : "Obsidian Dark Mode"}
+                          {theme === "light" ? "alabaster" : "obsidian"}
                         </span>
                       </div>
-                      <div className="settings-theme-segmented">
-                        <button
-                          type="button"
-                          onClick={() => setTheme("dark")}
-                          className={`settings-theme-pill ${theme === "dark" ? "active" : ""}`}
-                          title="Obsidian Dark Theme"
-                          aria-label="Obsidian Dark Theme"
-                        >
-                          <svg
-                            style={{ width: "12px", height: "12px", stroke: "currentColor" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                            />
-                          </svg>
-                          <span>dark</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setTheme("light")}
-                          className={`settings-theme-pill ${theme === "light" ? "active" : ""}`}
-                          title="Alabaster Light Theme"
-                          aria-label="Alabaster Light Theme"
-                        >
-                          <svg
-                            style={{ width: "12px", height: "12px", stroke: "currentColor" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                            />
-                          </svg>
-                          <span>light</span>
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className={`cool-capsule-toggle ${theme === "dark" ? "is-left" : "is-right"}`}
+                        title={`Current: ${theme === "dark" ? "obsidian" : "alabaster"}. Click to toggle.`}
+                        aria-label="Toggle theme"
+                      >
+                        <span className="cool-capsule-track">
+                          <span className="cool-capsule-track-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                          </span>
+                          <span className="cool-capsule-track-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <circle cx="12" cy="12" r="4" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41m14.14-14.14l-1.41 1.41" />
+                            </svg>
+                          </span>
+                        </span>
+                        <span className="cool-capsule-thumb">
+                          {theme === "dark" ? (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <circle cx="12" cy="12" r="4" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41m14.14-14.14l-1.41 1.41" />
+                            </svg>
+                          )}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -887,17 +888,60 @@ const Profile = () => {
                   <div className="settings-group-box">
                     <div className="settings-row">
                       <div>
-                        <span className="settings-row-label" style={{ display: "block" }}>3D Rubik's Cursor</span>
-                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Interactive isometric cursor</span>
+                        <span className="settings-row-label" style={{ display: "block" }}>Cursor</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          {cursorEnabled ? "rubix" : "normal"}
+                        </span>
                       </div>
-                      <label className="settings-toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={cursorEnabled}
-                          onChange={handleToggleCursor}
-                        />
-                        <span className="settings-slider" />
-                      </label>
+                      <button
+                        type="button"
+                        onClick={handleToggleCursor}
+                        className={`cool-capsule-toggle ${cursorEnabled ? "is-left" : "is-right"}`}
+                        title={`Current: ${cursorEnabled ? "rubix" : "normal"}. Click to toggle.`}
+                        aria-label="Toggle cursor"
+                      >
+                        <span className="cool-capsule-track">
+                          <span className="cool-capsule-track-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="12 2.5 20.5 7.4 20.5 16.6 12 21.5 3.5 16.6 3.5 7.4" />
+                              <line x1="12" y1="12" x2="12" y2="21.5" />
+                              <line x1="12" y1="12" x2="20.5" y2="7.4" />
+                              <line x1="12" y1="12" x2="3.5" y2="7.4" />
+                              <line x1="7.75" y1="4.95" x2="16.25" y2="9.7" />
+                              <line x1="16.25" y1="4.95" x2="7.75" y2="9.7" />
+                              <line x1="7.75" y1="9.7" x2="7.75" y2="19.05" />
+                              <line x1="3.5" y1="12" x2="12" y2="16.75" />
+                              <line x1="16.25" y1="9.7" x2="16.25" y2="19.05" />
+                              <line x1="12" y1="16.75" x2="20.5" y2="12" />
+                            </svg>
+                          </span>
+                          <span className="cool-capsule-track-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0.8" strokeLinejoin="round">
+                              <path d="M4 3l7.2 16.8 2.6-7 7-2.6L4 3z" />
+                            </svg>
+                          </span>
+                        </span>
+                        <span className="cool-capsule-thumb">
+                          {cursorEnabled ? (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="12 2.5 20.5 7.4 20.5 16.6 12 21.5 3.5 16.6 3.5 7.4" />
+                              <line x1="12" y1="12" x2="12" y2="21.5" />
+                              <line x1="12" y1="12" x2="20.5" y2="7.4" />
+                              <line x1="12" y1="12" x2="3.5" y2="7.4" />
+                              <line x1="7.75" y1="4.95" x2="16.25" y2="9.7" />
+                              <line x1="16.25" y1="4.95" x2="7.75" y2="9.7" />
+                              <line x1="7.75" y1="9.7" x2="7.75" y2="19.05" />
+                              <line x1="3.5" y1="12" x2="12" y2="16.75" />
+                              <line x1="16.25" y1="9.7" x2="16.25" y2="19.05" />
+                              <line x1="12" y1="16.75" x2="20.5" y2="12" />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0.8" strokeLinejoin="round">
+                              <path d="M4 3l7.2 16.8 2.6-7 7-2.6L4 3z" />
+                            </svg>
+                          )}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>
