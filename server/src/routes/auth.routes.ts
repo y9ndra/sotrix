@@ -9,13 +9,24 @@ const router = Router();
 
 const isTest = process.env.NODE_ENV === "test";
 
-// Strict limiter for brute-forceable credential endpoints
-const loginSignupLimiter = rateLimit({
+// Limiter for signup endpoint (50 attempts per 15 mins per IP, ignores successful signups)
+const signupLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: isTest ? 1000 : 10, // Max 10 attempts per 15 minutes per IP (relaxed in tests)
+  limit: isTest ? 1000 : 50, // Max 50 attempts per 15 minutes per IP
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { message: "Too many login or signup attempts. Please try again in 15 minutes." },
+  skipSuccessfulRequests: true,
+  message: { message: "Too many signup attempts from this IP. Please try again in 15 minutes." },
+});
+
+// Limiter for login endpoint (50 attempts per 15 mins per IP, ignores successful logins)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: isTest ? 1000 : 50, // Max 50 attempts per 15 minutes per IP
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: { message: "Too many login attempts from this IP. Please try again in 15 minutes." },
 });
 
 // Relaxed limiter for token refreshes (authenticated by HTTP cookie)
@@ -27,8 +38,8 @@ const refreshLimiter = rateLimit({
   message: { message: "Too many session refresh requests. Please try again later." },
 });
 
-router.post("/signup", loginSignupLimiter, validate(signupSchema), signup);
-router.post("/login", loginSignupLimiter, validate(loginSchema), login);
+router.post("/signup", signupLimiter, validate(signupSchema), signup);
+router.post("/login", loginLimiter, validate(loginSchema), login);
 router.post("/refresh", refreshLimiter, refresh);
 router.post("/logout", logout);
 router.get("/me", authenticate, getMe);

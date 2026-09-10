@@ -350,6 +350,27 @@ button, input, textarea, select {
   border-color: var(--text-primary);
 }
 
+.input-field.input-field-error {
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+.input-error-text {
+  display: block;
+  font-size: 11px;
+  color: #fca5a5;
+  margin-top: 5px;
+  font-family: var(--font-sans);
+}
+
+.input-helper-text {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  font-family: var(--font-sans);
+}
+
 /* Form Buttons */
 .btn {
   display: inline-flex;
