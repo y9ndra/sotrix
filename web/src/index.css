@@ -3053,17 +3053,20 @@ button, input, textarea, select {
   align-items: stretch;
   height: 100%;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   background-color: transparent;
-  padding: 20px 16px 24px 16px;
+  padding: 16px 20px 20px 20px;
   box-sizing: border-box;
   position: relative;
   gap: 16px;
 }
 
-/* Sidebar Inbox List (user names exceed to the side) */
+/* Sidebar Inbox List */
 .chat-sidebar {
-  width: 300px;
+  width: 280px;
+  min-width: 210px;
   border: 1px solid var(--border-default);
   border-radius: 10px;
   background-color: var(--bg-card);
@@ -3073,6 +3076,7 @@ button, input, textarea, select {
   overflow: hidden;
   position: relative;
   transition: border-color var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .chat-sidebar:hover {
@@ -3094,12 +3098,14 @@ button, input, textarea, select {
 }
 
 .chat-sidebar-header {
-  padding: 16px 20px;
+  padding: 16px 18px;
   border-bottom: 1px solid var(--border-default);
   display: flex;
   align-items: center;
   justify-content: space-between;
   background-color: var(--bg-card);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .chat-sidebar-title {
@@ -3151,12 +3157,14 @@ button, input, textarea, select {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 18px;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--border-default);
   cursor: pointer;
   transition: background-color var(--transition-fast), border-color var(--transition-fast);
   border-left: 3px solid transparent;
   background-color: transparent;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .chat-inbox-item:hover {
@@ -3220,6 +3228,7 @@ button, input, textarea, select {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  overflow: hidden;
 }
 
 .chat-inbox-top {
@@ -3227,6 +3236,8 @@ button, input, textarea, select {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .chat-inbox-name {
@@ -3309,11 +3320,11 @@ button, input, textarea, select {
   line-height: 1.6;
 }
 
-/* Main Chat Area (matches 640px width of other pages) */
+/* Main Chat Area (Flexibly responsive up to 640px) */
 .chat-main-panel {
-  width: 640px;
+  flex: 1 1 0;
+  min-width: 0;
   max-width: 640px;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -3323,6 +3334,7 @@ button, input, textarea, select {
   overflow: hidden;
   position: relative;
   transition: border-color var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .chat-main-panel:hover {
@@ -3344,12 +3356,116 @@ button, input, textarea, select {
 }
 
 /* Desktop wide-screen balancing: keeps the 640px chat panel dead-center */
-@media (min-width: 1240px) {
+@media (min-width: 1241px) {
   .chat-page-layout::after {
     content: "";
-    width: 300px;
+    width: 280px;
     flex-shrink: 0;
     pointer-events: none;
+  }
+}
+
+/* ==========================================================================
+   Messages / Chat Tablet & Small Desktop Layout (769px to 1080px)
+   Prevents overflow, keeps side navbar contained, and leaves clear space for solve button
+   ========================================================================== */
+@media (min-width: 769px) and (max-width: 1080px) {
+  .chat-page-layout {
+    padding: 12px 76px 16px 12px !important; /* 76px on right provides dedicated gutter for floating Rubik's solve button */
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    justify-content: flex-start !important;
+  }
+
+  .chat-sidebar {
+    width: 230px !important;
+    min-width: 200px !important;
+    max-width: 250px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chat-sidebar-header {
+    padding: 12px 14px !important;
+  }
+
+  .chat-sidebar-title {
+    font-size: 11px !important;
+  }
+
+  .chat-inbox-item {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+
+  .chat-avatar-wrapper {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .chat-inbox-name {
+    font-size: 13px !important;
+  }
+
+  .chat-inbox-time {
+    font-size: 10px !important;
+  }
+
+  .chat-main-panel {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: auto !important;
+  }
+
+  .chat-header {
+    padding: 11px 14px !important;
+  }
+
+  .chat-header-name {
+    font-size: 14px !important;
+  }
+
+  .chat-messages-container {
+    padding: 14px 12px !important;
+    gap: 10px !important;
+  }
+
+  .chat-input-bar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .chat-input-field {
+    padding: 8px 12px !important;
+    font-size: 13.5px !important;
+  }
+
+  .chat-send-btn {
+    padding: 8px 14px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* Medium Desktop (1081px to 1240px) */
+@media (min-width: 1081px) and (max-width: 1240px) {
+  .chat-page-layout {
+    padding: 16px 76px 20px 16px !important;
+    gap: 14px !important;
+    justify-content: flex-start !important;
+  }
+
+  .chat-sidebar {
+    width: 260px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chat-main-panel {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 640px !important;
   }
 }
 
@@ -3942,7 +4058,7 @@ button, input, textarea, select {
 .rubiks-solve-symbol-btn {
   position: fixed;
   bottom: 24px;
-  right: 24px;
+  right: 20px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -3959,6 +4075,18 @@ button, input, textarea, select {
   filter: none !important;
   transition: border-color var(--transition-fast), background-color var(--transition-fast), transform 0.25s ease, opacity 0.2s ease;
   user-select: none;
+}
+
+/* Ensure Rubik's solve button never merges with or covers modals, sheets, or overlays */
+body.notifications-sheet-open .rubiks-solve-symbol-btn,
+.deck-root-container.notifications-active .rubiks-solve-symbol-btn,
+body:has(.deck-sheet-container.half-sheet.active) .rubiks-solve-symbol-btn,
+body:has(.profile-settings-backdrop) .rubiks-solve-symbol-btn,
+body:has(.avatar-enlarged-modal) .rubiks-solve-symbol-btn {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: scale(0.75) !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
 }
 
 /* Disabled state when cube is already solved */
