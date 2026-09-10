@@ -32,6 +32,7 @@ export const swaggerSpec: OpenAPIV3.Document = {
                                 type: "object",
                                 required: ["username", "email", "password"],
                                 properties: {
+                                    name: { type: "string", example: "Yugendhra" },
                                     username: { type: "string", example: "yugendhra" },
                                     email: { type: "string", format: "email", example: "user@example.com" },
                                     password: { type: "string", format: "password", example: "password123" },

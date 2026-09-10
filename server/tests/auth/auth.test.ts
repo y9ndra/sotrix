@@ -48,6 +48,26 @@ describe("Auth API", () => {
       expect(userInDb?.password).not.toBe(userData.password);
     });
 
+    it("should create a new user with display name successfully", async () => {
+      const userData = {
+        name: "Alex Mercer",
+        username: "alexmercer",
+        email: "alex@test.com",
+        password: "password123",
+      };
+
+      const response = await request(app)
+        .post("/api/auth/signup")
+        .send(userData);
+
+      expect(response.status).toBe(201);
+      expect(response.body.user.name).toBe("Alex Mercer");
+      expect(response.body.user.username).toBe("alexmercer");
+
+      const userInDb = await User.findOne({ email: userData.email });
+      expect(userInDb?.name).toBe("Alex Mercer");
+    });
+
     it("should reject duplicate email or username", async () => {
       const userData = {
         username: "yugen",

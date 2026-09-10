@@ -5,6 +5,7 @@ import { signup } from "../api/auth.api";
 import { Link, useNavigate } from "react-router-dom";
 
 function Signup() {
+  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -14,6 +15,13 @@ function Signup() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  function handlenamechange(event: React.ChangeEvent<HTMLInputElement>) {
+    setName(event.target.value);
+    if (fieldErrors.name) {
+      setFieldErrors((prev) => ({ ...prev, name: "" }));
+    }
+  }
 
   function handleusernamechange(event: React.ChangeEvent<HTMLInputElement>) {
     setUsername(event.target.value);
@@ -52,6 +60,14 @@ function Signup() {
     setError("");
     setSuccess("");
     const newFieldErrors: Record<string, string> = {};
+
+    // Validate Display Name
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      newFieldErrors.name = "Display name is required";
+    } else if (trimmedName.length > 50) {
+      newFieldErrors.name = "Display name must not exceed 50 characters";
+    }
 
     // Validate Username (3 to 30 chars)
     const trimmedUsername = username.trim();
@@ -94,9 +110,15 @@ function Signup() {
 
     setLoading(true);
     try {
-      const response = await signup({ username: trimmedUsername, email: trimmedEmail, password });
+      const response = await signup({
+        name: trimmedName,
+        username: trimmedUsername,
+        email: trimmedEmail,
+        password,
+      });
       console.log(response);
       setSuccess("Signup successful! Redirecting to login...");
+      setName("");
       setUsername("");
       setEmail("");
       setPassword("");
@@ -134,6 +156,15 @@ function Signup() {
 
         {error && <div className="alert-error">{error}</div>}
         {success && <div className="alert-success">{success}</div>}
+
+        <Input
+          label="Display Name"
+          placeholder="e.g. Alex Mercer"
+          value={name}
+          onChange={handlenamechange}
+          error={fieldErrors.name}
+          helperText="Your public display name"
+        />
 
         <Input
           label="Username"

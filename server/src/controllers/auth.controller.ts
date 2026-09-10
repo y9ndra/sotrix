@@ -17,9 +17,9 @@ export const signup = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const { username, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
-    const result = await authService.signupUser({ username, email, password });
+    const result = await authService.signupUser({ name, username, email, password });
 
     return res.status(201).json({
       message: "User registered successfully",

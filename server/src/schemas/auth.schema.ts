@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 export const signupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .max(50, "Display name must not exceed 50 characters")
+    .optional(),
+
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")

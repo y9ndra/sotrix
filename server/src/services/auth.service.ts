@@ -18,7 +18,7 @@ import {
 } from "../types/auth.types";
 
 export const signupUser = async (input: SignupInput): Promise<SignupServiceResult> => {
-  const { username, email, password } = input;
+  const { name, username, email, password } = input;
 
   if (!password) {
     throw new Error("Password is required");
@@ -26,6 +26,7 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
 
   const normalizedUsername = username.trim().toLowerCase();
   const normalizedEmail = email.trim().toLowerCase();
+  const displayName = name?.trim() || normalizedUsername;
 
   // Check if username or email already exists
   const existingUser = await User.findOne({
@@ -39,6 +40,7 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const newUser = await User.create({
+    name: displayName,
     username: normalizedUsername,
     email: normalizedEmail,
     password: hashedPassword,
@@ -47,6 +49,7 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
   return {
     user: {
       id: (newUser._id as any).toString(),
+      name: newUser.name,
       username: newUser.username,
       email: newUser.email,
     },
