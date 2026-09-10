@@ -13,6 +13,7 @@ import {
   removePostFromAllInfiniteCaches,
 } from "../lib/queryCache";
 import { updatePost, deletePost } from "../services/post.service";
+import { convertEmojiShortcodes } from "../utils/emoji";
 import { useLikePost } from "../hooks/useLikePost";
 
 interface PostCardProps {
@@ -323,7 +324,7 @@ const PostCard = ({
         <div style={{ marginTop: "10px" }}>
           <textarea
             value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
+            onChange={(e) => setEditContent(convertEmojiShortcodes(e.target.value))}
             rows={3}
             className="post-edit-textarea"
           />

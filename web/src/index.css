@@ -647,19 +647,6 @@ button, input, textarea, select {
   filter: grayscale(0);
 }
 
-.nav-utility-link.active::after {
-  content: "";
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  background-color: var(--accent-matrix);
-  border-radius: 50%;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
-}
-
 .nav-icon {
   font-size: 16px;
   filter: grayscale(1);
@@ -4343,6 +4330,261 @@ button, input, textarea, select {
 
 .settings-confirm-actions button {
   flex: 1;
+}
+
+/* ==========================================================================
+   Emoji Picker & Popover Component (Sotrix Cyber/Matrix Aesthetic)
+   ========================================================================== */
+.emoji-picker-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
+}
+
+.emoji-trigger-btn {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.emoji-trigger-btn:hover,
+.emoji-trigger-btn.active {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.emoji-trigger-icon {
+  font-size: 17px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast);
+}
+
+.emoji-trigger-btn:hover .emoji-trigger-icon,
+.emoji-trigger-btn.active .emoji-trigger-icon {
+  transform: scale(1.1);
+}
+
+/* Popover floating panel */
+.emoji-popover {
+  position: absolute;
+  width: 290px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: emojiPopoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes emojiPopoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Placements */
+.emoji-popover-top-left {
+  bottom: calc(100% + 8px);
+  left: 0;
+}
+
+.emoji-popover-top-right {
+  bottom: calc(100% + 8px);
+  right: 0;
+}
+
+.emoji-popover-bottom-left {
+  top: calc(100% + 8px);
+  left: 0;
+}
+
+.emoji-popover-bottom-right {
+  top: calc(100% + 8px);
+  right: 0;
+}
+
+/* Search bar */
+.emoji-popover-header {
+  padding: 10px 10px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.emoji-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.emoji-search-icon {
+  position: absolute;
+  left: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.emoji-search-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 6px 26px 6px 26px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast);
+}
+
+.emoji-search-input:focus {
+  border-color: var(--border-hover);
+  box-shadow: none;
+}
+
+.emoji-search-input::placeholder {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.emoji-search-clear {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.emoji-search-clear:hover {
+  color: var(--text-primary);
+}
+
+/* Category Tabs */
+.emoji-category-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.emoji-category-tab {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: all var(--transition-fast);
+}
+
+.emoji-category-tab:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.emoji-category-tab.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+/* Emoji Grid */
+.emoji-grid-container {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.emoji-grid-item {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  padding: 6px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, background-color var(--transition-fast);
+}
+
+.emoji-grid-item:hover {
+  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.emoji-grid-item:active {
+  transform: scale(0.95);
+}
+
+.emoji-empty-search {
+  padding: 24px 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Footer with keyboard hint */
+.emoji-popover-footer {
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.emoji-hint-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: block;
+}
+
+.emoji-hint-text code {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 3px;
+  border-radius: 3px;
 }
 
 

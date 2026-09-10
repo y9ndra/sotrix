@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPost } from "../services/post.service";
 import type { Post } from "../types/post";
+import EmojiPicker from "./EmojiPicker";
+import { convertEmojiShortcodes, insertEmojiAtCursor } from "../utils/emoji";
 
 interface CreatePostProps {
   onPostCreated: (post: Post) => void;
@@ -12,6 +14,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (!image) {
@@ -26,6 +29,32 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
       URL.revokeObjectURL(url);
     };
   }, [image]);
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const rawValue = e.target.value;
+    const converted = convertEmojiShortcodes(rawValue);
+    setContent(converted);
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setContent((prev) => prev + emoji);
+      return;
+    }
+
+    const { newText, newCursor } = insertEmojiAtCursor(
+      content,
+      emoji,
+      textarea.selectionStart,
+      textarea.selectionEnd
+    );
+    setContent(newText);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursor, newCursor);
+    }, 0);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -74,8 +103,9 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
 
       <form onSubmit={handleSubmit}>
         <textarea
+          ref={textareaRef}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={handleContentChange}
           placeholder="whats happening?"
           rows={3}
           className="create-post-textarea"
@@ -144,16 +174,20 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             marginTop: "12px",
           }}
         >
-          <label className="create-post-file-label">
-            <span>{image ? "change file" : "add file"}</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={loading}
-              style={{ display: "none" }}
-            />
-          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <label className="create-post-file-label">
+              <span>{image ? "change file" : "add file"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={loading}
+                style={{ display: "none" }}
+              />
+            </label>
+
+            <EmojiPicker onSelect={handleEmojiSelect} placement="top-left" />
+          </div>
 
           <button
             type="submit"

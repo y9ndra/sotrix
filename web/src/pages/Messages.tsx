@@ -12,6 +12,8 @@ import {
   markConversationAsRead,
 } from "../services/chat.service";
 import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.types";
+import EmojiPicker from "../components/EmojiPicker";
+import { convertEmojiShortcodes, insertEmojiAtCursor } from "../utils/emoji";
 
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
@@ -109,6 +111,27 @@ const Messages: React.FC = () => {
   const isTypingEmittedRef = useRef(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatMessagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const chatInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleEmojiSelect = (emoji: string) => {
+    const input = chatInputRef.current;
+    if (!input) {
+      setInputContent((prev) => prev + emoji);
+      return;
+    }
+
+    const { newText, newCursor } = insertEmojiAtCursor(
+      inputContent,
+      emoji,
+      input.selectionStart,
+      input.selectionEnd
+    );
+    setInputContent(newText);
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(newCursor, newCursor);
+    }, 0);
+  };
 
   // Sync selected conversation from URL search params if present
   useEffect(() => {
@@ -371,7 +394,9 @@ const Messages: React.FC = () => {
 
   // Debounced Typing input change handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputContent(e.target.value);
+    const rawVal = e.target.value;
+    const converted = convertEmojiShortcodes(rawVal);
+    setInputContent(converted);
 
     const socket = getSocket();
     if (!socket || !selectedConversationId) return;
@@ -466,8 +491,6 @@ const Messages: React.FC = () => {
   const isOtherUserOnline = Boolean(
     isFollowingOther && otherParticipantId && onlineUserIds.has(otherParticipantId)
   );
-
-  const unreadConversationsCount = conversations.filter((c) => c.hasUnread).length;
 
   return (
     <div
@@ -708,7 +731,9 @@ const Messages: React.FC = () => {
 
             {/* Input Form */}
             <form onSubmit={handleSendMessage} className="chat-input-bar">
+              <EmojiPicker onSelect={handleEmojiSelect} placement="top-left" />
               <input
+                ref={chatInputRef}
                 type="text"
                 value={inputContent}
                 onChange={handleInputChange}

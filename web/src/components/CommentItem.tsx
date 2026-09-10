@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Comment } from "../types/comment";
 import { useAuthStore } from "../store/authStore";
+import { convertEmojiShortcodes } from "../utils/emoji";
 
 interface CommentItemProps {
   comment: Comment;
@@ -165,7 +166,7 @@ const CommentItem = ({ comment, onUpdateComment, onDeleteComment }: CommentItemP
           <input
             type="text"
             value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
+            onChange={(e) => setEditContent(convertEmojiShortcodes(e.target.value))}
             disabled={loading}
             className="comment-edit-input"
           />
