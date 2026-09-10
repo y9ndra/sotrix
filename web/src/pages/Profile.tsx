@@ -514,8 +514,7 @@ const Profile = () => {
                         <button
                           onClick={handleStartChat}
                           disabled={chatLoading}
-                          className="profile-action-btn primary"
-                          style={{ marginLeft: "8px" }}
+                          className="profile-action-btn primary profile-message-btn"
                           title={`Send message to @${user.username}`}
                         >
                           <svg
