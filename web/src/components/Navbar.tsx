@@ -1,19 +1,14 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationStore } from '../store/notification.store';
-import { removeToken } from '../services/token.service';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryKeys';
 import { getUnreadCount } from '../services/notification.service';
-import { logout } from '../api/auth.api';
-import { disconnectSocket } from '../services/socket.service';
 
 function Navbar() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    const clearUser = useAuthStore((state) => state.clearUser);
     const user = useAuthStore((state) => state.user);
-    const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
 
@@ -21,7 +16,6 @@ function Navbar() {
 
     const storeUnreadCount = useNotificationStore((state) => state.unreadCount);
     const setStoreUnreadCount = useNotificationStore((state) => state.setUnreadCount);
-    const resetNotifications = useNotificationStore((state) => state.resetNotifications);
 
     const { data: unreadData } = useQuery({
         queryKey: queryKeys.notifications.unreadCount,
@@ -39,21 +33,6 @@ function Navbar() {
     }, [unreadData?.data?.unreadCount, setStoreUnreadCount, queryClient]);
 
     const unreadCount = typeof storeUnreadCount === "number" ? storeUnreadCount : (unreadData?.data?.unreadCount ?? 0);
-
-    const handleLogout = async () => {
-        try {
-            await logout();
-        } catch (err) {
-            console.error("Server logout error:", err);
-        } finally {
-            disconnectSocket();
-            queryClient.clear();
-            removeToken();
-            clearUser();
-            resetNotifications();
-            navigate('/login');
-        }
-    };
 
     return (
         <>
@@ -95,13 +74,7 @@ function Navbar() {
                             </Link>
                         </li>
                     )}
-                    {isAuthenticated ? (
-                        <li>
-                            <button onClick={handleLogout} className="nav-logout-btn">
-                                logout
-                            </button>
-                        </li>
-                    ) : (
+                    {!isAuthenticated && (
                         <>
                             <li><Link to="/login" className={`nav-space-link ${location.pathname === "/login" ? "active" : ""}`}>login</Link></li>
                             <li><Link to="/signup" className={`nav-space-link ${location.pathname === "/signup" ? "active" : ""}`}>signup</Link></li>

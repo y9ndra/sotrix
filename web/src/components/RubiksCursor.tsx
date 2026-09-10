@@ -310,7 +310,56 @@ export const RubiksCursor: React.FC = () => {
     });
   }, []);
 
+  const [isEnabled, setIsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem("sotrix_rubiks_cursor") !== "false";
+  });
+
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.innerWidth <= 768 ||
+      window.matchMedia("(hover: none)").matches ||
+      window.matchMedia("(pointer: coarse)").matches
+    );
+  });
+
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobileDevice(
+        window.innerWidth <= 768 ||
+        window.matchMedia("(hover: none)").matches ||
+        window.matchMedia("(pointer: coarse)").matches
+      );
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      const val =
+        customEvent.detail !== undefined
+          ? customEvent.detail
+          : localStorage.getItem("sotrix_rubiks_cursor") !== "false";
+      setIsEnabled(val);
+      if (!val) {
+        document.body.classList.add("disable-custom-cursor");
+      } else {
+        document.body.classList.remove("disable-custom-cursor");
+      }
+    };
+
+    if (localStorage.getItem("sotrix_rubiks_cursor") === "false") {
+      document.body.classList.add("disable-custom-cursor");
+    }
+
+    window.addEventListener("sotrix_cursor_toggle", handleToggle);
+    return () => window.removeEventListener("sotrix_cursor_toggle", handleToggle);
+  }, []);
+
+  useEffect(() => {
+    if (!isEnabled || isMobileDevice) return;
     const isFinePointer = window.matchMedia("(pointer: fine)").matches;
     if (!isFinePointer) return;
 
@@ -401,6 +450,8 @@ export const RubiksCursor: React.FC = () => {
 
   const rotatingCubies = activeMove ? cubies.filter(activeMove.match) : [];
   const staticCubies = activeMove ? cubies.filter((c) => !activeMove.match(c)) : cubies;
+
+  if (!isEnabled || isMobileDevice) return null;
 
   return (
     <div

@@ -11,6 +11,10 @@ import { getUserPosts, deletePost } from "../services/post.service";
 import { removePostFromAllInfiniteCaches } from "../lib/queryCache";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
+import { logout } from "../api/auth.api";
+import { disconnectSocket } from "../services/socket.service";
+import { removeToken } from "../services/token.service";
+import { useNotificationStore } from "../store/notification.store";
 
 // Canvas Helper Utilities for Image Cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -89,6 +93,42 @@ const Profile = () => {
 
   // Lightbox Enlarged Avatar State
   const [isAvatarEnlarged, setIsAvatarEnlarged] = useState<boolean>(false);
+
+  // Profile Settings Modal State
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  const [cursorEnabled, setCursorEnabled] = useState<boolean>(() => {
+    return localStorage.getItem("sotrix_rubiks_cursor") !== "false";
+  });
+
+  const handleToggleCursor = () => {
+    const nextVal = !cursorEnabled;
+    setCursorEnabled(nextVal);
+    localStorage.setItem("sotrix_rubiks_cursor", nextVal ? "true" : "false");
+    if (!nextVal) {
+      document.body.classList.add("disable-custom-cursor");
+    } else {
+      document.body.classList.remove("disable-custom-cursor");
+    }
+    window.dispatchEvent(new CustomEvent("sotrix_cursor_toggle", { detail: nextVal }));
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+    } catch (err) {
+      console.error("Server logout error:", err);
+    } finally {
+      disconnectSocket();
+      queryClient.clear();
+      removeToken();
+      useAuthStore.getState().clearUser();
+      useNotificationStore.getState().resetNotifications();
+      navigate("/login");
+    }
+  };
 
   const currentUser = useAuthStore((state) => state.user);
   const setAuthUser = useAuthStore((state) => state.setUser);
@@ -446,28 +486,59 @@ const Profile = () => {
                     </div>
 
                     {/* Action Button: Edit Profile (for self) or Follow/Unfollow (for others) */}
-                    <div className="profile-header-actions">
+                    <div className={`profile-header-actions ${isOwnProfile ? "profile-header-actions-own" : ""}`}>
                       {isOwnProfile ? (
-                        <button
-                          onClick={handleStartEdit}
-                          className="profile-action-btn profile-edit-btn"
-                          title="Edit profile"
-                          aria-label="Edit profile"
-                        >
-                          <svg
-                            style={{ width: "14px", height: "14px", stroke: "currentColor" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2"
+                        <>
+                          <button
+                            onClick={handleStartEdit}
+                            className="profile-action-btn profile-edit-btn"
+                            title="Edit profile"
+                            aria-label="Edit profile"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                            />
-                          </svg>
-                          <span className="profile-btn-text">edit profile</span>
-                        </button>
+                            <svg
+                              style={{ width: "14px", height: "14px", stroke: "currentColor" }}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth="2"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              />
+                            </svg>
+                            <span className="profile-btn-text">edit profile</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setIsSettingsOpen(true);
+                              setShowLogoutConfirm(false);
+                            }}
+                            className="profile-action-btn profile-settings-btn"
+                            title="Account Settings"
+                            aria-label="Account Settings"
+                          >
+                            <svg
+                              style={{ width: "14px", height: "14px", stroke: "currentColor" }}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth="2"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                            </svg>
+                            <span className="profile-btn-text">settings</span>
+                          </button>
+                        </>
                       ) : (
                         <button
                           onClick={handleToggleFollow}
@@ -696,6 +767,148 @@ const Profile = () => {
         </div>,
         document.body
       )}
+
+      {/* Profile Settings Modal Portal */}
+      {isSettingsOpen &&
+        createPortal(
+          <div
+            className="settings-modal-backdrop"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsSettingsOpen(false);
+                setShowLogoutConfirm(false);
+              }
+            }}
+          >
+            <div className="settings-modal-card" role="dialog" aria-modal="true">
+              {/* Modal Header */}
+              <div className="settings-modal-header">
+                <h3 className="settings-modal-title">
+                  settings
+                </h3>
+                <button
+                  onClick={() => {
+                    setIsSettingsOpen(false);
+                    setShowLogoutConfirm(false);
+                  }}
+                  className="settings-close-btn"
+                  title="Close settings"
+                  aria-label="Close settings"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="settings-modal-body">
+                {/* Account Section */}
+                <div className="settings-group">
+                  <h4 className="settings-group-title">account</h4>
+                  <div className="settings-group-box">
+                    <div className="settings-row">
+                      <span className="settings-row-label">username</span>
+                      <span className="settings-row-value">@{user?.username || currentUser?.username}</span>
+                    </div>
+                    {(user?.email || currentUser?.email) && (
+                      <div className="settings-row">
+                        <span className="settings-row-label">email</span>
+                        <span className="settings-row-value">{user?.email || currentUser?.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Preferences Section (Desktop Only) */}
+                <div className="settings-group desktop-only-setting">
+                  <h4 className="settings-group-title">preferences</h4>
+                  <div className="settings-group-box">
+                    <div className="settings-row">
+                      <div>
+                        <span className="settings-row-label" style={{ display: "block" }}>3D Rubik's Cursor</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Interactive isometric cursor</span>
+                      </div>
+                      <label className="settings-toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={cursorEnabled}
+                          onChange={handleToggleCursor}
+                        />
+                        <span className="settings-slider" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* App Info Section */}
+                <div className="settings-group">
+                  <h4 className="settings-group-title">about</h4>
+                  <div className="settings-group-box">
+                    <div className="settings-row">
+                      <span className="settings-row-label">version</span>
+                      <span className="settings-row-value">v1.0.0 (beta)</span>
+                    </div>
+                    <div className="settings-row">
+                      <span className="settings-row-label">platform</span>
+                      <span className="settings-row-value">Sotrix Obsidian</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Session / Logout Section */}
+                <div className="settings-group" style={{ marginTop: "4px" }}>
+                  <h4 className="settings-group-title">session</h4>
+                  {!showLogoutConfirm ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowLogoutConfirm(true)}
+                      className="settings-logout-btn"
+                    >
+                      <svg
+                        style={{ width: "15px", height: "15px", stroke: "currentColor" }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                      log out
+                    </button>
+                  ) : (
+                    <div className="settings-confirm-box">
+                      <p className="settings-confirm-text">
+                        Are you sure you want to log out of your session?
+                      </p>
+                      <div className="settings-confirm-actions">
+                        <button
+                          type="button"
+                          onClick={() => setShowLogoutConfirm(false)}
+                          disabled={isLoggingOut}
+                          className="profile-action-btn"
+                        >
+                          cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          disabled={isLoggingOut}
+                          className="profile-action-btn primary"
+                          style={{ backgroundColor: "#ef4444", borderColor: "#ef4444", color: "#ffffff" }}
+                        >
+                          {isLoggingOut ? "logging out..." : "yes, log out"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
