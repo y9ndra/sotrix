@@ -2,6 +2,8 @@ import express, { Application, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
+import pinoHttp from 'pino-http';
+import { logger } from './config/logger';
 import { config, allowedOrigins } from './config/env';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -42,6 +44,23 @@ app.use(
       return callback(null, false);
     },
     credentials: true,
+  })
+);
+
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: {
+      ignore: (req) =>
+        req.url === "/health" ||
+        req.url === "/api/health" ||
+        req.url === "/metrics",
+    },
+    customLogLevel: (_req, res, err) => {
+      if (res.statusCode >= 500 || err) return "error";
+      if (res.statusCode >= 400) return "warn";
+      return "info";
+    },
   })
 );
 

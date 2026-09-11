@@ -12,6 +12,7 @@ import {
   removeUserSocket,
   getOnlineUsers,
 } from "./presence.manager";
+import { logger } from "../config/logger";
 
 let io: SocketIOServer | null = null;
 
@@ -57,7 +58,7 @@ export const initializeSocket = (
 
       redisSub.subscribe("socket:emit_to_user", (err) => {
         if (err) {
-          console.warn("Failed to subscribe to socket:emit_to_user channel:", err.message);
+          logger.warn({ err: err.message }, "Failed to subscribe to socket:emit_to_user channel");
         }
       });
 
@@ -67,12 +68,12 @@ export const initializeSocket = (
             const { userId, event, data } = JSON.parse(message);
             io.to(userId).to(getUserRoom(userId)).emit(event, data);
           } catch (e) {
-            console.error("Error processing Redis socket message:", e);
+            logger.error(e, "Error processing Redis socket message");
           }
         }
       });
     } catch (err) {
-      console.warn("Redis socket subscriber initialization skipped:", err);
+      logger.warn(err, "Redis socket subscriber initialization skipped");
     }
   }
 
@@ -84,12 +85,9 @@ export const initializeSocket = (
     socket.join(userId);
     socket.join(getUserRoom(userId));
 
-    console.log(
+    logger.info(
+      { socketId: socket.id, userId },
       `Socket connected: ${socket.id}, user: ${userId}`
-    );
-
-    console.log(
-      `Socket ${socket.id} joined room: ${getUserRoom(userId)}`
     );
 
     // Auto-join all conversation rooms the user is a participant of
@@ -103,7 +101,7 @@ export const initializeSocket = (
           }
         })
         .catch((err) => {
-          console.warn("Error auto-joining user conversation rooms:", err);
+          logger.warn(err, "Error auto-joining user conversation rooms");
         });
     }
 
@@ -112,7 +110,7 @@ export const initializeSocket = (
       const becameOnline = addUserSocket(userId, socket.id);
       if (becameOnline) {
         io!.emit("presence:online", { userId });
-        console.log(`Presence: User ${userId} is now ONLINE`);
+        logger.info({ userId }, `Presence: User ${userId} is now ONLINE`);
       }
 
       // Send initial online users list to connecting socket
@@ -132,8 +130,6 @@ export const initializeSocket = (
     registerChatHandlers(io!, socket);
 
     socket.on("test:ping", (data) => {
-      console.log("Received ping from client:", data);
-
       socket.emit("test:pong", {
         message: "Hello from Sotrix backend 🚀",
         receivedAt: new Date().toISOString(),
@@ -141,7 +137,8 @@ export const initializeSocket = (
     });
 
     socket.on("disconnect", (reason) => {
-      console.log(
+      logger.info(
+        { socketId: socket.id, reason, userId },
         `Socket disconnected: ${socket.id}, reason: ${reason}`
       );
 
@@ -149,7 +146,7 @@ export const initializeSocket = (
         const becameOffline = removeUserSocket(userId, socket.id);
         if (becameOffline) {
           io!.emit("presence:offline", { userId });
-          console.log(`Presence: User ${userId} is now OFFLINE`);
+          logger.info({ userId }, `Presence: User ${userId} is now OFFLINE`);
         }
       }
     });
