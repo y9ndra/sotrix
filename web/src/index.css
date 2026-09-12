@@ -4332,6 +4332,109 @@ button, input, textarea, select {
   flex: 1;
 }
 
+/* GitHub Star & Community Callout in Settings */
+.settings-star-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.settings-star-card:hover {
+  border-color: rgba(245, 158, 11, 0.45);
+  background-color: var(--bg-hover);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.08);
+}
+
+.settings-star-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.settings-star-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.settings-star-card:hover .settings-star-icon-wrap {
+  transform: rotate(8deg) scale(1.08);
+}
+
+.settings-star-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-star-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-star-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.settings-star-card:hover .settings-star-badge {
+  background-color: #f59e0b;
+  border-color: #f59e0b;
+  color: #000000;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+.settings-star-badge svg {
+  transition: transform var(--transition-fast);
+}
+
+.settings-star-card:hover .settings-star-badge svg.star-arrow-icon {
+  transform: translate(1px, -1px);
+}
+
 /* ==========================================================================
    Emoji Picker & Popover Component (Sotrix Cyber/Matrix Aesthetic)
    ========================================================================== */
