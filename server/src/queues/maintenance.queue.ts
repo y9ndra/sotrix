@@ -19,11 +19,13 @@ export const maintenanceQueue = new Queue<MaintenanceJobData>(
       },
 
       removeOnComplete: {
-        count: 1000,
+        count: 50,
+        age: 3600,
       },
 
       removeOnFail: {
-        count: 5000,
+        count: 100,
+        age: 86400,
       },
     },
   }

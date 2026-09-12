@@ -65,6 +65,18 @@ const DeckLayout = () => {
     navigate(-1);
   };
 
+  // Sync notifications-sheet-open class on document body to keep floating widgets clear
+  useEffect(() => {
+    if (isNotificationsActive) {
+      document.body.classList.add("notifications-sheet-open");
+    } else {
+      document.body.classList.remove("notifications-sheet-open");
+    }
+    return () => {
+      document.body.classList.remove("notifications-sheet-open");
+    };
+  }, [isNotificationsActive]);
+
   // Guard Profile space: keep rendered when on profile, or when notifications sheet is open over profile
   const isProfileActive = pathname.startsWith("/profile") || (isNotificationsActive && activeSlot === 4);
   const [renderProfile, setRenderProfile] = useState(isProfileActive);
@@ -81,7 +93,7 @@ const DeckLayout = () => {
   }, [isProfileActive]);
 
   return (
-    <div className="deck-root-container">
+    <div className={`deck-root-container ${isNotificationsActive ? "notifications-active" : ""}`}>
       <Navbar />
 
       <div className="deck-workspace">

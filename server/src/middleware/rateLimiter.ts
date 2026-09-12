@@ -14,7 +14,11 @@ export const globalLimiter = rateLimit({
   limit: isTest ? 100_000 : 1500, // 1,500 req / 15 min per IP (~100 req/min)
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  skip: (req: Request) => req.path === "/health" || req.path === "/",
+  skip: (req: Request) =>
+    req.path === "/health" ||
+    req.path === "/api/health" ||
+    req.path === "/metrics" ||
+    req.path === "/",
   message: {
     success: false,
     message: "Too many requests from this IP address. Please try again after 15 minutes.",

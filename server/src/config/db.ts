@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { logger } from "./logger";
 
 export async function connectDB() {
   const mongoUrl = process.env.DATABASE_URL || process.env.MONGO_URI;
@@ -10,10 +11,10 @@ export async function connectDB() {
   return mongoose
     .connect(mongoUrl)
     .then(() => {
-      console.log("MongoDB connected successfully");
+      logger.info("MongoDB connected successfully");
     })
     .catch((err) => {
-      console.error("MongoDB connection error:", err);
+      logger.error(err, "MongoDB connection error");
       throw err;
     });
 }

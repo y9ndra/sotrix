@@ -2,6 +2,8 @@ import express, { Application, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
+import pinoHttp from 'pino-http';
+import { logger } from './config/logger';
 import { config, allowedOrigins } from './config/env';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -15,6 +17,8 @@ import notificationRoutes from './routes/notification.routes';
 import conversationRoutes from './routes/conversation.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { globalLimiter } from './middleware/rateLimiter';
+import { metricsMiddleware } from './middleware/metrics.middleware';
+import { register } from './config/metrics';
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 
@@ -35,6 +39,7 @@ app.use(
         allowedOrigins.includes(normalizedOrigin) ||
         allowedOrigins.includes("*") ||
         normalizedOrigin.endsWith(".vercel.app") ||
+        normalizedOrigin.endsWith("yugendhra.me") ||
         process.env.NODE_ENV !== "production"
       ) {
         return callback(null, true);
@@ -44,6 +49,26 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: {
+      ignore: (req) =>
+        req.url === "/health" ||
+        req.url === "/api/health" ||
+        req.url === "/metrics",
+    },
+    customLogLevel: (_req, res, err) => {
+      if (res.statusCode >= 500 || err) return "error";
+      if (res.statusCode >= 400) return "warn";
+      return "info";
+    },
+  })
+);
+
+// Track Prometheus HTTP metrics (throughput, latency, errors)
+app.use(metricsMiddleware);
 
 // Tier 1: Global rate limiter (skips health check, test mode bypass)
 app.use(globalLimiter);
@@ -62,6 +87,11 @@ app.get(['/health', '/api/health'], (req: Request, res: Response) => {
     message: 'Sotrix Backend is running smoothly',
     timestamp: new Date().toISOString()
   });
+});
+
+app.get('/metrics', async (_req: Request, res: Response) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 app.use('/api/auth', authRoutes);

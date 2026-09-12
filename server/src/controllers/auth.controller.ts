@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
 import { SignupInput, LoginInput } from "../schemas/auth.schema";
 import { config } from "../config/env";
+import { logger } from "../config/logger";
 
 const refreshTokenCookieOptions = {
   httpOnly: true,
@@ -20,6 +21,11 @@ export const signup = async (
     const { name, username, email, password } = req.body;
 
     const result = await authService.signupUser({ name, username, email, password });
+
+    logger.info(
+      { userId: (result.user as any)._id || result.user.id, email: result.user.email },
+      "User registered successfully"
+    );
 
     return res.status(201).json({
       message: "User registered successfully",
@@ -48,6 +54,11 @@ export const login = async (
     }
 
     const result = await authService.loginUser({ identifier, password });
+
+    logger.info(
+      { userId: (result.user as any)._id || result.user.id },
+      "User logged in successfully"
+    );
 
     res.cookie(
       "refreshToken",
@@ -120,6 +131,8 @@ export const refresh = async (
     const result =
       await authService.refreshAccessToken(refreshToken);
 
+    logger.info("Access token refreshed successfully");
+
     res.cookie(
       "refreshToken",
       result.refreshToken,
@@ -159,6 +172,8 @@ export const logout = async (
     if (refreshToken) {
       await authService.logoutUser(refreshToken);
     }
+
+    logger.info("User logged out successfully");
 
     res.clearCookie("refreshToken", {
       httpOnly: refreshTokenCookieOptions.httpOnly,

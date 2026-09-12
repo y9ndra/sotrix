@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import multer from "multer";
+import { logger } from "../config/logger";
 
 export class AppError extends Error {
   statusCode: number;
@@ -70,7 +71,7 @@ export const errorHandler = (
   }
 
   // 4. Default unhandled server error
-  console.error("Unhandled error:", err);
+  logger.error(err, "Unhandled server error");
   const message = err instanceof Error ? err.message : "Internal server error";
 
   return res.status(500).json({
