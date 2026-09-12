@@ -28,6 +28,7 @@ export const initializeSocket = (
           allowedOrigins.includes(normalized) ||
           allowedOrigins.includes("*") ||
           normalized.endsWith(".vercel.app") ||
+          normalized.endsWith("yugendhra.me") ||
           process.env.NODE_ENV !== "production"
         ) {
           return callback(null, true);

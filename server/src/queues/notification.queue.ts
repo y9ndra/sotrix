@@ -19,10 +19,12 @@ export const notificationQueue = new Queue<NotificationJobData>(
         delay: 1000,
       },
       removeOnComplete: {
-        count: 1000,
+        count: 50,
+        age: 3600,
       },
       removeOnFail: {
-        count: 5000,
+        count: 100,
+        age: 86400,
       },
     },
   }

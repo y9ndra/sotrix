@@ -39,6 +39,7 @@ app.use(
         allowedOrigins.includes(normalizedOrigin) ||
         allowedOrigins.includes("*") ||
         normalizedOrigin.endsWith(".vercel.app") ||
+        normalizedOrigin.endsWith("yugendhra.me") ||
         process.env.NODE_ENV !== "production"
       ) {
         return callback(null, true);
