@@ -3724,6 +3724,75 @@ button, input, textarea, select {
   height: 3px;
 }
 
+/* Floating Scroll to Bottom Button */
+.chat-scroll-to-bottom-btn {
+  position: absolute;
+  bottom: 74px;
+  right: 20px;
+  z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  animation: fadeIn 0.18s ease;
+  user-select: none;
+}
+
+.chat-scroll-to-bottom-btn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--accent-matrix);
+  color: var(--accent-matrix);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.chat-scroll-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.chat-scroll-to-bottom-btn.has-unread {
+  border-color: var(--border-active);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  animation: pillBounce 2s infinite ease-in-out;
+}
+
+.chat-scroll-to-bottom-btn.has-unread:hover {
+  border-color: var(--text-muted);
+}
+
+@keyframes pillBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 /* Chat Input Bar */
 .chat-input-bar {
   padding: 14px 18px;

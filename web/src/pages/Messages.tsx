@@ -14,6 +14,7 @@ import {
 import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.types";
 import EmojiPicker from "../components/EmojiPicker";
 import { convertEmojiShortcodes, insertEmojiAtCursor } from "../utils/emoji";
+import { playMessageChime } from "../utils/sound";
 
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
@@ -113,6 +114,13 @@ const Messages: React.FC = () => {
   const chatMessagesContainerRef = useRef<HTMLDivElement | null>(null);
   const chatInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Smart scrolling state: track whether user is at the bottom or reading older messages
+  const isAtBottomRef = useRef(true);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [unreadBelowCount, setUnreadBelowCount] = useState(0);
+  const hasInitialScrolledRef = useRef<Record<string, boolean>>({});
+  const prevMessagesLengthRef = useRef(0);
+
   const handleEmojiSelect = (emoji: string) => {
     const input = chatInputRef.current;
     if (!input) {
@@ -209,13 +217,80 @@ const Messages: React.FC = () => {
     }
   }, [directConversation, queryClient]);
 
-  // Scroll messages container internally without scrolling parent ancestors
-  useEffect(() => {
+  // Monitor user scrolling to detect if they are reading older messages
+  const handleMessagesScroll = () => {
+    const container = chatMessagesContainerRef.current;
+    if (!container) return;
+
+    // Threshold of 120px from bottom is considered "at the bottom"
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const isAtBottom = distanceFromBottom <= 120;
+
+    isAtBottomRef.current = isAtBottom;
+    setShowScrollBottom(!isAtBottom);
+
+    if (isAtBottom) {
+      setUnreadBelowCount(0);
+    }
+  };
+
+  // Scroll to bottom helper
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     const container = chatMessagesContainerRef.current;
     if (container) {
-      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+      container.scrollTo({ top: container.scrollHeight, behavior });
+      isAtBottomRef.current = true;
+      setShowScrollBottom(false);
+      setUnreadBelowCount(0);
     }
-  }, [displayMessages.length, selectedConversationId, remoteTypingUserId]);
+  };
+
+  // Initial scroll to bottom when opening/switching a conversation
+  useEffect(() => {
+    if (
+      selectedConversationId &&
+      displayMessages.length > 0 &&
+      !hasInitialScrolledRef.current[selectedConversationId]
+    ) {
+      hasInitialScrolledRef.current[selectedConversationId] = true;
+      isAtBottomRef.current = true;
+      setShowScrollBottom(false);
+      setUnreadBelowCount(0);
+      const container = chatMessagesContainerRef.current;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [selectedConversationId, displayMessages.length]);
+
+  // Handle incoming messages: ONLY auto-scroll if the user is ALREADY at the bottom
+  useEffect(() => {
+    const container = chatMessagesContainerRef.current;
+    if (!container) return;
+
+    const lengthDiff = displayMessages.length - prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = displayMessages.length;
+
+    if (lengthDiff > 0) {
+      if (isAtBottomRef.current) {
+        container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+      } else {
+        // User is reading older messages: DO NOT SCROLL. Count new message below.
+        setUnreadBelowCount((prev) => prev + lengthDiff);
+      }
+    }
+  }, [displayMessages.length]);
+
+  // When remote user starts typing: NEVER scroll if user is reading older messages!
+  useEffect(() => {
+    if (remoteTypingUserId && isAtBottomRef.current) {
+      const container = chatMessagesContainerRef.current;
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+      }
+    }
+  }, [remoteTypingUserId]);
 
   // Request fresh presence list and attach real-time presence listeners
   useEffect(() => {
@@ -264,6 +339,11 @@ const Messages: React.FC = () => {
     // Handle new incoming canonical message
     const handleNewMessage = (newMsg: ChatMessage) => {
       const isCurrentConversation = newMsg.conversation === selectedConversationId;
+      const senderId =
+        typeof newMsg.sender === "string"
+          ? newMsg.sender
+          : newMsg.sender?._id || (newMsg.sender as any)?.id;
+      const isSentByMe = senderId === currentUserId;
 
       queryClient.setQueryData<MessagesResponse>(
         queryKeys.conversations.messages(newMsg.conversation),
@@ -290,12 +370,6 @@ const Messages: React.FC = () => {
       queryClient.setQueryData<Conversation[]>(
         queryKeys.conversations.all,
         (old = []) => {
-          const senderId =
-            typeof newMsg.sender === "string"
-              ? newMsg.sender
-              : newMsg.sender?._id || (newMsg.sender as any)?.id;
-          const isSentByMe = senderId === currentUserId;
-
           return old
             .map((conv) => {
               if (conv._id === newMsg.conversation) {
@@ -327,6 +401,11 @@ const Messages: React.FC = () => {
       if (isCurrentConversation) {
         markConversationAsRead(newMsg.conversation).catch(console.error);
         socket.emit("conversation:read", { conversationId: newMsg.conversation });
+      }
+
+      // Play soft synthesized chime for incoming message from other user
+      if (!isSentByMe) {
+        playMessageChime();
       }
     };
 
@@ -438,11 +517,17 @@ const Messages: React.FC = () => {
     isTypingEmittedRef.current = false;
 
     setInputContent("");
+    setTimeout(() => {
+      scrollToBottom("smooth");
+    }, 50);
   };
 
   const handleSelectConversation = (id: string) => {
     setSelectedConversationId(id);
     setSearchParams({ conversationId: id });
+    isAtBottomRef.current = true;
+    setShowScrollBottom(false);
+    setUnreadBelowCount(0);
 
     // Mark as read in local cache immediately
     queryClient.setQueryData<Conversation[]>(
@@ -651,7 +736,11 @@ const Messages: React.FC = () => {
             </header>
 
             {/* Message History Feed */}
-            <div ref={chatMessagesContainerRef} className="chat-messages-container">
+            <div
+              ref={chatMessagesContainerRef}
+              className="chat-messages-container"
+              onScroll={handleMessagesScroll}
+            >
               {messagesLoading ? (
                 <div className="chat-loading-wrap">
                   <p className="chat-loading-label">loading messages...</p>
@@ -728,6 +817,41 @@ const Messages: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Scroll to Bottom Floating Pill */}
+            {showScrollBottom && (
+              <button
+                type="button"
+                onClick={() => scrollToBottom("smooth")}
+                className={`chat-scroll-to-bottom-btn ${
+                  unreadBelowCount > 0 ? "has-unread" : ""
+                }`}
+                title="Scroll to newest messages"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 5v14M19 12l-7 7-7-7" />
+                </svg>
+                {unreadBelowCount > 0 ? (
+                  <>
+                    <span>new message</span>
+                    <span className="chat-scroll-unread-badge">
+                      {unreadBelowCount}
+                    </span>
+                  </>
+                ) : (
+                  <span>latest</span>
+                )}
+              </button>
+            )}
 
             {/* Input Form */}
             <form onSubmit={handleSendMessage} className="chat-input-bar">
