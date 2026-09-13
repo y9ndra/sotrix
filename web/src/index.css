@@ -1716,18 +1716,29 @@ button, input, textarea, select {
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .post-date {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
 }
 
 .post-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Action Buttons (Like / Comment) */
@@ -1747,6 +1758,12 @@ button, input, textarea, select {
   padding: 6px 12px;
   border-radius: 10px;
   transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .post-action-btn:hover {
@@ -1781,6 +1798,10 @@ button, input, textarea, select {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .comments-header {
@@ -1845,16 +1866,26 @@ button, input, textarea, select {
   flex-direction: column;
   gap: 6px;
   margin-top: 2px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .comment-input-row {
   display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .comment-input {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 0;
   background-color: var(--bg-card);
   border: 1px solid var(--border-default);
   border-radius: 6px;
@@ -1893,6 +1924,15 @@ button, input, textarea, select {
   letter-spacing: 0.04em;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .comment-submit-btn:hover:not(:disabled) {
@@ -1918,6 +1958,10 @@ button, input, textarea, select {
   flex-direction: column;
   gap: 6px;
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .comment-item:hover {
@@ -1929,6 +1973,8 @@ button, input, textarea, select {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .comment-author-wrap {
@@ -1936,6 +1982,8 @@ button, input, textarea, select {
   align-items: center;
   gap: 8px;
   text-decoration: none;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .comment-author-avatar {
@@ -1970,6 +2018,10 @@ button, input, textarea, select {
   color: var(--text-primary);
   text-decoration: none;
   transition: color var(--transition-fast);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .comment-author-name:hover {
@@ -1980,6 +2032,7 @@ button, input, textarea, select {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .comment-action-btn {
@@ -1996,6 +2049,10 @@ button, input, textarea, select {
   justify-content: center;
   line-height: 1;
   transition: all var(--transition-fast);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .comment-action-btn svg {
@@ -2026,6 +2083,8 @@ button, input, textarea, select {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .comment-confirm-text {
@@ -2075,6 +2134,7 @@ button, input, textarea, select {
   margin: 2px 0 0 0;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .comment-edit-box {
@@ -2082,10 +2142,15 @@ button, input, textarea, select {
   flex-direction: column;
   gap: 6px;
   margin-top: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .comment-edit-input {
   width: 100%;
+  min-width: 0;
   background-color: var(--bg-matrix);
   border: 1px solid var(--border-default);
   border-radius: 6px;
@@ -2107,6 +2172,7 @@ button, input, textarea, select {
   display: flex;
   justify-content: flex-end;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .comment-save-btn {
@@ -3269,6 +3335,50 @@ button, input, textarea, select {
     display: none !important;
   }
 
+  /* Responsive Post Card & Comments on Tablets/Mobile */
+  .post-card {
+    padding: 14px;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .post-footer {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .post-actions {
+    gap: 6px;
+  }
+
+  .post-action-btn {
+    padding: 5px 10px;
+    font-size: 11.5px;
+    gap: 5px;
+  }
+
+  .comments-section {
+    margin-top: 10px;
+    padding-top: 10px;
+    gap: 10px;
+  }
+
+  .comment-input-row {
+    gap: 6px;
+  }
+
+  .comment-input {
+    padding: 7px 10px;
+    font-size: 12.5px;
+  }
+
+  .comment-submit-btn {
+    padding: 7px 12px;
+    font-size: 10.5px;
+  }
+
   /* ==========================================================================
      Messages / Chat Mobile Layout
      ========================================================================== */
@@ -3387,6 +3497,142 @@ button, input, textarea, select {
 
   .chat-inbox-username {
     font-size: 11.5px;
+  }
+}
+
+/* ==========================================================================
+   Small Mobile & iPhone SE Comment & Post Responsiveness
+   ========================================================================== */
+@media (max-width: 480px) {
+  .post-card {
+    padding: 12px 10px;
+  }
+
+  .post-footer {
+    gap: 6px;
+  }
+
+  .post-date {
+    font-size: 10.5px;
+    max-width: 140px;
+  }
+
+  .post-actions {
+    gap: 5px;
+  }
+
+  .post-action-btn {
+    padding: 5px 8px;
+    font-size: 11px;
+    gap: 4px;
+    border-radius: 8px;
+  }
+
+  .comment-input-row {
+    gap: 6px;
+  }
+
+  .comment-input {
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .comment-input::placeholder {
+    font-size: 11.5px;
+  }
+
+  .comment-submit-btn {
+    padding: 7px 10px;
+    font-size: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .emoji-trigger-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .emoji-trigger-icon {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 380px) {
+  .post-card {
+    padding: 10px 8px;
+  }
+
+  .post-footer {
+    gap: 4px;
+    row-gap: 6px;
+  }
+
+  .post-date {
+    font-size: 9.5px;
+    max-width: 120px;
+  }
+
+  .post-actions {
+    gap: 4px;
+  }
+
+  .post-action-btn {
+    padding: 4px 7px;
+    font-size: 10px;
+    gap: 3px;
+    border-radius: 7px;
+  }
+
+  .comment-input-row {
+    gap: 4px;
+  }
+
+  .comment-input {
+    padding: 6px 7px;
+    font-size: 11.5px;
+  }
+
+  .comment-input::placeholder {
+    font-size: 10.5px;
+  }
+
+  .comment-submit-btn {
+    padding: 6px 8px;
+    font-size: 9.5px;
+    letter-spacing: 0.02em;
+    border-radius: 5px;
+  }
+
+  .emoji-trigger-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .emoji-trigger-icon {
+    font-size: 14px;
+  }
+
+  .comment-item {
+    padding: 8px 9px;
+  }
+
+  .comment-author-name {
+    font-size: 12px;
+  }
+
+  .comment-content {
+    font-size: 12px;
+  }
+
+  .comment-confirm-box {
+    gap: 4px;
+  }
+
+  .comment-btn-confirm,
+  .comment-btn-cancel {
+    padding: 2px 6px;
+    font-size: 10px;
   }
 }
 

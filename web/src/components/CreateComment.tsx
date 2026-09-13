@@ -72,8 +72,12 @@ const CreateComment = ({ onAddComment }: CreateCommentProps) => {
           type="submit"
           disabled={loading || !content.trim()}
           className="comment-submit-btn"
+          title={loading ? "Posting..." : "Comment"}
+          aria-label={loading ? "Posting comment" : "Submit comment"}
         >
-          {loading ? "posting..." : "comment"}
+          <span className="comment-submit-text">
+            {loading ? "posting..." : "comment"}
+          </span>
         </button>
       </div>
     </form>

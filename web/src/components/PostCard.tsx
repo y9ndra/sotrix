@@ -362,8 +362,16 @@ const PostCard = ({
       )}
 
       <div className="post-footer">
-        <small className="post-date">
-          {new Date(post.createdAt).toLocaleString()}
+        <small
+          className="post-date"
+          title={new Date(post.createdAt).toLocaleString()}
+        >
+          {new Date(post.createdAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </small>
 
         <div className="post-actions">
