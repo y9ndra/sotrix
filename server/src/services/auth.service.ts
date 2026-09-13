@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import User from "../models/user.model";
 import Session from "../models/session.model";
+import { userRepository } from "../repositories";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -29,9 +29,10 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
   const displayName = name?.trim() || normalizedUsername;
 
   // Check if username or email already exists
-  const existingUser = await User.findOne({
-    $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
-  });
+  const existingUser = await userRepository.findByEmailOrUsername(
+    normalizedEmail,
+    normalizedUsername
+  );
 
   if (existingUser) {
     throw new Error("User with this email or username already exists");
@@ -39,7 +40,7 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const newUser = await User.create({
+  const newUser = await userRepository.create({
     name: displayName,
     username: normalizedUsername,
     email: normalizedEmail,
@@ -65,9 +66,7 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
 
   const normalizedIdentifier = identifier.trim().toLowerCase();
 
-  const user = await User.findOne({
-    $or: [{ email: normalizedIdentifier }, { username: normalizedIdentifier }],
-  });
+  const user = await userRepository.findByEmailOrUsername(normalizedIdentifier);
 
   if (!user) {
     throw new Error("User with this email or username does not exist");
@@ -111,7 +110,7 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
 };
 
 export const getUserProfile = async (userId: string): Promise<AuthUser> => {
-  const user = await User.findById(userId).select("-password");
+  const user = await userRepository.findById(userId, { select: "-password" });
 
   if (!user) {
     throw new Error("User not found");

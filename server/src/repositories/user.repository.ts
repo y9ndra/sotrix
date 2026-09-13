@@ -11,7 +11,8 @@ export interface IUserRepository {
     excludeId?: string
   ): Promise<IUser | null>;
   findByEmailOrUsername(
-    identifier: string
+    identifier: string,
+    username?: string
   ): Promise<IUser | null>;
   create(
     userData: Partial<IUser>
@@ -65,10 +66,17 @@ export class MongoUserRepository implements IUserRepository {
   }
 
   async findByEmailOrUsername(
-    identifier: string
+    identifier: string,
+    username?: string
   ): Promise<IUser | null> {
+    const conditions: any[] = [{ email: identifier }];
+    if (username) {
+      conditions.push({ username });
+    } else {
+      conditions.push({ username: identifier });
+    }
     return User.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
+      $or: conditions,
     }).exec();
   }
 
