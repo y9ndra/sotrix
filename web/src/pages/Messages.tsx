@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
+import { useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { usePresenceStore } from "../store/presenceStore";
@@ -120,6 +120,8 @@ const Messages: React.FC = () => {
   const [unreadBelowCount, setUnreadBelowCount] = useState(0);
   const hasInitialScrolledRef = useRef<Record<string, boolean>>({});
   const prevMessagesLengthRef = useRef(0);
+  const prevScrollHeightRef = useRef<number | null>(null);
+  const prevLastMessageIdRef = useRef<string | null>(null);
 
   const handleEmojiSelect = (emoji: string) => {
     const input = chatInputRef.current;
@@ -170,18 +172,45 @@ const Messages: React.FC = () => {
     }
   }, [conversations, selectedConversationId, activeConversationId]);
 
-  // Fetch messages for selected conversation
-  const { data: messagesResponse, isLoading: messagesLoading } = useQuery({
+  // Fetch messages for selected conversation with infinite scrolling (cursor pagination)
+  const {
+    data: messagesData,
+    isLoading: messagesLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: queryKeys.conversations.messages(selectedConversationId || ""),
-    queryFn: () => getMessages(selectedConversationId!),
+    queryFn: ({ pageParam }) =>
+      getMessages(selectedConversationId!, pageParam as string | undefined, 30),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage?.hasMore && lastPage?.nextCursor ? lastPage.nextCursor : undefined,
     enabled: !!selectedConversationId,
     staleTime: 0,
     refetchOnMount: "always",
   });
 
+  // Flatten and deduplicate all messages across pages (newest-first)
+  const rawMessages: ChatMessage[] = useMemo(() => {
+    if (!messagesData?.pages) return [];
+    const seen = new Set<string>();
+    const list: ChatMessage[] = [];
+    for (const page of messagesData.pages) {
+      if (Array.isArray(page?.data)) {
+        for (const msg of page.data) {
+          if (msg?._id && !seen.has(msg._id)) {
+            seen.add(msg._id);
+            list.push(msg);
+          }
+        }
+      }
+    }
+    return list;
+  }, [messagesData]);
+
   // Messages are returned newest-first from backend: reverse for natural bottom-up chat display
-  const rawMessages: ChatMessage[] = messagesResponse?.data ?? [];
-  const displayMessages = [...rawMessages].reverse();
+  const displayMessages = useMemo(() => [...rawMessages].reverse(), [rawMessages]);
 
   // Fetch active conversation details directly if selected
   const { data: directConversation } = useQuery({
@@ -217,10 +246,28 @@ const Messages: React.FC = () => {
     }
   }, [directConversation, queryClient]);
 
-  // Monitor user scrolling to detect if they are reading older messages
+  // Preserve scroll position when older messages are prepended at the top
+  useLayoutEffect(() => {
+    const container = chatMessagesContainerRef.current;
+    if (!container || prevScrollHeightRef.current === null) return;
+
+    const diff = container.scrollHeight - prevScrollHeightRef.current;
+    if (diff > 0) {
+      container.scrollTop = container.scrollTop + diff;
+    }
+    prevScrollHeightRef.current = null;
+  }, [displayMessages.length]);
+
+  // Monitor user scrolling to detect if they are reading older messages or reached top to load more
   const handleMessagesScroll = () => {
     const container = chatMessagesContainerRef.current;
     if (!container) return;
+
+    // Check if scrolled near top to auto-load older messages
+    if (container.scrollTop < 80 && hasNextPage && !isFetchingNextPage) {
+      prevScrollHeightRef.current = container.scrollHeight;
+      fetchNextPage();
+    }
 
     // Threshold of 120px from bottom is considered "at the bottom"
     const distanceFromBottom =
@@ -232,6 +279,16 @@ const Messages: React.FC = () => {
 
     if (isAtBottom) {
       setUnreadBelowCount(0);
+    }
+  };
+
+  const handleLoadEarlier = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      const container = chatMessagesContainerRef.current;
+      if (container) {
+        prevScrollHeightRef.current = container.scrollHeight;
+      }
+      fetchNextPage();
     }
   };
 
@@ -261,26 +318,37 @@ const Messages: React.FC = () => {
       if (container) {
         container.scrollTop = container.scrollHeight;
       }
+      const lastMsg = displayMessages[displayMessages.length - 1];
+      if (lastMsg) {
+        prevLastMessageIdRef.current = lastMsg._id;
+      }
     }
-  }, [selectedConversationId, displayMessages.length]);
+  }, [selectedConversationId, displayMessages]);
 
   // Handle incoming messages: ONLY auto-scroll if the user is ALREADY at the bottom
   useEffect(() => {
     const container = chatMessagesContainerRef.current;
     if (!container) return;
 
-    const lengthDiff = displayMessages.length - prevMessagesLengthRef.current;
+    const currentLastMessage = displayMessages[displayMessages.length - 1];
+    const currentLastId = currentLastMessage?._id || null;
+    const isNewMessageAtBottom =
+      currentLastId !== null &&
+      prevLastMessageIdRef.current !== null &&
+      currentLastId !== prevLastMessageIdRef.current;
+
+    prevLastMessageIdRef.current = currentLastId;
     prevMessagesLengthRef.current = displayMessages.length;
 
-    if (lengthDiff > 0) {
+    if (isNewMessageAtBottom) {
       if (isAtBottomRef.current) {
         container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
       } else {
         // User is reading older messages: DO NOT SCROLL. Count new message below.
-        setUnreadBelowCount((prev) => prev + lengthDiff);
+        setUnreadBelowCount((prev) => prev + 1);
       }
     }
-  }, [displayMessages.length]);
+  }, [displayMessages]);
 
   // When remote user starts typing: NEVER scroll if user is reading older messages!
   useEffect(() => {
@@ -345,24 +413,56 @@ const Messages: React.FC = () => {
           : newMsg.sender?._id || (newMsg.sender as any)?.id;
       const isSentByMe = senderId === currentUserId;
 
-      queryClient.setQueryData<MessagesResponse>(
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
         queryKeys.conversations.messages(newMsg.conversation),
         (oldData) => {
           if (!oldData) {
             return {
+              pages: [
+                {
+                  success: true,
+                  data: [newMsg],
+                  nextCursor: null,
+                  hasMore: false,
+                },
+              ],
+              pageParams: [undefined],
+            };
+          }
+
+          if ("pages" in oldData) {
+            const alreadyExists = oldData.pages.some((page) =>
+              page?.data?.some((m) => m._id === newMsg._id)
+            );
+            if (alreadyExists) return oldData;
+
+            const firstPage = oldData.pages[0] || {
               success: true,
-              data: [newMsg],
+              data: [],
               nextCursor: null,
               hasMore: false,
             };
+            const updatedFirstPage = {
+              ...firstPage,
+              data: [newMsg, ...(firstPage.data || [])],
+            };
+            return {
+              ...oldData,
+              pages: [updatedFirstPage, ...oldData.pages.slice(1)],
+            };
           }
-          if (oldData.data.some((m) => m._id === newMsg._id)) {
-            return oldData;
+
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            if (oldData.data.some((m) => m._id === newMsg._id)) {
+              return oldData;
+            }
+            return {
+              ...oldData,
+              data: [newMsg, ...oldData.data],
+            };
           }
-          return {
-            ...oldData,
-            data: [newMsg, ...oldData.data],
-          };
+
+          return oldData;
         }
       );
 
@@ -751,54 +851,87 @@ const Messages: React.FC = () => {
                   <small className="chat-empty-subtitle">Send a message to start the conversation.</small>
                 </div>
               ) : (
-                displayMessages.map((msg, idx) => {
-                  const isSender =
-                    msg.sender?._id === currentUserId ||
-                    (typeof msg.sender === "string" && msg.sender === currentUserId);
-
-                  const prevMsg = idx > 0 ? displayMessages[idx - 1] : null;
-                  const showDateDivider =
-                    !prevMsg ||
-                    !isSameDay(new Date(prevMsg.createdAt), new Date(msg.createdAt));
-
-                  const fullTimestampTooltip = new Date(msg.createdAt).toLocaleString(
-                    undefined,
-                    {
-                      dateStyle: "full",
-                      timeStyle: "short",
-                    }
-                  );
-
-                  return (
-                    <React.Fragment key={msg._id}>
-                      {showDateDivider && (
-                        <div className="chat-date-divider-row">
-                          <span className="chat-date-divider-line" />
-                          <span className="chat-date-divider-pill">
-                            {formatDateDivider(msg.createdAt)}
-                          </span>
-                          <span className="chat-date-divider-line" />
-                        </div>
-                      )}
-                      <div
-                        className={`chat-message-bubble-row ${isSender ? "outgoing" : "incoming"}`}
+                <>
+                  {hasNextPage && (
+                    <div className="chat-load-older-wrap">
+                      <button
+                        type="button"
+                        onClick={handleLoadEarlier}
+                        disabled={isFetchingNextPage}
+                        className="chat-load-older-btn"
+                        aria-label="Load earlier messages"
                       >
-                        <div className={`chat-message-bubble ${isSender ? "mine" : "theirs"}`}>
-                          <p className="chat-message-text">{msg.content}</p>
-                          <span
-                            className="chat-message-timestamp"
-                            title={fullTimestampTooltip}
-                          >
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                        {isFetchingNextPage ? (
+                          <span className="chat-load-older-loading">
+                            <span>Loading earlier messages</span>
+                            <span className="chat-typing-dots">
+                              <span className="typing-dot" />
+                              <span className="typing-dot" />
+                              <span className="typing-dot" />
+                            </span>
                           </span>
+                        ) : (
+                          <span>↑ Load earlier messages</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {!hasNextPage && displayMessages.length >= 10 && (
+                    <div className="chat-conversation-start-pill">
+                      <span>Beginning of conversation history</span>
+                    </div>
+                  )}
+
+                  {displayMessages.map((msg, idx) => {
+                    const isSender =
+                      msg.sender?._id === currentUserId ||
+                      (typeof msg.sender === "string" && msg.sender === currentUserId);
+
+                    const prevMsg = idx > 0 ? displayMessages[idx - 1] : null;
+                    const showDateDivider =
+                      !prevMsg ||
+                      !isSameDay(new Date(prevMsg.createdAt), new Date(msg.createdAt));
+
+                    const fullTimestampTooltip = new Date(msg.createdAt).toLocaleString(
+                      undefined,
+                      {
+                        dateStyle: "full",
+                        timeStyle: "short",
+                      }
+                    );
+
+                    return (
+                      <React.Fragment key={msg._id}>
+                        {showDateDivider && (
+                          <div className="chat-date-divider-row">
+                            <span className="chat-date-divider-line" />
+                            <span className="chat-date-divider-pill">
+                              {formatDateDivider(msg.createdAt)}
+                            </span>
+                            <span className="chat-date-divider-line" />
+                          </div>
+                        )}
+                        <div
+                          className={`chat-message-bubble-row ${isSender ? "outgoing" : "incoming"}`}
+                        >
+                          <div className={`chat-message-bubble ${isSender ? "mine" : "theirs"}`}>
+                            <p className="chat-message-text">{msg.content}</p>
+                            <span
+                              className="chat-message-timestamp"
+                              title={fullTimestampTooltip}
+                            >
+                              {new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })
+                      </React.Fragment>
+                    );
+                  })}
+                </>
               )}
 
               {/* Real-time Typing Indicator Bubble */}

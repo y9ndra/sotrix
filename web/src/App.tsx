@@ -13,7 +13,7 @@ import DeckLayout from './components/DeckLayout';
 import RubiksCursor from './components/RubiksCursor';
 
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { connectSocket, disconnectSocket } from "./services/socket.service";
 import { useNotificationStore } from "./store/notification.store";
 import { usePresenceStore } from "./store/presenceStore";
@@ -135,24 +135,58 @@ function App() {
 
       const handleGlobalMessageNew = (newMsg: ChatMessage) => {
         // Optimistically update conversation message cache if loaded
-        queryClient.setQueryData<MessagesResponse>(
+        queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
           queryKeys.conversations.messages(newMsg.conversation),
           (oldData) => {
             if (!oldData) {
               return {
+                pages: [
+                  {
+                    success: true,
+                    data: [newMsg],
+                    nextCursor: null,
+                    hasMore: false,
+                  },
+                ],
+                pageParams: [undefined],
+              };
+            }
+
+            // Check if it's in InfiniteData format
+            if ("pages" in oldData) {
+              const alreadyExists = oldData.pages.some((page) =>
+                page?.data?.some((m) => m._id === newMsg._id)
+              );
+              if (alreadyExists) return oldData;
+
+              const firstPage = oldData.pages[0] || {
                 success: true,
-                data: [newMsg],
+                data: [],
                 nextCursor: null,
                 hasMore: false,
               };
+              const updatedFirstPage = {
+                ...firstPage,
+                data: [newMsg, ...(firstPage.data || [])],
+              };
+              return {
+                ...oldData,
+                pages: [updatedFirstPage, ...oldData.pages.slice(1)],
+              };
             }
-            if (oldData.data.some((m) => m._id === newMsg._id)) {
-              return oldData;
+
+            // Fallback for single MessagesResponse format
+            if ("data" in oldData && Array.isArray(oldData.data)) {
+              if (oldData.data.some((m) => m._id === newMsg._id)) {
+                return oldData;
+              }
+              return {
+                ...oldData,
+                data: [newMsg, ...oldData.data],
+              };
             }
-            return {
-              ...oldData,
-              data: [newMsg, ...oldData.data],
-            };
+
+            return oldData;
           }
         );
 

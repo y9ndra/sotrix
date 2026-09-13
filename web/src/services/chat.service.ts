@@ -21,7 +21,7 @@ export const getOrCreateConversation = async (
 export const getMessages = async (
   conversationId: string,
   cursor?: string,
-  limit: number = 20
+  limit: number = 30
 ): Promise<MessagesResponse> => {
   const response = await api.get(`/conversations/${conversationId}/messages`, {
     params: { cursor, limit },

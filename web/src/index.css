@@ -3562,6 +3562,79 @@ button, input, textarea, select {
   background-size: 24px 24px;
 }
 
+/* Load Earlier Messages Button & Indicator */
+.chat-load-older-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 0 10px 0;
+  width: 100%;
+}
+
+.chat-load-older-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 6px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--card-shadow);
+}
+
+.chat-load-older-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-matrix);
+  color: var(--accent-matrix);
+  transform: translateY(-1px);
+}
+
+.chat-load-older-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.chat-load-older-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.chat-load-older-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-conversation-start-pill {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0 12px 0;
+  width: 100%;
+}
+
+.chat-conversation-start-pill span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  background-color: var(--bg-card);
+  border: 1px dashed var(--border-default);
+  border-radius: 16px;
+  padding: 4px 14px;
+  opacity: 0.8;
+  user-select: none;
+}
+
 /* Date Divider between days in chat feed */
 .chat-date-divider-row {
   display: flex;
