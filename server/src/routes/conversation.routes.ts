@@ -6,6 +6,9 @@ import {
   getConversation,
   getConversationMessages,
   markAsRead,
+  editMessageController,
+  deleteMessageController,
+  batchDeleteMessagesController,
 } from "../controllers/conversation.controller";
 
 const router = Router();
@@ -27,5 +30,14 @@ router.patch("/:id/read", markAsRead);
 
 // Get cursor-paginated messages for a conversation
 router.get("/:id/messages", getConversationMessages);
+
+// Edit a message
+router.patch("/:conversationId/messages/:messageId", editMessageController);
+
+// Batch delete messages
+router.post("/:conversationId/messages/batch-delete", batchDeleteMessagesController);
+
+// Delete a single message
+router.delete("/:conversationId/messages/:messageId", deleteMessageController);
 
 export default router;

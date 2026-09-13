@@ -1,7 +1,13 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import mongoose from "mongoose";
 import Conversation from "../models/conversation.model";
-import { createMessage } from "../services/message.service";
+import {
+  createMessage,
+  editMessage,
+  deleteMessage,
+  batchDeleteMessages,
+  DeleteMessageMode,
+} from "../services/message.service";
 import { markConversationAsRead } from "../services/conversation.service";
 import { getUserRoom } from "./socketRooms";
 
@@ -117,6 +123,180 @@ export const registerChatHandlers = (
       } catch (error: any) {
         socket.emit("chat:error", {
           message: error.message || "Failed to send message",
+        });
+      }
+    }
+  );
+
+  // Handle editing a chat message
+  socket.on(
+    "message:edit",
+    async (payload: {
+      conversationId: string;
+      messageId: string;
+      content: string;
+    }) => {
+      try {
+        if (!userId) {
+          socket.emit("chat:error", { message: "Unauthorized" });
+          return;
+        }
+
+        const { conversationId, messageId, content } = payload || {};
+        if (!messageId || !content) {
+          socket.emit("chat:error", {
+            message: "Message ID and content are required",
+          });
+          return;
+        }
+
+        const updatedMessage = await editMessage(messageId, userId, content);
+
+        const targetConvId =
+          conversationId || updatedMessage.conversation.toString();
+        const conversation = await Conversation.findById(targetConvId).select(
+          "participants"
+        );
+        const participantIds = conversation?.participants || [];
+
+        let emitter: any = io.to(targetConvId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+        }
+        emitter.emit("message:edited", updatedMessage);
+      } catch (error: any) {
+        socket.emit("chat:error", {
+          message: error.message || "Failed to edit message",
+        });
+      }
+    }
+  );
+
+  // Handle deleting a chat message (selective: for_me or for_everyone)
+  socket.on(
+    "message:delete",
+    async (payload: {
+      conversationId: string;
+      messageId: string;
+      mode?: DeleteMessageMode;
+    }) => {
+      try {
+        if (!userId) {
+          socket.emit("chat:error", { message: "Unauthorized" });
+          return;
+        }
+
+        const { conversationId, messageId, mode = "for_everyone" } = payload || {};
+        if (!messageId) {
+          socket.emit("chat:error", {
+            message: "Message ID is required",
+          });
+          return;
+        }
+
+        const result = await deleteMessage(messageId, userId, mode);
+
+        const targetConvId = conversationId || result.conversationId;
+
+        if (result.mode === "for_everyone") {
+          const conversation = await Conversation.findById(targetConvId).select(
+            "participants"
+          );
+          const participantIds = conversation?.participants || [];
+
+          let emitter: any = io.to(targetConvId);
+          for (const pId of participantIds) {
+            const pIdStr = pId.toString();
+            emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+          }
+          emitter.emit("message:deleted", {
+            conversationId: targetConvId,
+            messageId: result.messageId,
+            mode: "for_everyone",
+          });
+        } else {
+          // for_me: only emit to requesting user's room
+          io.to(userId.toString())
+            .to(getUserRoom(userId.toString()))
+            .emit("message:deleted", {
+              conversationId: targetConvId,
+              messageId: result.messageId,
+              mode: "for_me",
+            });
+        }
+      } catch (error: any) {
+        socket.emit("chat:error", {
+          message: error.message || "Failed to delete message",
+        });
+      }
+    }
+  );
+
+  // Handle batch deleting chat messages (selective: for_me or for_everyone)
+  socket.on(
+    "message:batch-delete",
+    async (payload: {
+      conversationId: string;
+      messageIds: string[];
+      mode?: DeleteMessageMode;
+    }) => {
+      try {
+        if (!userId) {
+          socket.emit("chat:error", { message: "Unauthorized" });
+          return;
+        }
+
+        const { conversationId, messageIds, mode = "for_everyone" } = payload || {};
+        if (
+          !conversationId ||
+          !messageIds ||
+          !Array.isArray(messageIds) ||
+          messageIds.length === 0
+        ) {
+          socket.emit("chat:error", {
+            message: "Conversation ID and messageIds array are required",
+          });
+          return;
+        }
+
+        const result = await batchDeleteMessages(
+          messageIds,
+          userId,
+          mode
+        );
+
+        const targetConvId = conversationId || result.conversationId;
+
+        if (result.mode === "for_everyone") {
+          const conversation = await Conversation.findById(targetConvId).select(
+            "participants"
+          );
+          const participantIds = conversation?.participants || [];
+
+          let emitter: any = io.to(targetConvId);
+          for (const pId of participantIds) {
+            const pIdStr = pId.toString();
+            emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+          }
+          emitter.emit("message:batch-deleted", {
+            conversationId: targetConvId,
+            messageIds: result.messageIds,
+            mode: "for_everyone",
+          });
+        } else {
+          // for_me: only emit to requesting user's room
+          io.to(userId.toString())
+            .to(getUserRoom(userId.toString()))
+            .emit("message:batch-deleted", {
+              conversationId: targetConvId,
+              messageIds: result.messageIds,
+              mode: "for_me",
+            });
+        }
+      } catch (error: any) {
+        socket.emit("chat:error", {
+          message: error.message || "Failed to batch delete messages",
         });
       }
     }

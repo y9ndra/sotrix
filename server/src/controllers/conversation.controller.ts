@@ -5,9 +5,16 @@ import {
   getConversationForUser,
   markConversationAsRead,
 } from "../services/conversation.service";
-import { getMessages as getMessagesService } from "../services/message.service";
+import {
+  getMessages as getMessagesService,
+  editMessage as editMessageService,
+  deleteMessage as deleteMessageService,
+  batchDeleteMessages as batchDeleteMessagesService,
+  type DeleteMessageMode,
+} from "../services/message.service";
 import { getSocketIO } from "../socket/socket.manager";
 import { getUserRoom } from "../socket/socketRooms";
+import Conversation from "../models/conversation.model";
 
 export const createOrGetConversation = async (
   req: Request,
@@ -154,6 +161,222 @@ export const markAsRead = async (
       data: conversation,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const editMessageController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { conversationId, messageId } = req.params;
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Message content cannot be empty",
+      });
+    }
+
+    const updatedMessage = await editMessageService(
+      messageId,
+      userId,
+      content
+    );
+
+    // Broadcast message:edited to conversation room and participants' user rooms
+    try {
+      const io = getSocketIO();
+      const targetConvId = conversationId || updatedMessage.conversation.toString();
+      const conversation = await Conversation.findById(targetConvId).select("participants");
+      const participantIds = conversation?.participants || [];
+
+      let emitter: any = io.to(targetConvId);
+      for (const pId of participantIds) {
+        const pIdStr = pId.toString();
+        emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+      }
+      emitter.emit("message:edited", updatedMessage);
+    } catch (socketErr) {
+      console.warn("Could not broadcast message:edited event:", socketErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: updatedMessage,
+    });
+  } catch (error: any) {
+    if (error.message === "Message not found") {
+      return res.status(404).json({ success: false, message: error.message });
+    }
+    if (error.message === "You are not authorized to edit this message") {
+      return res.status(403).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+export const deleteMessageController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { conversationId, messageId } = req.params;
+    const mode =
+      (req.query.mode as DeleteMessageMode) ||
+      (req.body?.mode as DeleteMessageMode) ||
+      "for_everyone";
+
+    const result = await deleteMessageService(messageId, userId, mode);
+
+    // Broadcast message:deleted event
+    try {
+      const io = getSocketIO();
+      const targetConvId = conversationId || result.conversationId;
+
+      if (result.mode === "for_everyone") {
+        // Broadcast to conversation room and each participant's personal room
+        const conversation = await Conversation.findById(targetConvId).select(
+          "participants"
+        );
+        const participantIds = conversation?.participants || [];
+
+        let emitter: any = io.to(targetConvId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+        }
+        emitter.emit("message:deleted", {
+          conversationId: targetConvId,
+          messageId: result.messageId,
+          mode: "for_everyone",
+        });
+      } else {
+        // "for_me": Only emit to requesting user's personal room across all their active tabs
+        io.to(userId.toString())
+          .to(getUserRoom(userId.toString()))
+          .emit("message:deleted", {
+            conversationId: targetConvId,
+            messageId: result.messageId,
+            mode: "for_me",
+          });
+      }
+    } catch (socketErr) {
+      console.warn("Could not broadcast message:deleted event:", socketErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    if (error.message === "Message not found") {
+      return res.status(200).json({
+        success: true,
+        data: {
+          conversationId: req.params.conversationId,
+          messageId: req.params.messageId,
+          mode: req.query.mode || req.body?.mode || "for_everyone",
+        },
+      });
+    }
+    if (
+      error.message?.includes("not authorized") ||
+      error.message?.includes("access denied")
+    ) {
+      return res.status(403).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+export const batchDeleteMessagesController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { conversationId } = req.params;
+    const { messageIds, mode = "for_everyone" } = req.body;
+
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "messageIds must be a non-empty array of IDs",
+      });
+    }
+
+    const result = await batchDeleteMessagesService(
+      messageIds,
+      userId,
+      mode as DeleteMessageMode
+    );
+
+    // Broadcast batch deletion event
+    try {
+      const io = getSocketIO();
+      const targetConvId = conversationId || result.conversationId;
+
+      if (result.mode === "for_everyone") {
+        const conversation = await Conversation.findById(targetConvId).select(
+          "participants"
+        );
+        const participantIds = conversation?.participants || [];
+
+        let emitter: any = io.to(targetConvId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+        }
+        emitter.emit("message:batch-deleted", {
+          conversationId: targetConvId,
+          messageIds: result.messageIds,
+          mode: "for_everyone",
+        });
+      } else {
+        io.to(userId.toString())
+          .to(getUserRoom(userId.toString()))
+          .emit("message:batch-deleted", {
+            conversationId: targetConvId,
+            messageIds: result.messageIds,
+            mode: "for_me",
+          });
+      }
+    } catch (socketErr) {
+      console.warn("Could not broadcast message:batch-deleted event:", socketErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    if (
+      error.message?.includes("not authorized") ||
+      error.message?.includes("access denied") ||
+      error.message?.includes("only delete messages sent by you")
+    ) {
+      return res.status(403).json({ success: false, message: error.message });
+    }
     next(error);
   }
 };
