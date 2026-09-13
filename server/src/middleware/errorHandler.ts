@@ -72,7 +72,12 @@ export const errorHandler = (
 
   // 4. Default unhandled server error
   logger.error(err, "Unhandled server error");
-  const message = err instanceof Error ? err.message : "Internal server error";
+  const isProduction = process.env.NODE_ENV === "production";
+  const message = isProduction
+    ? "Internal server error"
+    : err instanceof Error
+    ? err.message
+    : "Internal server error";
 
   return res.status(500).json({
     message,
