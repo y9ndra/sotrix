@@ -23,6 +23,11 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
+# Ensure upload directory exists and set ownership for non-root user
+RUN mkdir -p uploads && chown -R node:node /app
+
+USER node
+
 EXPOSE 5000
 
 CMD ["node", "dist/server.js"]
