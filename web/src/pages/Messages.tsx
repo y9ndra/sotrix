@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
@@ -10,6 +11,9 @@ import {
   getConversation,
   getMessages,
   markConversationAsRead,
+  editMessage,
+  deleteMessage,
+  batchDeleteMessages,
 } from "../services/chat.service";
 import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.types";
 import EmojiPicker from "../components/EmojiPicker";
@@ -123,6 +127,195 @@ const Messages: React.FC = () => {
   const prevScrollHeightRef = useRef<number | null>(null);
   const prevLastMessageIdRef = useRef<string | null>(null);
 
+  // Message edit and delete state
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const editInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Selection mode & Selective Delete state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    targetMessage?: ChatMessage | null;
+    isBatch?: boolean;
+  } | null>(null);
+
+  // Auto-focus and position cursor at end when entering edit mode
+  useEffect(() => {
+    if (editingMessageId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.selectionStart = editInputRef.current.value.length;
+      editInputRef.current.selectionEnd = editInputRef.current.value.length;
+    }
+  }, [editingMessageId]);
+
+  // Reset selection and modal state on conversation switch
+  useEffect(() => {
+    setIsSelectMode(false);
+    setSelectedMessageIds(new Set());
+    setDeleteModal(null);
+    setEditingMessageId(null);
+  }, [selectedConversationId]);
+
+  // Close delete modal or cancel select mode on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (deleteModal?.isOpen) {
+          setDeleteModal(null);
+        } else if (isSelectMode) {
+          setIsSelectMode(false);
+          setSelectedMessageIds(new Set());
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [deleteModal, isSelectMode]);
+
+  const toggleSelectMode = () => {
+    setIsSelectMode((prev) => {
+      if (prev) {
+        setSelectedMessageIds(new Set());
+      }
+      return !prev;
+    });
+    setEditingMessageId(null);
+  };
+
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedMessageIds(new Set());
+  };
+
+  const toggleSelectMessage = (messageId: string) => {
+    setSelectedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  };
+
+  const openSingleDeleteModal = (msg: ChatMessage) => {
+    setDeleteModal({
+      isOpen: true,
+      targetMessage: msg,
+      isBatch: false,
+    });
+  };
+
+  const openBatchDeleteModal = () => {
+    if (selectedMessageIds.size === 0) return;
+    setDeleteModal({
+      isOpen: true,
+      isBatch: true,
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal(null);
+  };
+
+  const startEditing = (msg: ChatMessage) => {
+    setEditingMessageId(msg._id);
+    setEditingContent(msg.content);
+  };
+
+  const cancelEditing = () => {
+    setEditingMessageId(null);
+    setEditingContent("");
+  };
+
+  const submitEdit = async (messageId: string) => {
+    const trimmed = editingContent.trim();
+    if (!trimmed || !selectedConversationId) return;
+
+    // Optimistically update React Query messages cache
+    queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+      queryKeys.conversations.messages(selectedConversationId),
+      (oldData) => {
+        if (!oldData) return oldData;
+        if ("pages" in oldData) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              data: page.data.map((m) =>
+                m._id === messageId
+                  ? {
+                      ...m,
+                      content: trimmed,
+                      isEdited: true,
+                      editedAt: new Date().toISOString(),
+                    }
+                  : m
+              ),
+            })),
+          };
+        }
+        if ("data" in oldData && Array.isArray(oldData.data)) {
+          return {
+            ...oldData,
+            data: oldData.data.map((m) =>
+              m._id === messageId
+                ? {
+                    ...m,
+                    content: trimmed,
+                    isEdited: true,
+                    editedAt: new Date().toISOString(),
+                  }
+                : m
+            ),
+          };
+        }
+        return oldData;
+      }
+    );
+
+    // Update conversation lastMessage in sidebar if applicable
+    queryClient.setQueryData<Conversation[]>(
+      queryKeys.conversations.all,
+      (old = []) => {
+        return old.map((conv) => {
+          if (conv._id === selectedConversationId && conv.lastMessage) {
+            return {
+              ...conv,
+              lastMessage: {
+                ...conv.lastMessage,
+                content: trimmed,
+              },
+            };
+          }
+          return conv;
+        });
+      }
+    );
+
+    // Emit via Socket.IO
+    const socket = getSocket();
+    if (socket) {
+      socket.emit("message:edit", {
+        conversationId: selectedConversationId,
+        messageId,
+        content: trimmed,
+      });
+    }
+
+    // Call REST endpoint as reliable fallback
+    try {
+      await editMessage(selectedConversationId, messageId, trimmed);
+    } catch (err) {
+      console.error("Failed to edit message via API:", err);
+    }
+
+    cancelEditing();
+  };
+
   const handleEmojiSelect = (emoji: string) => {
     const input = chatInputRef.current;
     if (!input) {
@@ -211,6 +404,149 @@ const Messages: React.FC = () => {
 
   // Messages are returned newest-first from backend: reverse for natural bottom-up chat display
   const displayMessages = useMemo(() => [...rawMessages].reverse(), [rawMessages]);
+
+  const handleToggleSelectAll = () => {
+    if (selectedMessageIds.size === displayMessages.length && displayMessages.length > 0) {
+      setSelectedMessageIds(new Set());
+    } else {
+      setSelectedMessageIds(new Set(displayMessages.map((m) => m._id)));
+    }
+  };
+
+  // Determine if all target messages can be deleted for everyone (i.e. all authored by currentUser)
+  const canDeleteForEveryone = useMemo(() => {
+    if (!deleteModal) return false;
+    if (deleteModal.isBatch) {
+      if (selectedMessageIds.size === 0) return false;
+      return Array.from(selectedMessageIds).every((id) => {
+        const msg = displayMessages.find((m) => m._id === id);
+        if (!msg) return false;
+        const sId =
+          typeof msg.sender === "string"
+            ? msg.sender
+            : msg.sender?._id || (msg.sender as any)?.id;
+        return sId === currentUserId;
+      });
+    }
+    if (deleteModal.targetMessage) {
+      const sId =
+        typeof deleteModal.targetMessage.sender === "string"
+          ? deleteModal.targetMessage.sender
+          : deleteModal.targetMessage.sender?._id ||
+            (deleteModal.targetMessage.sender as any)?.id;
+      return sId === currentUserId;
+    }
+    return false;
+  }, [deleteModal, selectedMessageIds, displayMessages, currentUserId]);
+
+  const handleConfirmDelete = async (mode: "for_me" | "for_everyone") => {
+    if (!deleteModal || !selectedConversationId) return;
+
+    if (deleteModal.isBatch) {
+      const idsToDelete = Array.from(selectedMessageIds);
+      closeDeleteModal();
+      exitSelectMode();
+
+      const idSet = new Set(idsToDelete);
+
+      // Optimistically remove from React Query messages cache
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(selectedConversationId),
+        (oldData) => {
+          if (!oldData) return oldData;
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.filter((m) => !idSet.has(m._id)),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.filter((m) => !idSet.has(m._id)),
+            };
+          }
+          return oldData;
+        }
+      );
+
+      // Invalidate conversation list to update lastMessage
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.all,
+        exact: true,
+      });
+
+      // Emit via Socket.IO
+      const socket = getSocket();
+      if (socket) {
+        socket.emit("message:batch-delete", {
+          conversationId: selectedConversationId,
+          messageIds: idsToDelete,
+          mode,
+        });
+      }
+
+      // Reliable REST fallback
+      try {
+        await batchDeleteMessages(selectedConversationId, idsToDelete, mode);
+      } catch (err) {
+        console.error("Failed to batch delete messages via API:", err);
+      }
+    } else if (deleteModal.targetMessage) {
+      const msgId = deleteModal.targetMessage._id;
+      closeDeleteModal();
+
+      // Optimistically remove from React Query messages cache
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(selectedConversationId),
+        (oldData) => {
+          if (!oldData) return oldData;
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.filter((m) => m._id !== msgId),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.filter((m) => m._id !== msgId),
+            };
+          }
+          return oldData;
+        }
+      );
+
+      // Invalidate conversation list to update lastMessage
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.all,
+        exact: true,
+      });
+
+      // Emit via Socket.IO
+      const socket = getSocket();
+      if (socket) {
+        socket.emit("message:delete", {
+          conversationId: selectedConversationId,
+          messageId: msgId,
+          mode,
+        });
+      }
+
+      // Reliable REST fallback
+      try {
+        await deleteMessage(selectedConversationId, msgId, mode);
+      } catch (err) {
+        console.error("Failed to delete message via API:", err);
+      }
+    }
+  };
 
   // Fetch active conversation details directly if selected
   const { data: directConversation } = useQuery({
@@ -547,7 +883,134 @@ const Messages: React.FC = () => {
       }
     };
 
+    // Handle message edited event
+    const handleMessageEdited = (editedMsg: ChatMessage) => {
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(editedMsg.conversation),
+        (oldData) => {
+          if (!oldData) return oldData;
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.map((m) =>
+                  m._id === editedMsg._id ? { ...m, ...editedMsg } : m
+                ),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.map((m) =>
+                m._id === editedMsg._id ? { ...m, ...editedMsg } : m
+              ),
+            };
+          }
+          return oldData;
+        }
+      );
+
+      // Update conversations list preview
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) => {
+          return old.map((conv) => {
+            if (conv._id === editedMsg.conversation && conv.lastMessage) {
+              return {
+                ...conv,
+                lastMessage: {
+                  ...conv.lastMessage,
+                  content: editedMsg.content,
+                },
+              };
+            }
+            return conv;
+          });
+        }
+      );
+    };
+
+    // Handle message deleted event
+    const handleMessageDeleted = ({
+      conversationId,
+      messageId,
+    }: {
+      conversationId: string;
+      messageId: string;
+    }) => {
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(conversationId),
+        (oldData) => {
+          if (!oldData) return oldData;
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.filter((m) => m._id !== messageId),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.filter((m) => m._id !== messageId),
+            };
+          }
+          return oldData;
+        }
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.all,
+        exact: true,
+      });
+    };
+
+    // Handle batch messages deleted event
+    const handleMessageBatchDeleted = ({
+      conversationId,
+      messageIds,
+    }: {
+      conversationId: string;
+      messageIds: string[];
+    }) => {
+      const idSet = new Set(messageIds);
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(conversationId),
+        (oldData) => {
+          if (!oldData) return oldData;
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.filter((m) => !idSet.has(m._id)),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.filter((m) => !idSet.has(m._id)),
+            };
+          }
+          return oldData;
+        }
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.conversations.all,
+        exact: true,
+      });
+    };
+
     socket.on("message:new", handleNewMessage);
+    socket.on("message:edited", handleMessageEdited);
+    socket.on("message:deleted", handleMessageDeleted);
+    socket.on("message:batch-deleted", handleMessageBatchDeleted);
     socket.on("typing:start", handleTypingStart);
     socket.on("typing:stop", handleTypingStop);
 
@@ -556,6 +1019,9 @@ const Messages: React.FC = () => {
       socket.emit("conversation:leave", selectedConversationId);
       socket.off("connect", handleSocketConnect);
       socket.off("message:new", handleNewMessage);
+      socket.off("message:edited", handleMessageEdited);
+      socket.off("message:deleted", handleMessageDeleted);
+      socket.off("message:batch-deleted", handleMessageBatchDeleted);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
       setRemoteTypingUserId(null);
@@ -833,6 +1299,30 @@ const Messages: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              <div className="chat-header-actions">
+                <button
+                  type="button"
+                  className={`chat-header-select-btn ${isSelectMode ? "active" : ""}`}
+                  onClick={toggleSelectMode}
+                  title={isSelectMode ? "Exit selection mode" : "Select messages"}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="9 11 12 14 22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                  <span>{isSelectMode ? "Cancel" : "Select"}</span>
+                </button>
+              </div>
             </header>
 
             {/* Message History Feed */}
@@ -912,22 +1402,253 @@ const Messages: React.FC = () => {
                             <span className="chat-date-divider-line" />
                           </div>
                         )}
-                        <div
-                          className={`chat-message-bubble-row ${isSender ? "outgoing" : "incoming"}`}
-                        >
-                          <div className={`chat-message-bubble ${isSender ? "mine" : "theirs"}`}>
-                            <p className="chat-message-text">{msg.content}</p>
-                            <span
-                              className="chat-message-timestamp"
-                              title={fullTimestampTooltip}
+                        {(() => {
+                          const isSelected = selectedMessageIds.has(msg._id);
+                          return (
+                            <div
+                              className={`chat-message-bubble-row ${
+                                isSender ? "outgoing" : "incoming"
+                              } ${isSelectMode ? "in-select-mode" : ""} ${isSelected ? "selected" : ""}`}
+                              onClick={isSelectMode ? () => toggleSelectMessage(msg._id) : undefined}
                             >
-                              {new Date(msg.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                        </div>
+                              {/* Selection checkbox for incoming message (on left) */}
+                              {!isSender && isSelectMode && (
+                                <button
+                                  type="button"
+                                  className={`chat-message-select-btn ${isSelected ? "selected" : ""}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelectMessage(msg._id);
+                                  }}
+                                  aria-label={isSelected ? "Deselect message" : "Select message"}
+                                >
+                                  <div className="chat-select-checkbox">
+                                    {isSelected && (
+                                      <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="3"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      >
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </button>
+                              )}
+
+                              {/* Message actions for outgoing message */}
+                              {isSender && !isSelectMode && editingMessageId !== msg._id && (
+                                <div className="chat-message-actions">
+                                  <button
+                                    type="button"
+                                    className="chat-action-btn edit"
+                                    onClick={() => startEditing(msg)}
+                                    title="Edit message"
+                                    aria-label="Edit message"
+                                  >
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="chat-action-btn delete"
+                                    onClick={() => openSingleDeleteModal(msg)}
+                                    title="Delete message"
+                                    aria-label="Delete message"
+                                  >
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+
+                              <div
+                                className={`chat-message-bubble ${
+                                  isSender ? "mine" : "theirs"
+                                } ${editingMessageId === msg._id ? "is-editing" : ""}`}
+                              >
+                                {editingMessageId === msg._id ? (
+                                  <div className="chat-message-inline-edit">
+                                    <textarea
+                                      ref={editInputRef}
+                                      value={editingContent}
+                                      onChange={(e) =>
+                                        setEditingContent(
+                                          convertEmojiShortcodes(e.target.value)
+                                        )
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                          e.preventDefault();
+                                          submitEdit(msg._id);
+                                        } else if (e.key === "Escape") {
+                                          cancelEditing();
+                                        }
+                                      }}
+                                      className="chat-inline-edit-input"
+                                      rows={1}
+                                    />
+                                    <div className="chat-inline-edit-footer">
+                                      <span className="chat-inline-edit-hint">
+                                        esc to{" "}
+                                        <button
+                                          type="button"
+                                          onClick={cancelEditing}
+                                          className="chat-inline-link"
+                                        >
+                                          cancel
+                                        </button>{" "}
+                                        • enter to{" "}
+                                        <button
+                                          type="button"
+                                          onClick={() => submitEdit(msg._id)}
+                                          className="chat-inline-link save"
+                                        >
+                                          save
+                                        </button>
+                                      </span>
+                                      <div className="chat-inline-edit-actions">
+                                        <button
+                                          type="button"
+                                          onClick={cancelEditing}
+                                          className="chat-inline-btn cancel"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => submitEdit(msg._id)}
+                                          disabled={
+                                            !editingContent.trim() ||
+                                            editingContent.trim() === msg.content
+                                          }
+                                          className="chat-inline-btn save"
+                                        >
+                                          Save
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <p className="chat-message-text">{msg.content}</p>
+                                    <div className="chat-message-footer">
+                                      {msg.isEdited && (
+                                        <span
+                                          className="chat-message-edited-tag"
+                                          title={
+                                            msg.editedAt
+                                              ? `Edited ${new Date(
+                                                  msg.editedAt
+                                                ).toLocaleString([], {
+                                                  dateStyle: "short",
+                                                  timeStyle: "short",
+                                                })}`
+                                              : "Edited"
+                                          }
+                                        >
+                                          (edited)
+                                        </span>
+                                      )}
+                                      <span
+                                        className="chat-message-timestamp"
+                                        title={fullTimestampTooltip}
+                                      >
+                                        {new Date(msg.createdAt).toLocaleTimeString([], {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Message action for incoming message (Delete for Me) */}
+                              {!isSender && !isSelectMode && (
+                                <div className="chat-message-actions">
+                                  <button
+                                    type="button"
+                                    className="chat-action-btn delete"
+                                    onClick={() => openSingleDeleteModal(msg)}
+                                    title="Delete message for me"
+                                    aria-label="Delete message for me"
+                                  >
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Selection checkbox for outgoing message (on right) */}
+                              {isSender && isSelectMode && (
+                                <button
+                                  type="button"
+                                  className={`chat-message-select-btn ${isSelected ? "selected" : ""}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelectMessage(msg._id);
+                                  }}
+                                  aria-label={isSelected ? "Deselect message" : "Select message"}
+                                >
+                                  <div className="chat-select-checkbox">
+                                    {isSelected && (
+                                      <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="3"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      >
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </React.Fragment>
                     );
                   })}
@@ -986,25 +1707,74 @@ const Messages: React.FC = () => {
               </button>
             )}
 
-            {/* Input Form */}
-            <form onSubmit={handleSendMessage} className="chat-input-bar">
-              <EmojiPicker onSelect={handleEmojiSelect} placement="top-left" />
-              <input
-                ref={chatInputRef}
-                type="text"
-                value={inputContent}
-                onChange={handleInputChange}
-                placeholder={`message ${otherParticipant.name || otherParticipant.username}...`}
-                className="chat-input-field"
-              />
-              <button
-                type="submit"
-                disabled={!inputContent.trim()}
-                className="chat-send-btn"
-              >
-                Send
-              </button>
-            </form>
+            {/* Multi-Select Action Dock or Input Form */}
+            {isSelectMode ? (
+              <div className="chat-select-dock">
+                <div className="chat-select-dock-info">
+                  <span className="chat-select-count">
+                    {selectedMessageIds.size} message{selectedMessageIds.size === 1 ? "" : "s"} selected
+                  </span>
+                  <button
+                    type="button"
+                    className="chat-select-dock-link"
+                    onClick={handleToggleSelectAll}
+                  >
+                    {selectedMessageIds.size === displayMessages.length && displayMessages.length > 0
+                      ? "Deselect All"
+                      : "Select All"}
+                  </button>
+                </div>
+                <div className="chat-select-dock-actions">
+                  <button
+                    type="button"
+                    className="chat-select-dock-btn cancel"
+                    onClick={exitSelectMode}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="chat-select-dock-btn delete"
+                    disabled={selectedMessageIds.size === 0}
+                    onClick={openBatchDeleteModal}
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    Delete ({selectedMessageIds.size})
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSendMessage} className="chat-input-bar">
+                <EmojiPicker onSelect={handleEmojiSelect} placement="top-left" />
+                <input
+                  ref={chatInputRef}
+                  type="text"
+                  value={inputContent}
+                  onChange={handleInputChange}
+                  placeholder={`message ${otherParticipant.name || otherParticipant.username}...`}
+                  className="chat-input-field"
+                />
+                <button
+                  type="submit"
+                  disabled={!inputContent.trim()}
+                  className="chat-send-btn"
+                >
+                  Send
+                </button>
+              </form>
+            )}
           </>
         ) : (
           <div className="chat-placeholder-state">
@@ -1029,6 +1799,66 @@ const Messages: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Delete Message Confirmation Modal (portalled to body to escape DeckLayout transform) */}
+        {deleteModal?.isOpen &&
+          createPortal(
+            <div className="chat-delete-modal-overlay" onClick={closeDeleteModal}>
+              <div
+                className="chat-delete-modal"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="chat-delete-modal-header">
+                  <h4 className="chat-delete-modal-title">
+                    [ DELETE MESSAGE{deleteModal.isBatch ? "S" : ""} ]
+                  </h4>
+                </div>
+                <p className="chat-delete-modal-body">
+                  {deleteModal.isBatch ? (
+                    canDeleteForEveryone ? (
+                      `Are you sure you want to delete ${selectedMessageIds.size} selected message${
+                        selectedMessageIds.size === 1 ? "" : "s"
+                      }?`
+                    ) : (
+                      `You have selected ${selectedMessageIds.size} message${
+                        selectedMessageIds.size === 1 ? "" : "s"
+                      }, including incoming messages. You can delete them for yourself.`
+                    )
+                  ) : canDeleteForEveryone ? (
+                    "Choose whether you want to delete this message only for yourself or for everyone in the conversation."
+                  ) : (
+                    "This message will be removed from your view. Other participants will still be able to see it."
+                  )}
+                </p>
+                <div className="chat-delete-modal-options">
+                  {canDeleteForEveryone && (
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmDelete("for_everyone")}
+                      className="chat-modal-btn delete-everyone"
+                    >
+                      Delete for Everyone
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmDelete("for_me")}
+                    className="chat-modal-btn delete-me"
+                  >
+                    Delete for Me
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeDeleteModal}
+                    className="chat-modal-btn cancel"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
       </main>
     </div>
   );

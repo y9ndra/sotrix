@@ -1,5 +1,5 @@
 import api from "./api";
-import type { Conversation, MessagesResponse } from "../types/chat.types";
+import type { Conversation, MessagesResponse, ChatMessage } from "../types/chat.types";
 
 export const getConversations = async (): Promise<Conversation[]> => {
   const response = await api.get("/conversations");
@@ -35,3 +35,40 @@ export const markConversationAsRead = async (
   const response = await api.patch(`/conversations/${id}/read`);
   return response.data.data;
 };
+
+export const editMessage = async (
+  conversationId: string,
+  messageId: string,
+  content: string
+): Promise<ChatMessage> => {
+  const response = await api.patch(
+    `/conversations/${conversationId}/messages/${messageId}`,
+    { content }
+  );
+  return response.data.data;
+};
+
+export const deleteMessage = async (
+  conversationId: string,
+  messageId: string,
+  mode: "for_me" | "for_everyone" = "for_everyone"
+): Promise<{ conversationId: string; messageId: string; mode: string }> => {
+  const response = await api.delete(
+    `/conversations/${conversationId}/messages/${messageId}`,
+    { params: { mode } }
+  );
+  return response.data.data;
+};
+
+export const batchDeleteMessages = async (
+  conversationId: string,
+  messageIds: string[],
+  mode: "for_me" | "for_everyone" = "for_everyone"
+): Promise<{ conversationId: string; messageIds: string[]; mode: string }> => {
+  const response = await api.post(
+    `/conversations/${conversationId}/messages/batch-delete`,
+    { messageIds, mode }
+  );
+  return response.data.data;
+};
+

@@ -25,6 +25,8 @@ export interface ChatMessage {
   conversation: string;
   sender: ChatUser;
   content: string;
+  isEdited?: boolean;
+  editedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

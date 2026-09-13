@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 export interface CubieFaceColors {
   U: string;
@@ -631,7 +632,7 @@ export const RubiksCursor: React.FC = () => {
 
   if (!isEnabled || isMobileDevice) return null;
 
-  return (
+  const cursorNode = (
     <>
       <div
         ref={cursorWrapperRef}
@@ -711,6 +712,10 @@ export const RubiksCursor: React.FC = () => {
       </button>
     </>
   );
+
+  return typeof document !== "undefined"
+    ? createPortal(cursorNode, document.body)
+    : cursorNode;
 };
 
 export default RubiksCursor;
