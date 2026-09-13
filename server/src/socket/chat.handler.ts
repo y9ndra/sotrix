@@ -85,14 +85,18 @@ export const registerChatHandlers = (
   // Handle sending and persisting a chat message
   socket.on(
     "message:send",
-    async (payload: { conversationId: string; content: string }) => {
+    async (payload: {
+      conversationId: string;
+      content: string;
+      replyToId?: string;
+    }) => {
       try {
         if (!userId) {
           socket.emit("chat:error", { message: "Unauthorized" });
           return;
         }
 
-        const { conversationId, content } = payload || {};
+        const { conversationId, content, replyToId } = payload || {};
 
         if (!conversationId || !content) {
           socket.emit("chat:error", {
@@ -105,7 +109,8 @@ export const registerChatHandlers = (
         const message = await createMessage(
           conversationId,
           userId,
-          content
+          content,
+          replyToId
         );
 
         // 2. Fetch conversation participants to broadcast to their individual user rooms

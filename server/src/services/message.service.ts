@@ -27,7 +27,8 @@ export interface PaginatedMessagesResult {
 export const createMessage = async (
   conversationId: string,
   senderId: string,
-  content: string
+  content: string,
+  replyToId?: string
 ): Promise<IMessage> => {
   if (
     !mongoose.Types.ObjectId.isValid(conversationId) ||
@@ -51,10 +52,22 @@ export const createMessage = async (
     throw new Error("Message cannot be empty");
   }
 
+  let validReplyToId: string | null = null;
+  if (replyToId && mongoose.Types.ObjectId.isValid(replyToId)) {
+    const targetMsg = await Message.findOne({
+      _id: replyToId,
+      conversation: conversationId,
+    });
+    if (targetMsg) {
+      validReplyToId = targetMsg._id.toString();
+    }
+  }
+
   const message = await Message.create({
     conversation: conversationId,
     sender: senderId,
     content: trimmedContent,
+    replyTo: validReplyToId || undefined,
   });
 
   const messageDate = message.createdAt || new Date();
@@ -74,7 +87,14 @@ export const createMessage = async (
   conversation.markModified("lastRead");
   await conversation.save();
 
-  await message.populate("sender", "name username profilePicUrl");
+  await message.populate([
+    { path: "sender", select: "name username profilePicUrl" },
+    {
+      path: "replyTo",
+      select: "content sender createdAt isEdited deletedFor",
+      populate: { path: "sender", select: "name username profilePicUrl" },
+    },
+  ]);
 
   return message;
 };
@@ -145,6 +165,11 @@ export const getMessages = async (
   // Fetch limit + 1 to check if there are more messages without an extra count query
   const messages = await Message.find(query)
     .populate("sender", "name username profilePicUrl")
+    .populate({
+      path: "replyTo",
+      select: "content sender createdAt isEdited deletedFor",
+      populate: { path: "sender", select: "name username profilePicUrl" },
+    })
     .sort({
       createdAt: -1,
       _id: -1,
@@ -217,7 +242,14 @@ export const editMessage = async (
     throw new Error("Failed to update message");
   }
 
-  await updatedMessage.populate("sender", "name username profilePicUrl");
+  await updatedMessage.populate([
+    { path: "sender", select: "name username profilePicUrl" },
+    {
+      path: "replyTo",
+      select: "content sender createdAt isEdited deletedFor",
+      populate: { path: "sender", select: "name username profilePicUrl" },
+    },
+  ]);
 
   // If this message was the conversation's latest message, update lastMessage content
   const conversation = await Conversation.findById(updatedMessage.conversation);

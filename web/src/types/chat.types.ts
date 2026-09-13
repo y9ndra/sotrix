@@ -20,6 +20,15 @@ export interface Conversation {
   updatedAt: string;
 }
 
+export interface QuotedMessage {
+  _id: string;
+  sender: ChatUser;
+  content: string;
+  createdAt: string;
+  isEdited?: boolean;
+  deletedFor?: string[];
+}
+
 export interface ChatMessage {
   _id: string;
   conversation: string;
@@ -27,6 +36,8 @@ export interface ChatMessage {
   content: string;
   isEdited?: boolean;
   editedAt?: string;
+  deletedFor?: string[];
+  replyTo?: QuotedMessage | null;
   createdAt: string;
   updatedAt: string;
 }

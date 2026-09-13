@@ -7,6 +7,7 @@ export interface IMessageRepository {
       conversation: string | mongoose.Types.ObjectId;
       sender: string | mongoose.Types.ObjectId;
       content: string;
+      replyTo?: string | mongoose.Types.ObjectId | null;
     },
     session?: ClientSession
   ): Promise<IMessage>;
@@ -54,6 +55,7 @@ export class MongoMessageRepository implements IMessageRepository {
       conversation: string | mongoose.Types.ObjectId;
       sender: string | mongoose.Types.ObjectId;
       content: string;
+      replyTo?: string | mongoose.Types.ObjectId | null;
     },
     session?: ClientSession
   ): Promise<IMessage> {
@@ -157,6 +159,14 @@ export class MongoMessageRepository implements IMessageRepository {
   ): Promise<IMessage[]> {
     const dbQuery = Message.find(query)
       .populate("sender", "name username profilePicUrl")
+      .populate({
+        path: "replyTo",
+        select: "content sender createdAt isEdited deletedFor",
+        populate: {
+          path: "sender",
+          select: "name username profilePicUrl",
+        },
+      })
       .sort({
         createdAt: -1,
         _id: -1,

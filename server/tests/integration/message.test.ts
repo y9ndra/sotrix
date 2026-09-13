@@ -257,4 +257,42 @@ describe("Message Edit & Delete Integration Tests", () => {
       expect(dbMsgB?.deletedFor.map((id) => id.toString())).toContain(userBId.toString());
     });
   });
+
+  describe("Selective Reply & Quoting Integration Tests", () => {
+    it("should persist replyTo reference and populate nested sender when creating and querying messages", async () => {
+      const { userA, userB, conversation, message } = await setupConversationAndMessage();
+      const userBId = userB.user.id || userB.user._id;
+
+      // User B replies to User A's message
+      const { createMessage, getMessages } = await import("../../src/services/message.service");
+
+      const replyMessage = await createMessage(
+        conversation._id.toString(),
+        userBId.toString(),
+        "Replying to user A's message!",
+        message._id.toString()
+      );
+
+      expect(replyMessage.replyTo).toBeDefined();
+      expect((replyMessage.replyTo as any)._id.toString()).toBe(message._id.toString());
+      expect((replyMessage.replyTo as any).content).toBe("Initial message from user A");
+      expect((replyMessage.replyTo as any).sender).toBeDefined();
+      expect((replyMessage.replyTo as any).sender.username).toBe(userA.user.username);
+
+      // Verify retrieving via getMessages
+      const history = await getMessages(
+        conversation._id.toString(),
+        userBId.toString()
+      );
+
+      expect(history.data).toHaveLength(2);
+      const retrievedReply = history.data.find(
+        (m) => m._id.toString() === replyMessage._id.toString()
+      );
+      expect(retrievedReply).toBeDefined();
+      expect(retrievedReply?.replyTo).toBeDefined();
+      expect((retrievedReply?.replyTo as any).content).toBe("Initial message from user A");
+      expect((retrievedReply?.replyTo as any).sender.username).toBe(userA.user.username);
+    });
+  });
 });

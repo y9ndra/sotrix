@@ -97,6 +97,485 @@ const formatSidebarTimestamp = (dateString: string): string => {
   });
 };
 
+interface ChatMessageRowProps {
+  msg: ChatMessage;
+  isSender: boolean;
+  isSelected: boolean;
+  isSelectMode: boolean;
+  isEditing: boolean;
+  editingContent: string;
+  editInputRef: React.RefObject<HTMLTextAreaElement | null>;
+  currentUserId: string;
+  fullTimestampTooltip: string;
+  onStartEditing: (msg: ChatMessage) => void;
+  onCancelEditing: () => void;
+  onSubmitEdit: (id: string) => void;
+  onSetEditingContent: (val: string) => void;
+  onStartReplying: (msg: ChatMessage) => void;
+  onOpenDeleteModal: (msg: ChatMessage) => void;
+  onToggleSelectMessage: (id: string) => void;
+  onScrollToMessage: (id: string) => void;
+}
+
+const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
+  msg,
+  isSender,
+  isSelected,
+  isSelectMode,
+  isEditing,
+  editingContent,
+  editInputRef,
+  currentUserId,
+  fullTimestampTooltip,
+  onStartEditing,
+  onCancelEditing,
+  onSubmitEdit,
+  onSetEditingContent,
+  onStartReplying,
+  onOpenDeleteModal,
+  onToggleSelectMessage,
+  onScrollToMessage,
+}) => {
+  // Mobile swipe to reply state
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const directionLockedRef = useRef<"h" | "v" | null>(null);
+  const hasVibratedRef = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isSelectMode || isEditing || e.touches.length > 1) return;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+    directionLockedRef.current = null;
+    hasVibratedRef.current = false;
+    setIsSwiping(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || isSelectMode || isEditing) return;
+    const diffX = e.touches[0].clientX - touchStartRef.current.x;
+    const diffY = e.touches[0].clientY - touchStartRef.current.y;
+
+    if (!directionLockedRef.current) {
+      if (Math.abs(diffY) > 7 && Math.abs(diffY) >= Math.abs(diffX)) {
+        directionLockedRef.current = "v";
+        return;
+      }
+      if (Math.abs(diffX) > 7 && Math.abs(diffX) > Math.abs(diffY)) {
+        // Only allow swiping right (diffX > 0)
+        if (diffX > 0) {
+          directionLockedRef.current = "h";
+          setIsSwiping(true);
+        } else {
+          directionLockedRef.current = "v";
+          return;
+        }
+      }
+    }
+
+    if (directionLockedRef.current === "h" && diffX > 0) {
+      const clamped = Math.min(60, diffX * 0.45);
+      setSwipeOffset(clamped);
+
+      if (clamped >= 35 && !hasVibratedRef.current) {
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try {
+            navigator.vibrate(15);
+          } catch (_) {}
+        }
+        hasVibratedRef.current = true;
+      } else if (clamped < 35 && hasVibratedRef.current) {
+        hasVibratedRef.current = false;
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (swipeOffset >= 35) {
+      onStartReplying(msg);
+    }
+    setSwipeOffset(0);
+    setIsSwiping(false);
+    touchStartRef.current = null;
+    directionLockedRef.current = null;
+    hasVibratedRef.current = false;
+  };
+
+  const handleTouchCancel = () => {
+    setSwipeOffset(0);
+    setIsSwiping(false);
+    touchStartRef.current = null;
+    directionLockedRef.current = null;
+    hasVibratedRef.current = false;
+  };
+
+  return (
+    <div
+      id={`chat-message-${msg._id}`}
+      className={`chat-message-bubble-row ${
+        isSender ? "outgoing" : "incoming"
+      } ${isSelectMode ? "in-select-mode" : ""} ${isSelected ? "selected" : ""}`}
+      onClick={isSelectMode ? () => onToggleSelectMessage(msg._id) : undefined}
+    >
+      {/* Mobile Swipe Reply indicator behind bubble */}
+      <div
+        className={`chat-swipe-reply-indicator ${
+          swipeOffset >= 35 ? "threshold-passed" : ""
+        }`}
+        style={{
+          opacity: Math.min(1, swipeOffset / 20),
+          transform: `scale(${Math.min(1, 0.4 + (swipeOffset / 35) * 0.6)})`,
+        }}
+        aria-hidden="true"
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="9 17 4 12 9 7" />
+          <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+        </svg>
+      </div>
+
+      {/* Selection checkbox for incoming message (on left) */}
+      {!isSender && isSelectMode && (
+        <button
+          type="button"
+          className={`chat-message-select-btn ${isSelected ? "selected" : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelectMessage(msg._id);
+          }}
+          aria-label={isSelected ? "Deselect message" : "Select message"}
+        >
+          <div className="chat-select-checkbox">
+            {isSelected && (
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </div>
+        </button>
+      )}
+
+      {/* Message actions for outgoing message: Reply, Edit, Delete */}
+      {isSender && !isSelectMode && !isEditing && (
+        <div className="chat-message-actions">
+          <button
+            type="button"
+            className="chat-action-btn reply"
+            onClick={() => onStartReplying(msg)}
+            title="Reply to message"
+            aria-label="Reply to message"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 17 4 12 9 7" />
+              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="chat-action-btn edit"
+            onClick={() => onStartEditing(msg)}
+            title="Edit message"
+            aria-label="Edit message"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="chat-action-btn delete"
+            onClick={() => onOpenDeleteModal(msg)}
+            title="Delete message"
+            aria-label="Delete message"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Message Bubble with Touch Handlers */}
+      <div
+        className={`chat-message-bubble ${
+          isSender ? "mine" : "theirs"
+        } ${isEditing ? "is-editing" : ""}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
+        style={{
+          transform: swipeOffset > 0 ? `translateX(${swipeOffset}px)` : undefined,
+          transition: isSwiping
+            ? "none"
+            : "transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)",
+        }}
+      >
+        {isEditing ? (
+          <div className="chat-message-inline-edit">
+            <textarea
+              ref={editInputRef}
+              value={editingContent}
+              onChange={(e) =>
+                onSetEditingContent(convertEmojiShortcodes(e.target.value))
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  onSubmitEdit(msg._id);
+                } else if (e.key === "Escape") {
+                  onCancelEditing();
+                }
+              }}
+              className="chat-inline-edit-input"
+              rows={1}
+            />
+            <div className="chat-inline-edit-footer">
+              <span className="chat-inline-edit-hint">
+                esc to{" "}
+                <button
+                  type="button"
+                  onClick={onCancelEditing}
+                  className="chat-inline-link"
+                >
+                  cancel
+                </button>{" "}
+                • enter to{" "}
+                <button
+                  type="button"
+                  onClick={() => onSubmitEdit(msg._id)}
+                  className="chat-inline-link save"
+                >
+                  save
+                </button>
+              </span>
+              <div className="chat-inline-edit-actions">
+                <button
+                  type="button"
+                  onClick={onCancelEditing}
+                  className="chat-inline-btn cancel"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSubmitEdit(msg._id)}
+                  disabled={
+                    !editingContent.trim() ||
+                    editingContent.trim() === msg.content
+                  }
+                  className="chat-inline-btn save"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Quoted Message Card */}
+            {msg.replyTo && (
+              <div
+                className="chat-quoted-card"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onScrollToMessage(msg.replyTo!._id);
+                }}
+                title="Jump to quoted message"
+              >
+                <div className="chat-quoted-inner">
+                  <div className="chat-quoted-header">
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="9 17 4 12 9 7" />
+                      <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+                    </svg>
+                    <span className="chat-quoted-sender">
+                      {(msg.replyTo.sender?._id === currentUserId ||
+                        (typeof msg.replyTo.sender === "string" &&
+                          msg.replyTo.sender === currentUserId))
+                        ? "You"
+                        : msg.replyTo.sender?.name ||
+                          msg.replyTo.sender?.username ||
+                          "user"}
+                    </span>
+                  </div>
+                  <p className="chat-quoted-text">
+                    {msg.replyTo.content || "[Original message deleted]"}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <p className="chat-message-text">{msg.content}</p>
+            <div className="chat-message-footer">
+              {msg.isEdited && (
+                <span
+                  className="chat-message-edited-tag"
+                  title={
+                    msg.editedAt
+                      ? `Edited ${new Date(msg.editedAt).toLocaleString([], {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}`
+                      : "Edited"
+                  }
+                >
+                  (edited)
+                </span>
+              )}
+              <span
+                className="chat-message-timestamp"
+                title={fullTimestampTooltip}
+              >
+                {new Date(msg.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Message actions for incoming message: Reply, Delete */}
+      {!isSender && !isSelectMode && (
+        <div className="chat-message-actions">
+          <button
+            type="button"
+            className="chat-action-btn reply"
+            onClick={() => onStartReplying(msg)}
+            title="Reply to message"
+            aria-label="Reply to message"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 17 4 12 9 7" />
+              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="chat-action-btn delete"
+            onClick={() => onOpenDeleteModal(msg)}
+            title="Delete message for me"
+            aria-label="Delete message for me"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Selection checkbox for outgoing message (on right) */}
+      {isSender && isSelectMode && (
+        <button
+          type="button"
+          className={`chat-message-select-btn ${isSelected ? "selected" : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelectMessage(msg._id);
+          }}
+          aria-label={isSelected ? "Deselect message" : "Select message"}
+        >
+          <div className="chat-select-checkbox">
+            {isSelected && (
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </div>
+        </button>
+      )}
+    </div>
+  );
+};
+
 const Messages: React.FC = () => {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
@@ -132,6 +611,9 @@ const Messages: React.FC = () => {
   const [editingContent, setEditingContent] = useState("");
   const editInputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Message reply state
+  const [replyingToMessage, setReplyingToMessage] = useState<ChatMessage | null>(null);
+
   // Selection mode & Selective Delete state
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
@@ -150,15 +632,16 @@ const Messages: React.FC = () => {
     }
   }, [editingMessageId]);
 
-  // Reset selection and modal state on conversation switch
+  // Reset selection, reply, and modal state on conversation switch
   useEffect(() => {
     setIsSelectMode(false);
     setSelectedMessageIds(new Set());
     setDeleteModal(null);
     setEditingMessageId(null);
+    setReplyingToMessage(null);
   }, [selectedConversationId]);
 
-  // Close delete modal or cancel select mode on Escape key press
+  // Close delete modal, cancel select mode, cancel edit, or cancel reply on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -167,12 +650,47 @@ const Messages: React.FC = () => {
         } else if (isSelectMode) {
           setIsSelectMode(false);
           setSelectedMessageIds(new Set());
+        } else if (editingMessageId) {
+          setEditingMessageId(null);
+          setEditingContent("");
+        } else if (replyingToMessage) {
+          setReplyingToMessage(null);
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [deleteModal, isSelectMode]);
+  }, [deleteModal, isSelectMode, editingMessageId, replyingToMessage]);
+
+  const startReplying = (msg: ChatMessage) => {
+    setReplyingToMessage(msg);
+    setEditingMessageId(null);
+    if (chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  };
+
+  const cancelReplying = () => {
+    setReplyingToMessage(null);
+  };
+
+  const scrollToMessage = (targetId: string) => {
+    if (!targetId) return;
+    const el = document.getElementById(`chat-message-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.remove("pulse-highlight");
+      void el.offsetWidth;
+      el.classList.add("pulse-highlight");
+      setTimeout(() => {
+        el.classList.remove("pulse-highlight");
+      }, 2000);
+    } else {
+      if (hasNextPage && !isFetchingNextPage) {
+        handleLoadEarlier();
+      }
+    }
+  };
 
   const toggleSelectMode = () => {
     setIsSelectMode((prev) => {
@@ -1073,6 +1591,7 @@ const Messages: React.FC = () => {
     socket.emit("message:send", {
       conversationId: selectedConversationId,
       content,
+      replyToId: replyingToMessage?._id || undefined,
     });
 
     // Reset typing state immediately
@@ -1083,6 +1602,7 @@ const Messages: React.FC = () => {
     isTypingEmittedRef.current = false;
 
     setInputContent("");
+    setReplyingToMessage(null);
     setTimeout(() => {
       scrollToBottom("smooth");
     }, 50);
@@ -1402,253 +1922,25 @@ const Messages: React.FC = () => {
                             <span className="chat-date-divider-line" />
                           </div>
                         )}
-                        {(() => {
-                          const isSelected = selectedMessageIds.has(msg._id);
-                          return (
-                            <div
-                              className={`chat-message-bubble-row ${
-                                isSender ? "outgoing" : "incoming"
-                              } ${isSelectMode ? "in-select-mode" : ""} ${isSelected ? "selected" : ""}`}
-                              onClick={isSelectMode ? () => toggleSelectMessage(msg._id) : undefined}
-                            >
-                              {/* Selection checkbox for incoming message (on left) */}
-                              {!isSender && isSelectMode && (
-                                <button
-                                  type="button"
-                                  className={`chat-message-select-btn ${isSelected ? "selected" : ""}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleSelectMessage(msg._id);
-                                  }}
-                                  aria-label={isSelected ? "Deselect message" : "Select message"}
-                                >
-                                  <div className="chat-select-checkbox">
-                                    {isSelected && (
-                                      <svg
-                                        width="12"
-                                        height="12"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="3"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      >
-                                        <polyline points="20 6 9 17 4 12" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                </button>
-                              )}
-
-                              {/* Message actions for outgoing message */}
-                              {isSender && !isSelectMode && editingMessageId !== msg._id && (
-                                <div className="chat-message-actions">
-                                  <button
-                                    type="button"
-                                    className="chat-action-btn edit"
-                                    onClick={() => startEditing(msg)}
-                                    title="Edit message"
-                                    aria-label="Edit message"
-                                  >
-                                    <svg
-                                      width="12"
-                                      height="12"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    >
-                                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="chat-action-btn delete"
-                                    onClick={() => openSingleDeleteModal(msg)}
-                                    title="Delete message"
-                                    aria-label="Delete message"
-                                  >
-                                    <svg
-                                      width="12"
-                                      height="12"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    >
-                                      <polyline points="3 6 5 6 21 6" />
-                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              )}
-
-                              <div
-                                className={`chat-message-bubble ${
-                                  isSender ? "mine" : "theirs"
-                                } ${editingMessageId === msg._id ? "is-editing" : ""}`}
-                              >
-                                {editingMessageId === msg._id ? (
-                                  <div className="chat-message-inline-edit">
-                                    <textarea
-                                      ref={editInputRef}
-                                      value={editingContent}
-                                      onChange={(e) =>
-                                        setEditingContent(
-                                          convertEmojiShortcodes(e.target.value)
-                                        )
-                                      }
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter" && !e.shiftKey) {
-                                          e.preventDefault();
-                                          submitEdit(msg._id);
-                                        } else if (e.key === "Escape") {
-                                          cancelEditing();
-                                        }
-                                      }}
-                                      className="chat-inline-edit-input"
-                                      rows={1}
-                                    />
-                                    <div className="chat-inline-edit-footer">
-                                      <span className="chat-inline-edit-hint">
-                                        esc to{" "}
-                                        <button
-                                          type="button"
-                                          onClick={cancelEditing}
-                                          className="chat-inline-link"
-                                        >
-                                          cancel
-                                        </button>{" "}
-                                        • enter to{" "}
-                                        <button
-                                          type="button"
-                                          onClick={() => submitEdit(msg._id)}
-                                          className="chat-inline-link save"
-                                        >
-                                          save
-                                        </button>
-                                      </span>
-                                      <div className="chat-inline-edit-actions">
-                                        <button
-                                          type="button"
-                                          onClick={cancelEditing}
-                                          className="chat-inline-btn cancel"
-                                        >
-                                          Cancel
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => submitEdit(msg._id)}
-                                          disabled={
-                                            !editingContent.trim() ||
-                                            editingContent.trim() === msg.content
-                                          }
-                                          className="chat-inline-btn save"
-                                        >
-                                          Save
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <p className="chat-message-text">{msg.content}</p>
-                                    <div className="chat-message-footer">
-                                      {msg.isEdited && (
-                                        <span
-                                          className="chat-message-edited-tag"
-                                          title={
-                                            msg.editedAt
-                                              ? `Edited ${new Date(
-                                                  msg.editedAt
-                                                ).toLocaleString([], {
-                                                  dateStyle: "short",
-                                                  timeStyle: "short",
-                                                })}`
-                                              : "Edited"
-                                          }
-                                        >
-                                          (edited)
-                                        </span>
-                                      )}
-                                      <span
-                                        className="chat-message-timestamp"
-                                        title={fullTimestampTooltip}
-                                      >
-                                        {new Date(msg.createdAt).toLocaleTimeString([], {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </span>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-
-                              {/* Message action for incoming message (Delete for Me) */}
-                              {!isSender && !isSelectMode && (
-                                <div className="chat-message-actions">
-                                  <button
-                                    type="button"
-                                    className="chat-action-btn delete"
-                                    onClick={() => openSingleDeleteModal(msg)}
-                                    title="Delete message for me"
-                                    aria-label="Delete message for me"
-                                  >
-                                    <svg
-                                      width="12"
-                                      height="12"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    >
-                                      <polyline points="3 6 5 6 21 6" />
-                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* Selection checkbox for outgoing message (on right) */}
-                              {isSender && isSelectMode && (
-                                <button
-                                  type="button"
-                                  className={`chat-message-select-btn ${isSelected ? "selected" : ""}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleSelectMessage(msg._id);
-                                  }}
-                                  aria-label={isSelected ? "Deselect message" : "Select message"}
-                                >
-                                  <div className="chat-select-checkbox">
-                                    {isSelected && (
-                                      <svg
-                                        width="12"
-                                        height="12"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="3"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      >
-                                        <polyline points="20 6 9 17 4 12" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })()}
+                        <ChatMessageRow
+                          msg={msg}
+                          isSender={isSender}
+                          isSelected={selectedMessageIds.has(msg._id)}
+                          isSelectMode={isSelectMode}
+                          isEditing={editingMessageId === msg._id}
+                          editingContent={editingContent}
+                          editInputRef={editInputRef}
+                          currentUserId={currentUserId}
+                          fullTimestampTooltip={fullTimestampTooltip}
+                          onStartEditing={startEditing}
+                          onCancelEditing={cancelEditing}
+                          onSubmitEdit={submitEdit}
+                          onSetEditingContent={setEditingContent}
+                          onStartReplying={startReplying}
+                          onOpenDeleteModal={openSingleDeleteModal}
+                          onToggleSelectMessage={toggleSelectMessage}
+                          onScrollToMessage={scrollToMessage}
+                        />
                       </React.Fragment>
                     );
                   })}
@@ -1756,24 +2048,87 @@ const Messages: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSendMessage} className="chat-input-bar">
-                <EmojiPicker onSelect={handleEmojiSelect} placement="top-left" />
-                <input
-                  ref={chatInputRef}
-                  type="text"
-                  value={inputContent}
-                  onChange={handleInputChange}
-                  placeholder={`message ${otherParticipant.name || otherParticipant.username}...`}
-                  className="chat-input-field"
-                />
-                <button
-                  type="submit"
-                  disabled={!inputContent.trim()}
-                  className="chat-send-btn"
-                >
-                  Send
-                </button>
-              </form>
+              <div className="chat-input-container">
+                {replyingToMessage && (
+                  <div className="chat-reply-dock-bar">
+                    <div className="chat-reply-dock-main">
+                      <div className="chat-reply-dock-meta">
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="9 17 4 12 9 7" />
+                          <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+                        </svg>
+                        <span>
+                          Replying to{" "}
+                          <strong>
+                            {(replyingToMessage.sender?._id === currentUserId ||
+                              (typeof replyingToMessage.sender === "string" &&
+                                replyingToMessage.sender === currentUserId))
+                              ? "yourself"
+                              : replyingToMessage.sender?.name ||
+                                replyingToMessage.sender?.username ||
+                                "user"}
+                          </strong>
+                        </span>
+                      </div>
+                      <p className="chat-reply-dock-text">
+                        {replyingToMessage.content}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={cancelReplying}
+                      className="chat-reply-dock-cancel"
+                      title="Cancel reply (Esc)"
+                      aria-label="Cancel reply"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                <form onSubmit={handleSendMessage} className="chat-input-bar">
+                  <EmojiPicker onSelect={handleEmojiSelect} placement="top-left" />
+                  <input
+                    ref={chatInputRef}
+                    type="text"
+                    value={inputContent}
+                    onChange={handleInputChange}
+                    placeholder={
+                      replyingToMessage
+                        ? "Type your reply..."
+                        : `message ${otherParticipant.name || otherParticipant.username}...`
+                    }
+                    className="chat-input-field"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputContent.trim()}
+                    className="chat-send-btn"
+                  >
+                    Send
+                  </button>
+                </form>
+              </div>
             )}
           </>
         ) : (
