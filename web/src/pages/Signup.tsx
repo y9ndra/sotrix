@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import AuthBrand from "../components/AuthBrand";
+import AuthStage from "../components/AuthStage";
 import { signup } from "../api/auth.api";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -149,69 +151,87 @@ function Signup() {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card signup-card">
-        <span className="auth-header-tag">Account Signup</span>
-        <h2 className="auth-title">Sign Up</h2>
+    <div className="auth-split-layout">
+      <div className="auth-split-container">
+        {/* Left Column: 3D Animated Rubik's Logo with Brand Name Below */}
+        <div className="auth-stage-column">
+          <div className="auth-brand-monument">
+            <AuthStage />
+            <AuthBrand />
+          </div>
+        </div>
 
-        {error && <div className="alert-error">{error}</div>}
-        {success && <div className="alert-success">{success}</div>}
+        {/* Right Column: Seamless Minimalist Overlay Form */}
+        <div className="auth-form-column">
+          <div className="auth-form-overlay auth-form-overlay-signup">
+            <div className="auth-header-overlay">
+              <h2 className="auth-title">Sign up</h2>
+            </div>
 
-        <Input
-          label="Display Name"
-          placeholder="e.g. Alex Mercer"
-          value={name}
-          onChange={handlenamechange}
-          error={fieldErrors.name}
-          helperText="Your public display name"
-        />
+            {error && <div className="alert-error">{error}</div>}
+            {success && <div className="alert-success">{success}</div>}
 
-        <Input
-          label="Username"
-          placeholder="Pick a handle"
-          value={username}
-          onChange={handleusernamechange}
-          error={fieldErrors.username}
-          helperText="3 to 30 characters"
-        />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handlesignup();
+              }}
+              className="auth-form"
+            >
+              <Input
+                label="Display Name"
+                placeholder="e.g. Alex Mercer"
+                value={name}
+                onChange={handlenamechange}
+                error={fieldErrors.name}
+              />
 
-        <Input
-          label="Email"
-          placeholder="name@domain.com"
-          value={email}
-          onChange={handleemailchange}
-          error={fieldErrors.email}
-          helperText="Valid email address"
-        />
+              <Input
+                label="Username"
+                placeholder="e.g. alex"
+                value={username}
+                onChange={handleusernamechange}
+                error={fieldErrors.username}
+              />
 
-        <Input
-          label="Password"
-          placeholder="••••••••"
-          value={password}
-          type="password"
-          onChange={handlepasswordchange}
-          error={fieldErrors.password}
-          helperText="Must be at least 8 characters"
-        />
+              <Input
+                label="Email address"
+                placeholder="name@domain.com"
+                value={email}
+                onChange={handleemailchange}
+                error={fieldErrors.email}
+              />
 
-        <Input
-          label="Confirm Password"
-          placeholder="••••••••"
-          value={confirmPassword}
-          type="password"
-          onChange={handleconfirmpasswordchange}
-          error={fieldErrors.confirmPassword}
-          helperText="Must match password"
-        />
+              <Input
+                label="Password"
+                placeholder="••••••••••••"
+                value={password}
+                type="password"
+                onChange={handlepasswordchange}
+                error={fieldErrors.password}
+              />
 
-        <Button
-          name={loading ? "Signing up..." : "Sign Up"}
-          onClick={handlesignup}
-          disabled={loading}
-        />
+              <Input
+                label="Confirm Password"
+                placeholder="••••••••••••"
+                value={confirmPassword}
+                type="password"
+                onChange={handleconfirmpasswordchange}
+                error={fieldErrors.confirmPassword}
+              />
 
-        <div className="auth-link-group">
-          Already have an account? <Link to="/login">Log In</Link>
+              <Button
+                name={loading ? "Signing up..." : "Signup"}
+                onClick={handlesignup}
+                disabled={loading}
+                className="auth-submit-btn"
+              />
+
+              <div className="auth-link-group">
+                Already have an account? <Link to="/login">Log in</Link>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

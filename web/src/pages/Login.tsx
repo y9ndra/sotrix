@@ -1,7 +1,9 @@
-import { login, getMe } from "../api/auth.api"
+import { login, getMe } from "../api/auth.api";
 import React, { useState } from "react";   
-import Button from "../components/Button"
-import Input from "../components/Input"
+import Button from "../components/Button";
+import Input from "../components/Input";
+import AuthBrand from "../components/AuthBrand";
+import AuthStage from "../components/AuthStage";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { saveToken } from "../services/token.service";
@@ -92,38 +94,61 @@ function Login() {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card login-card">
-        <span className="auth-header-tag">Account Login</span>
-        <h2 className="auth-title">Log In</h2>
+    <div className="auth-split-layout">
+      <div className="auth-split-container">
+        {/* Left Column: 3D Animated Rubik's Logo with Brand Name Below */}
+        <div className="auth-stage-column">
+          <div className="auth-brand-monument">
+            <AuthStage />
+            <AuthBrand />
+          </div>
+        </div>
 
-        {error && <div className="alert-error">{error}</div>}
-        {success && <div className="alert-success">{success}</div>}
+        {/* Right Column: Seamless Minimalist Overlay Form */}
+        <div className="auth-form-column">
+          <div className="auth-form-overlay">
+            <div className="auth-header-overlay">
+              <h2 className="auth-title">Log in</h2>
+            </div>
 
-        <Input
-          label="Username or email"
-          placeholder="Enter credentials"
-          value={username}
-          onChange={handleusernamechange}
-          error={fieldErrors.username}
-        />
-        <Input
-          label="Password"
-          placeholder="••••••••"
-          value={password}
-          type="password"
-          onChange={handlepasswordchange}
-          error={fieldErrors.password}
-        />
+            {error && <div className="alert-error">{error}</div>}
+            {success && <div className="alert-success">{success}</div>}
 
-        <Button
-          name={loading ? "Logging in..." : "Log In"}
-          onClick={handlelogin}
-          disabled={loading}
-        />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handlelogin();
+              }}
+              className="auth-form"
+            >
+              <Input
+                label="Email or username"
+                placeholder="name@domain.com"
+                value={username}
+                onChange={handleusernamechange}
+                error={fieldErrors.username}
+              />
+              <Input
+                label="Password"
+                placeholder="••••••••••••"
+                value={password}
+                type="password"
+                onChange={handlepasswordchange}
+                error={fieldErrors.password}
+              />
 
-        <div className="auth-link-group">
-          Don't have an account? <Link to="/signup">Sign Up</Link>
+              <Button
+                name={loading ? "Logging in..." : "Login"}
+                onClick={handlelogin}
+                disabled={loading}
+                className="auth-submit-btn"
+              />
+
+              <div className="auth-link-group">
+                Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
