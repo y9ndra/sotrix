@@ -1875,7 +1875,7 @@ button, input, textarea, select {
 .comment-input-row {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-end;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -1893,9 +1893,31 @@ button, input, textarea, select {
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 13px;
+  line-height: 1.45;
   outline: none;
+  resize: none;
+  min-height: 36px;
+  max-height: 120px;
+  overflow-y: auto;
   box-sizing: border-box;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.comment-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comment-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comment-input::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+.comment-input::-webkit-scrollbar-thumb:hover {
+  background: var(--border-active);
 }
 
 .comment-input:focus {
@@ -1926,6 +1948,7 @@ button, input, textarea, select {
   white-space: nowrap;
   flex-shrink: 0;
   box-sizing: border-box;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2154,13 +2177,31 @@ button, input, textarea, select {
   background-color: var(--bg-matrix);
   border: 1px solid var(--border-default);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 8px 10px;
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 13px;
+  line-height: 1.45;
   box-sizing: border-box;
   outline: none;
+  resize: none;
+  min-height: 36px;
+  max-height: 120px;
+  overflow-y: auto;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.comment-edit-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comment-edit-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comment-edit-input::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
 }
 
 .comment-edit-input:focus {
@@ -5204,12 +5245,12 @@ button, input, textarea, select {
 
 /* Chat Input Bar */
 .chat-input-bar {
-  padding: 14px 18px;
+  padding: 12px 18px;
   background-color: var(--bg-card);
   border-top: 1px solid var(--border-default);
   display: flex;
-  gap: 12px;
-  align-items: center;
+  gap: 10px;
+  align-items: flex-end;
 }
 
 .chat-input-field {
@@ -5217,11 +5258,17 @@ button, input, textarea, select {
   background-color: var(--input-bg);
   border: 1px solid var(--border-default);
   border-radius: 10px;
-  padding: 11px 16px;
+  padding: 10px 14px;
   font-family: var(--font-sans);
   font-size: 13.5px;
+  line-height: 1.45;
   color: var(--text-primary);
   outline: none;
+  resize: none;
+  min-height: 40px;
+  max-height: 140px;
+  overflow-y: auto;
+  box-sizing: border-box;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
@@ -5237,6 +5284,23 @@ button, input, textarea, select {
   font-size: 12px;
 }
 
+.chat-input-field::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-input-field::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-input-field::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+.chat-input-field::-webkit-scrollbar-thumb:hover {
+  background: var(--border-active);
+}
+
 .chat-send-btn {
   padding: 10px 18px;
   border-radius: 10px;
@@ -5250,6 +5314,12 @@ button, input, textarea, select {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   transition: all var(--transition-fast);
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .chat-send-btn:hover:not(:disabled) {

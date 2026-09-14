@@ -595,7 +595,7 @@ const Messages: React.FC = () => {
   const isTypingEmittedRef = useRef(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatMessagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const chatInputRef = useRef<HTMLInputElement | null>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Smart scrolling state: track whether user is at the bottom or reading older messages
   const isAtBottomRef = useRef(true);
@@ -1556,7 +1556,7 @@ const Messages: React.FC = () => {
   }, [selectedConversationId, typingConversations]);
 
   // Debounced Typing input change handler
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const rawVal = e.target.value;
     const converted = convertEmojiShortcodes(rawVal);
     setInputContent(converted);
@@ -1579,9 +1579,45 @@ const Messages: React.FC = () => {
     }, 500);
   };
 
+  // Keyboard shortcut: Shift + Enter for multiline / Enter to send
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return;
+
+    if (e.key === "Enter") {
+      if (e.shiftKey) {
+        // Shift + Enter: Allow natural newline in textarea
+        return;
+      }
+
+      // Check if on touch-only mobile screen (virtual keyboard without physical shift key)
+      const isTouchOnly =
+        typeof window !== "undefined" &&
+        window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+      if (isTouchOnly) {
+        // Soft keyboards on mobile phones can use Return to add new lines;
+        // user can tap the dedicated Send button to submit.
+        return;
+      }
+
+      // Hardware/Desktop keyboard: Enter sends the message!
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // Auto-resize chat textarea to fit multiline content up to max-height (140px)
+  useEffect(() => {
+    const textarea = chatInputRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const computedHeight = Math.min(Math.max(textarea.scrollHeight, 40), 140);
+    textarea.style.height = `${computedHeight}px`;
+  }, [inputContent]);
+
   // Send message handler
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const content = inputContent.trim();
     const socket = getSocket();
 
@@ -1603,6 +1639,12 @@ const Messages: React.FC = () => {
 
     setInputContent("");
     setReplyingToMessage(null);
+
+    // Reset textarea height to initial single line
+    if (chatInputRef.current) {
+      chatInputRef.current.style.height = "auto";
+    }
+
     setTimeout(() => {
       scrollToBottom("smooth");
     }, 50);
@@ -2108,11 +2150,12 @@ const Messages: React.FC = () => {
                 )}
                 <form onSubmit={handleSendMessage} className="chat-input-bar">
                   <EmojiPicker onSelect={handleEmojiSelect} placement="top-left" />
-                  <input
+                  <textarea
                     ref={chatInputRef}
-                    type="text"
+                    rows={1}
                     value={inputContent}
                     onChange={handleInputChange}
+                    onKeyDown={handleChatKeyDown}
                     placeholder={
                       replyingToMessage
                         ? "Type your reply..."
@@ -2124,6 +2167,8 @@ const Messages: React.FC = () => {
                     type="submit"
                     disabled={!inputContent.trim()}
                     className="chat-send-btn"
+                    title="Send message (Enter)"
+                    aria-label="Send message"
                   >
                     Send
                   </button>

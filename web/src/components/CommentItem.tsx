@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { Comment } from "../types/comment";
 import { useAuthStore } from "../store/authStore";
@@ -19,6 +19,43 @@ const CommentItem = ({ comment, onUpdateComment, onDeleteComment }: CommentItemP
   const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      const textarea = editInputRef.current;
+      textarea.focus();
+      textarea.selectionStart = textarea.value.length;
+      textarea.selectionEnd = textarea.value.length;
+      textarea.style.height = "auto";
+      const computedHeight = Math.min(Math.max(textarea.scrollHeight, 36), 120);
+      textarea.style.height = `${computedHeight}px`;
+    }
+  }, [isEditing]);
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return;
+
+    if (e.key === "Enter") {
+      if (e.shiftKey) {
+        // Shift + Enter: Allow natural newline
+        return;
+      }
+
+      const isTouchOnly =
+        typeof window !== "undefined" &&
+        window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+      if (isTouchOnly) {
+        return;
+      }
+
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === "Escape") {
+      setIsEditing(false);
+    }
+  };
 
   const isOwner = Boolean(currentUserId && comment.author?._id === currentUserId);
 
@@ -163,10 +200,20 @@ const CommentItem = ({ comment, onUpdateComment, onDeleteComment }: CommentItemP
 
       {isEditing ? (
         <div className="comment-edit-box">
-          <input
-            type="text"
+          <textarea
+            ref={editInputRef}
+            rows={1}
             value={editContent}
-            onChange={(e) => setEditContent(convertEmojiShortcodes(e.target.value))}
+            onChange={(e) => {
+              const converted = convertEmojiShortcodes(e.target.value);
+              setEditContent(converted);
+              if (editInputRef.current) {
+                editInputRef.current.style.height = "auto";
+                const computed = Math.min(Math.max(editInputRef.current.scrollHeight, 36), 120);
+                editInputRef.current.style.height = `${computed}px`;
+              }
+            }}
+            onKeyDown={handleEditKeyDown}
             disabled={loading}
             className="comment-edit-input"
           />
