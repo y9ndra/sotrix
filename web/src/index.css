@@ -2249,6 +2249,8 @@ button, input, textarea, select {
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
   background-color: transparent;
   box-sizing: border-box;
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
 }
 
 .deck-base-layer.dimmed {
@@ -2430,6 +2432,7 @@ button, input, textarea, select {
   min-height: 0;
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   background-color: transparent;
+  will-change: transform;
 }
 
 .joint-deck-slot {
@@ -2440,6 +2443,7 @@ button, input, textarea, select {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  touch-action: pan-y;
   box-sizing: border-box;
 }
 
