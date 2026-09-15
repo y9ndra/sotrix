@@ -9,6 +9,7 @@ import {
 import type { Notification } from "../types/notification";
 import { useNavigate } from "react-router-dom";
 import { useNotificationStore } from "../store/notification.store";
+import RubiksLoader from "../components/RubiksLoader";
 
 const Notifications = () => {
   const navigate = useNavigate();
@@ -270,9 +271,9 @@ const Notifications = () => {
         )}
 
         {isLoading && notifications.length === 0 && (
-          <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "16px", textAlign: "center" }}>
-            loading notifications...
-          </p>
+          <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+            <RubiksLoader size="sm" text="LOADING NOTIFICATIONS" />
+          </div>
         )}
 
         {notifications.length > 0 && hasNextPage && (

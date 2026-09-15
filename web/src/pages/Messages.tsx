@@ -19,6 +19,7 @@ import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.
 import EmojiPicker from "../components/EmojiPicker";
 import { convertEmojiShortcodes, insertEmojiAtCursor } from "../utils/emoji";
 import { playMessageChime } from "../utils/sound";
+import RubiksLoader from "../components/RubiksLoader";
 
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
@@ -1719,7 +1720,9 @@ const Messages: React.FC = () => {
 
         <div className="chat-inbox-list">
           {conversationsLoading ? (
-            <p className="chat-loading-label">loading conversations...</p>
+            <div style={{ padding: "48px 16px", display: "flex", justifyContent: "center" }}>
+              <RubiksLoader text="SYNCING COMMS" size="sm" />
+            </div>
           ) : conversations.length === 0 ? (
             <div className="chat-empty-inbox">
               <p>no conversations yet.</p>
@@ -1894,8 +1897,8 @@ const Messages: React.FC = () => {
               onScroll={handleMessagesScroll}
             >
               {messagesLoading ? (
-                <div className="chat-loading-wrap">
-                  <p className="chat-loading-label">loading messages...</p>
+                <div className="chat-loading-wrap" style={{ padding: "48px 0" }}>
+                  <RubiksLoader text="DECRYPTING TRANSMISSIONS" size="sm" />
                 </div>
               ) : displayMessages.length === 0 ? (
                 <div className="chat-empty-conversation">

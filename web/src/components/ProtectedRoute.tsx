@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import React from "react";
 import { useAuthStore } from "../store/authStore";
+import RubiksLoader from "./RubiksLoader";
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -11,11 +12,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   if (!isInitialized) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        Loading...
-      </div>
-    );
+    return <RubiksLoader fullscreen text="INITIALIZING SOTRIX" size="md" />;
   }
 
   if (!isAuthenticated) {

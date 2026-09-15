@@ -6,6 +6,7 @@ import { useAuthStore } from "../store/authStore";
 import { useFeed } from "../hooks/useFeed";
 import { queryKeys } from "../lib/queryKeys";
 import type { Post } from "../types/post.types";
+import RubiksLoader from "../components/RubiksLoader";
 
 function Homepage() {
   const user = useAuthStore((state) => state.user);
@@ -117,9 +118,9 @@ function Homepage() {
         )}
 
         {isLoading && (
-          <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "12px" }}>
-            loading feed...
-          </p>
+          <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+            <RubiksLoader size="sm" text="LOADING FEED" />
+          </div>
         )}
       </div>
     </div>

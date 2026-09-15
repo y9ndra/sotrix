@@ -7,6 +7,7 @@ import type { SuggestedUser } from "../services/explore.service";
 import { searchUsers } from "../services/user.service";
 import type { SearchUsersResponse } from "../services/user.service";
 import { queryKeys } from "../lib/queryKeys";
+import RubiksLoader from "../components/RubiksLoader";
 
 const Search = () => {
   const queryClient = useQueryClient();
@@ -277,6 +278,12 @@ const Search = () => {
       ) : (
         <div>
           {usersError && <p className="error-text">{usersError}</p>}
+
+          {usersLoading && users.length === 0 && (
+            <div style={{ padding: "64px 0", display: "flex", justifyContent: "center" }}>
+              <RubiksLoader text="SEARCHING AGENTS" size="md" />
+            </div>
+          )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {users.map((user) => (

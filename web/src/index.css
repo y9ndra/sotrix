@@ -6362,10 +6362,423 @@ body:has(.chat-delete-modal-overlay) .rubiks-solve-symbol-btn {
 
 .emoji-hint-text code {
   color: var(--text-secondary);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: emojiPopoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes emojiPopoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Placements */
+.emoji-popover-top-left {
+  bottom: calc(100% + 8px);
+  left: 0;
+}
+
+.emoji-popover-top-right {
+  bottom: calc(100% + 8px);
+  right: 0;
+}
+
+.emoji-popover-bottom-left {
+  top: calc(100% + 8px);
+  left: 0;
+}
+
+.emoji-popover-bottom-right {
+  top: calc(100% + 8px);
+  right: 0;
+}
+
+/* Search bar */
+.emoji-popover-header {
+  padding: 10px 10px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.emoji-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.emoji-search-icon {
+  position: absolute;
+  left: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.emoji-search-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 6px 26px 6px 26px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast);
+}
+
+.emoji-search-input:focus {
+  border-color: var(--border-hover);
+  box-shadow: none;
+}
+
+.emoji-search-input::placeholder {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.emoji-search-clear {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.emoji-search-clear:hover {
+  color: var(--text-primary);
+}
+
+/* Category Tabs */
+.emoji-category-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.emoji-category-tab {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: all var(--transition-fast);
+}
+
+.emoji-category-tab:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.emoji-category-tab.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+/* Emoji Grid */
+.emoji-grid-container {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.emoji-grid-item {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  padding: 6px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, background-color var(--transition-fast);
+}
+
+.emoji-grid-item:hover {
+  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.emoji-grid-item:active {
+  transform: scale(0.95);
+}
+
+.emoji-empty-search {
+  padding: 24px 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Footer with keyboard hint */
+.emoji-popover-footer {
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.emoji-hint-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: block;
+}
+
+.emoji-hint-text code {
+  color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.06);
   padding: 1px 3px;
   border-radius: 3px;
 }
 
+/* ==========================================================================
+   Universal 3D Themed Rubik's Cube Loader (Speedcuber Engine, On-Theme)
+   ========================================================================== */
 
+.rubiks-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--modal-backdrop, rgba(0, 0, 0, 0.85));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: rubiks-loader-fadein 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
+@keyframes rubiks-loader-fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.rubiks-loader-container {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 3D Kinetic Anchor with subtle floating levitation */
+.rubiks-loader-anchor {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  perspective: 700px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rubiks-loader-float 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes rubiks-loader-float {
+  0% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(2px);
+  }
+}
+
+/* Pulsing atmospheric emerald aura */
+.rubiks-loader-aura {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.42) 0%, rgba(16, 185, 129, 0.1) 48%, transparent 74%);
+  animation: rubiks-loader-aura-pulse 2.4s ease-in-out infinite alternate;
+  filter: blur(4px);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+[data-theme="light"] .rubiks-loader-aura {
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.32) 0%, rgba(5, 150, 105, 0.08) 50%, transparent 75%);
+}
+
+@keyframes rubiks-loader-aura-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0.95;
+  }
+}
+
+/* Solved pulse wave on the anchor when a routine completes */
+.rubiks-loader-anchor.is-solved .rubiks-loader-aura {
+  transform: scale(1.4);
+  opacity: 1;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, rgba(16, 185, 129, 0.18) 50%, transparent 75%);
+}
+
+/* 3D Isometric Scene strictly matching RubiksCursor */
+.rubiks-loader-cube-scene {
+  width: 26px;
+  height: 26px;
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Slices */
+.rubiks-loader-slice {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Individual Cubie (7px x 7px x 7px, centered at 9.5px, 9.5px in 26px scene) */
+.rubiks-loader-cubie {
+  position: absolute;
+  top: 9.5px;
+  left: 9.5px;
+  width: 7px;
+  height: 7px;
+  transform-style: preserve-3d;
+}
+
+/* Cubie Faces: Plain Obsidian & Emerald (Sotrix Cyber Aesthetic) */
+.rubiks-loader-cubie .cubie-face {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+}
+
+.rubiks-loader-cubie .cubie-face.is-external {
+  border: 0.9px solid var(--accent-matrix, #10b981);
+  border-radius: 1.2px;
+  box-shadow: inset 0 0 3px rgba(16, 185, 129, 0.22), 0 0 1px rgba(16, 185, 129, 0.35);
+}
+
+.rubiks-loader-cubie .cubie-face.is-internal {
+  border: 0.8px solid #000000;
+  border-radius: 1px;
+}
+
+[data-theme="light"] .rubiks-loader-cubie .cubie-face.is-external {
+  border: 0.9px solid #059669;
+  box-shadow: inset 0 0 2.5px rgba(5, 150, 105, 0.18);
+}
+
+[data-theme="light"] .rubiks-loader-cubie .cubie-face.is-internal {
+  border: 0.8px solid #cbd5e1;
+}
+
+/* 3D Geometric Face Positions (Identical to RubiksCursor) */
+.rubiks-loader-cubie .cubie-face.face-f {
+  transform: translateZ(3.5px);
+}
+
+.rubiks-loader-cubie .cubie-face.face-b {
+  transform: rotateY(180deg) translateZ(3.5px);
+}
+
+.rubiks-loader-cubie .cubie-face.face-r {
+  transform: rotateY(90deg) translateZ(3.5px);
+}
+
+.rubiks-loader-cubie .cubie-face.face-l {
+  transform: rotateY(-90deg) translateZ(3.5px);
+}
+
+.rubiks-loader-cubie .cubie-face.face-u {
+  transform: rotateX(90deg) translateZ(3.5px);
+}
+
+.rubiks-loader-cubie .cubie-face.face-d {
+  transform: rotateX(-90deg) translateZ(3.5px);
+}
+
+/* Status Label */
+.rubiks-loader-caption {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono, 'Space Grotesk', monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #a1a1aa);
+  animation: rubiks-loader-caption-pulse 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes rubiks-loader-caption-pulse {
+  0% {
+    opacity: 0.7;
+    letter-spacing: 0.20em;
+  }
+  100% {
+    opacity: 1;
+    letter-spacing: 0.24em;
+  }
+}
+
+.rubiks-loader-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-matrix, #10b981);
+  box-shadow: 0 0 6px var(--accent-matrix, #10b981);
+  animation: rubiks-loader-dot-pulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes rubiks-loader-dot-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}

@@ -16,6 +16,7 @@ import { disconnectSocket, getSocket } from "../services/socket.service";
 import { removeToken } from "../services/token.service";
 import { useNotificationStore } from "../store/notification.store";
 import { useTheme } from "../context/ThemeContext";
+import RubiksLoader from "../components/RubiksLoader";
 
 // Canvas Helper Utilities for Image Cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -369,10 +370,7 @@ const Profile = () => {
         <div className="profile-body">
           {loading && (
             <div className="profile-loading-box">
-              <div className="profile-spinner" />
-              <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "12px" }}>
-                fetching user profile...
-              </p>
+              <RubiksLoader size="sm" text="FETCHING PROFILE" />
             </div>
           )}
 

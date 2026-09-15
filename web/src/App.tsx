@@ -11,6 +11,7 @@ import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import DeckLayout from './components/DeckLayout';
 import RubiksCursor from './components/RubiksCursor';
+import GlobalLoader from './components/GlobalLoader';
 
 import { useEffect } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -287,6 +288,7 @@ function App() {
     <>
       <RubiksCursor />
       <AuthInitializer />
+      <GlobalLoader />
       <Routes>
         {/* Unprotected Auth Routes */}
         <Route path="/login" element={<Login />} />

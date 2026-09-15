@@ -24,9 +24,293 @@
         } catch (e) {}
       })();
     </script>
+    <style>
+      #app-premount-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        background: #000000;
+        user-select: none;
+        pointer-events: none;
+      }
+      [data-theme="light"] #app-premount-loader {
+        background: #f8fafc;
+      }
+      :root {
+        --premount-scale: 1.0;
+      }
+      @media (min-width: 601px) and (max-width: 1024px) {
+        :root { --premount-scale: 1.18; }
+      }
+      @media (min-width: 1025px) and (max-width: 1440px) {
+        :root { --premount-scale: 1.35; }
+      }
+      @media (min-width: 1441px) {
+        :root { --premount-scale: 1.55; }
+      }
+      .premount-anchor {
+        position: relative;
+        width: calc(26px * var(--premount-scale, 1));
+        height: calc(26px * var(--premount-scale, 1));
+        perspective: 700px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: premount-float 3.5s ease-in-out infinite alternate;
+      }
+      @keyframes premount-float {
+        0% { transform: translateY(-2px); }
+        100% { transform: translateY(2px); }
+      }
+      .premount-aura {
+        position: absolute;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.42) 0%, rgba(16, 185, 129, 0.1) 48%, transparent 74%);
+        animation: premount-aura-pulse 2.4s ease-in-out infinite alternate;
+        filter: blur(4px);
+        transform: scale(var(--premount-scale, 1));
+        transition: transform 0.4s ease, opacity 0.4s ease;
+      }
+      [data-theme="light"] .premount-aura {
+        background: radial-gradient(circle, rgba(5, 150, 105, 0.32) 0%, rgba(5, 150, 105, 0.08) 50%, transparent 75%);
+      }
+      @keyframes premount-aura-pulse {
+        0% { transform: scale(0.85); opacity: 0.55; }
+        100% { transform: scale(1.18); opacity: 0.95; }
+      }
+      .premount-anchor.is-solved .premount-aura {
+        transform: scale(1.4);
+        opacity: 1;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, rgba(16, 185, 129, 0.18) 50%, transparent 75%);
+      }
+      /* Fixed 3D Isometric Scene (Strictly locked angle, screen-width aligned scaling) */
+      .premount-cube-scene {
+        width: 26px;
+        height: 26px;
+        position: relative;
+        transform-style: preserve-3d;
+        transform: scale3d(var(--premount-scale, 1), var(--premount-scale, 1), var(--premount-scale, 1)) rotateX(-26deg) rotateY(38deg);
+      }
+      .premount-slice {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        will-change: transform;
+      }
+      .premount-cubie {
+        position: absolute;
+        top: 9.5px;
+        left: 9.5px;
+        width: 7px;
+        height: 7px;
+        transform-style: preserve-3d;
+      }
+      .premount-face {
+        position: absolute;
+        width: 7px;
+        height: 7px;
+        box-sizing: border-box;
+        border: 0.9px solid #10b981;
+        border-radius: 1.2px;
+        background: #111827;
+        box-shadow: inset 0 0 3px rgba(16, 185, 129, 0.22), 0 0 1px rgba(16, 185, 129, 0.35);
+        backface-visibility: hidden;
+      }
+      [data-theme="light"] .premount-face {
+        border: 0.9px solid #059669;
+        background: #ffffff;
+        box-shadow: inset 0 0 2.5px rgba(5, 150, 105, 0.18);
+      }
+      .premount-face.face-f { transform: translateZ(3.5px); }
+      .premount-face.face-b { transform: rotateY(180deg) translateZ(3.5px); }
+      .premount-face.face-r { transform: rotateY(90deg) translateZ(3.5px); }
+      .premount-face.face-l { transform: rotateY(-90deg) translateZ(3.5px); }
+      .premount-face.face-u { transform: rotateX(90deg) translateZ(3.5px); }
+      .premount-face.face-d { transform: rotateX(-90deg) translateZ(3.5px); }
+      .premount-caption {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: monospace, sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #a1a1aa;
+      }
+      [data-theme="light"] .premount-caption { color: #475569; }
+      .premount-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 6px #10b981;
+      }
+      [data-theme="light"] .premount-dot {
+        background: #059669;
+        box-shadow: 0 0 6px #059669;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="app-premount-loader">
+        <div id="premount-anchor" class="premount-anchor">
+          <div class="premount-aura"></div>
+          <div class="premount-cube-scene">
+            <div id="premount-static-slice" class="premount-slice"></div>
+            <div id="premount-active-slice" class="premount-slice"></div>
+          </div>
+        </div>
+        <div class="premount-caption">
+          <span class="premount-dot"></span>
+          <span>INITIALIZING SOTRIX</span>
+          <span class="premount-dot"></span>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var staticSlice = document.getElementById('premount-static-slice');
+        var activeSlice = document.getElementById('premount-active-slice');
+        if (!staticSlice || !activeSlice) return;
+
+        var cubies = [];
+        var id = 0;
+        for (var y = -1; y <= 1; y++) {
+          for (var x = -1; x <= 1; x++) {
+            for (var z = -1; z <= 1; z++) {
+              if (x === 0 && y === 0 && z === 0) continue;
+              cubies.push({ id: id++, x: x, y: y, z: z });
+            }
+          }
+        }
+
+        var faces = ['face-f', 'face-b', 'face-r', 'face-l', 'face-u', 'face-d'];
+        for (var i = 0; i < cubies.length; i++) {
+          var c = cubies[i];
+          var el = document.createElement('div');
+          el.className = 'premount-cubie';
+          el.id = 'premount-cubie-' + c.id;
+          el.style.transform = 'translate3d(' + (c.x * 8.2) + 'px, ' + (c.y * 8.2) + 'px, ' + (c.z * 8.2) + 'px)';
+          for (var f = 0; f < faces.length; f++) {
+            var faceEl = document.createElement('div');
+            faceEl.className = 'premount-face ' + faces[f];
+            el.appendChild(faceEl);
+          }
+          staticSlice.appendChild(el);
+        }
+
+        var MOVES = [
+          { match: function(c) { return c.y === -1; }, transform: 'rotateY(-90deg)', apply: function(c) { return { x: -c.z, y: c.y, z: c.x }; }, opp: 1 },
+          { match: function(c) { return c.y === -1; }, transform: 'rotateY(90deg)', apply: function(c) { return { x: c.z, y: c.y, z: -c.x }; }, opp: 0 },
+          { match: function(c) { return c.y === 1; }, transform: 'rotateY(90deg)', apply: function(c) { return { x: c.z, y: c.y, z: -c.x }; }, opp: 3 },
+          { match: function(c) { return c.y === 1; }, transform: 'rotateY(-90deg)', apply: function(c) { return { x: -c.z, y: c.y, z: c.x }; }, opp: 2 },
+          { match: function(c) { return c.x === 1; }, transform: 'rotateX(-90deg)', apply: function(c) { return { x: c.x, y: c.z, z: -c.y }; }, opp: 5 },
+          { match: function(c) { return c.x === 1; }, transform: 'rotateX(90deg)', apply: function(c) { return { x: c.x, y: -c.z, z: c.y }; }, opp: 4 },
+          { match: function(c) { return c.x === -1; }, transform: 'rotateX(90deg)', apply: function(c) { return { x: c.x, y: -c.z, z: c.y }; }, opp: 7 },
+          { match: function(c) { return c.x === -1; }, transform: 'rotateX(-90deg)', apply: function(c) { return { x: c.x, y: c.z, z: -c.y }; }, opp: 6 },
+          { match: function(c) { return c.z === 1; }, transform: 'rotateZ(90deg)', apply: function(c) { return { x: -c.y, y: c.x, z: c.z }; }, opp: 9 },
+          { match: function(c) { return c.z === 1; }, transform: 'rotateZ(-90deg)', apply: function(c) { return { x: c.y, y: -c.x, z: c.z }; }, opp: 8 },
+        ];
+
+        var ROUTINES = [
+          [6, 1, 7, 0, 6, 1, 7, 0],
+          [9, 6, 1, 7, 0, 8],
+          [6, 1, 7, 1, 6, 1, 1, 7],
+          [6, 1, 7, 0, 7, 9, 6, 8],
+          [6, 1, 7, 8, 1, 9, 6, 0, 7],
+          [1, 6, 0, 7, 9, 6, 8]
+        ];
+
+        var rIdx = 0;
+        function executeTurn(moveIdx, duration, callback) {
+          var move = MOVES[moveIdx];
+          if (!move) return callback();
+
+          var rotatingEls = [];
+          var rotatingData = [];
+          for (var i = 0; i < cubies.length; i++) {
+            if (move.match(cubies[i])) {
+              var el = document.getElementById('premount-cubie-' + cubies[i].id);
+              if (el) {
+                activeSlice.appendChild(el);
+                rotatingEls.push(el);
+                rotatingData.push(cubies[i]);
+              }
+            }
+          }
+
+          activeSlice.style.transition = 'none';
+          activeSlice.style.transform = 'none';
+
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+              activeSlice.style.transition = 'transform ' + duration + 'ms cubic-bezier(0.25, 1, 0.5, 1)';
+              activeSlice.style.transform = move.transform;
+
+              setTimeout(function() {
+                for (var j = 0; j < rotatingData.length; j++) {
+                  var c = rotatingData[j];
+                  var updated = move.apply(c);
+                  c.x = updated.x;
+                  c.y = updated.y;
+                  c.z = updated.z;
+                  var el = rotatingEls[j];
+                  el.style.transform = 'translate3d(' + (c.x * 8.2) + 'px, ' + (c.y * 8.2) + 'px, ' + (c.z * 8.2) + 'px)';
+                  staticSlice.appendChild(el);
+                }
+                activeSlice.style.transition = 'none';
+                requestAnimationFrame(callback);
+              }, duration);
+            });
+          });
+        }
+
+        var MOVE_DURATION = 260;
+        function runNextRoutine() {
+          var seq = ROUTINES[rIdx % ROUTINES.length];
+          rIdx++;
+          var sIdx = 0;
+
+          function doScramble() {
+            if (sIdx < seq.length) {
+              executeTurn(seq[sIdx], MOVE_DURATION, function() {
+                sIdx++;
+                doScramble();
+              });
+            } else {
+              doSolve(seq.length - 1);
+            }
+          }
+
+          function doSolve(idx) {
+            if (idx >= 0) {
+              var inv = MOVES[seq[idx]].opp;
+              executeTurn(inv, MOVE_DURATION, function() {
+                doSolve(idx - 1);
+              });
+            } else {
+              runNextRoutine();
+            }
+          }
+
+          doScramble();
+        }
+
+        runNextRoutine();
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

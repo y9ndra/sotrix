@@ -6,6 +6,7 @@ import { getExplorePosts } from "../services/explore.service";
 import type { Post, PostsResponse } from "../types/post";
 import { searchPosts } from "../services/post.service";
 import { queryKeys } from "../lib/queryKeys";
+import RubiksLoader from "../components/RubiksLoader";
 
 const Explore = () => {
   const queryClient = useQueryClient();
@@ -215,6 +216,12 @@ const Explore = () => {
       ) : (
         <div>
           {postsError && <p className="error-text">{postsError.message}</p>}
+
+          {postsLoading && posts.length === 0 && (
+            <div style={{ padding: "64px 0", display: "flex", justifyContent: "center" }}>
+              <RubiksLoader text="SCANNING MATRIX FEED" size="md" />
+            </div>
+          )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {posts.map((post) => (
