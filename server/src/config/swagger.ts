@@ -263,7 +263,43 @@ export const swaggerSpec: OpenAPIV3.Document = {
                     },
                 ],
                 responses: {
-                    "200": { description: "Followers list returned successfully with isFollowing status" },
+                    "200": {
+                        description: "Followers list returned successfully with isFollowing status",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    _id: { type: "string", example: "60d0fe4f5311236168a109ca" },
+                                                    name: { type: "string", example: "Yugendhra" },
+                                                    username: { type: "string", example: "yugendhra" },
+                                                    bio: { type: "string", example: "Full stack developer" },
+                                                    profilePicUrl: { type: "string", example: "https://res.cloudinary.com/..." },
+                                                    followersCount: { type: "integer", example: 42 },
+                                                    isFollowing: { type: "boolean", example: false },
+                                                    followedAt: { type: "string", format: "date-time" },
+                                                },
+                                            },
+                                        },
+                                        pagination: {
+                                            type: "object",
+                                            properties: {
+                                                hasMore: { type: "boolean", example: false },
+                                                nextCursor: { type: "string", nullable: true, example: null },
+                                                totalCount: { type: "integer", example: 1 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     "400": { description: "Invalid User ID format" },
                     "401": { description: "Unauthorized" },
                     "404": { description: "User not found" },
@@ -297,7 +333,43 @@ export const swaggerSpec: OpenAPIV3.Document = {
                     },
                 ],
                 responses: {
-                    "200": { description: "Following list returned successfully with isFollowing status" },
+                    "200": {
+                        description: "Following list returned successfully with isFollowing status",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        data: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    _id: { type: "string", example: "60d0fe4f5311236168a109ca" },
+                                                    name: { type: "string", example: "Yugendhra" },
+                                                    username: { type: "string", example: "yugendhra" },
+                                                    bio: { type: "string", example: "Full stack developer" },
+                                                    profilePicUrl: { type: "string", example: "https://res.cloudinary.com/..." },
+                                                    followersCount: { type: "integer", example: 42 },
+                                                    isFollowing: { type: "boolean", example: false },
+                                                    followedAt: { type: "string", format: "date-time" },
+                                                },
+                                            },
+                                        },
+                                        pagination: {
+                                            type: "object",
+                                            properties: {
+                                                hasMore: { type: "boolean", example: false },
+                                                nextCursor: { type: "string", nullable: true, example: null },
+                                                totalCount: { type: "integer", example: 1 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     "400": { description: "Invalid User ID format" },
                     "401": { description: "Unauthorized" },
                     "404": { description: "User not found" },
