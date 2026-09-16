@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import Follow from "../models/follow.model";
+import { decodeCursor, encodeCursor } from "../utils/cursor";
 import {
   IUserRepository,
   userRepository,
@@ -9,6 +11,26 @@ import {
 export interface ToggleFollowResult {
   following: boolean;
   followersCount: number;
+}
+
+export interface FollowUserItem {
+  _id: string;
+  name?: string;
+  username: string;
+  bio?: string;
+  profilePicUrl?: string;
+  followersCount: number;
+  isFollowing: boolean;
+  followedAt: Date;
+}
+
+export interface PaginatedFollowUsersResult {
+  data: FollowUserItem[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor: string | null;
+    totalCount: number;
+  };
 }
 
 export class FollowService {
@@ -175,8 +197,202 @@ export class FollowService {
 
     return this.toggleFollowWithoutTransaction(followerId, followingId);
   }
+
+  async getFollowers(
+    targetUserId: string,
+    viewerId?: string,
+    limit: number = 10,
+    cursor?: string
+  ): Promise<PaginatedFollowUsersResult> {
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+      throw new Error("Invalid User ID format");
+    }
+
+    const targetUser = await this.userRepo.findById(targetUserId);
+    if (!targetUser) {
+      throw new Error("User not found");
+    }
+
+    const query: any = { following: targetUserId };
+
+    if (cursor) {
+      const decoded = decodeCursor(cursor);
+      if (decoded) {
+        const cursorDate = new Date(decoded.createdAt);
+        query.$or = [
+          { createdAt: { $lt: cursorDate } },
+          { createdAt: cursorDate, _id: { $lt: decoded.id } },
+        ];
+      }
+    }
+
+    const [follows, totalCount] = await Promise.all([
+      Follow.find(query)
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(limit + 1)
+        .populate("follower", "name username bio profilePicUrl followersCount")
+        .exec(),
+      Follow.countDocuments({ following: targetUserId }),
+    ]);
+
+    const hasMore = follows.length > limit;
+    const items = follows.slice(0, limit);
+
+    let nextCursor: string | null = null;
+    if (hasMore && items.length > 0) {
+      const last = items[items.length - 1];
+      nextCursor = encodeCursor({
+        createdAt: (last.createdAt as Date).toISOString(),
+        id: last._id.toString(),
+      });
+    }
+
+    const followerUsers = items
+      .map((item) => ({
+        user: item.follower as any,
+        followedAt: item.createdAt,
+      }))
+      .filter((entry) => entry.user && entry.user._id);
+
+    const followerIds = followerUsers.map((entry) => entry.user._id.toString());
+    const followedSet = new Set<string>();
+
+    if (viewerId && followerIds.length > 0) {
+      const followedDocs = await this.followRepo.findFollowingIn(viewerId, followerIds);
+      followedDocs.forEach((doc: any) => {
+        followedSet.add(doc.following.toString());
+      });
+    }
+
+    const data: FollowUserItem[] = followerUsers.map(({ user, followedAt }) => {
+      const uObj = user.toObject ? user.toObject() : user;
+      const uId = uObj._id.toString();
+      return {
+        _id: uId,
+        name: uObj.name,
+        username: uObj.username,
+        bio: uObj.bio,
+        profilePicUrl: uObj.profilePicUrl,
+        followersCount: uObj.followersCount ?? 0,
+        isFollowing: viewerId ? (viewerId === uId ? false : followedSet.has(uId)) : false,
+        followedAt,
+      };
+    });
+
+    return {
+      data,
+      pagination: {
+        hasMore,
+        nextCursor,
+        totalCount,
+      },
+    };
+  }
+
+  async getFollowing(
+    targetUserId: string,
+    viewerId?: string,
+    limit: number = 10,
+    cursor?: string
+  ): Promise<PaginatedFollowUsersResult> {
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+      throw new Error("Invalid User ID format");
+    }
+
+    const targetUser = await this.userRepo.findById(targetUserId);
+    if (!targetUser) {
+      throw new Error("User not found");
+    }
+
+    const query: any = { follower: targetUserId };
+
+    if (cursor) {
+      const decoded = decodeCursor(cursor);
+      if (decoded) {
+        const cursorDate = new Date(decoded.createdAt);
+        query.$or = [
+          { createdAt: { $lt: cursorDate } },
+          { createdAt: cursorDate, _id: { $lt: decoded.id } },
+        ];
+      }
+    }
+
+    const [follows, totalCount] = await Promise.all([
+      Follow.find(query)
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(limit + 1)
+        .populate("following", "name username bio profilePicUrl followersCount")
+        .exec(),
+      Follow.countDocuments({ follower: targetUserId }),
+    ]);
+
+    const hasMore = follows.length > limit;
+    const items = follows.slice(0, limit);
+
+    let nextCursor: string | null = null;
+    if (hasMore && items.length > 0) {
+      const last = items[items.length - 1];
+      nextCursor = encodeCursor({
+        createdAt: (last.createdAt as Date).toISOString(),
+        id: last._id.toString(),
+      });
+    }
+
+    const followingUsers = items
+      .map((item) => ({
+        user: item.following as any,
+        followedAt: item.createdAt,
+      }))
+      .filter((entry) => entry.user && entry.user._id);
+
+    const followingIds = followingUsers.map((entry) => entry.user._id.toString());
+    const followedSet = new Set<string>();
+
+    if (viewerId && followingIds.length > 0) {
+      const followedDocs = await this.followRepo.findFollowingIn(viewerId, followingIds);
+      followedDocs.forEach((doc: any) => {
+        followedSet.add(doc.following.toString());
+      });
+    }
+
+    const data: FollowUserItem[] = followingUsers.map(({ user, followedAt }) => {
+      const uObj = user.toObject ? user.toObject() : user;
+      const uId = uObj._id.toString();
+      return {
+        _id: uId,
+        name: uObj.name,
+        username: uObj.username,
+        bio: uObj.bio,
+        profilePicUrl: uObj.profilePicUrl,
+        followersCount: uObj.followersCount ?? 0,
+        isFollowing: viewerId ? (viewerId === uId ? false : followedSet.has(uId)) : false,
+        followedAt,
+      };
+    });
+
+    return {
+      data,
+      pagination: {
+        hasMore,
+        nextCursor,
+        totalCount,
+      },
+    };
+  }
 }
 
 export const followService = new FollowService();
 export const toggleFollow = (followerId: string, followingId: string) =>
   followService.toggleFollow(followerId, followingId);
+export const getFollowers = (
+  targetUserId: string,
+  viewerId?: string,
+  limit?: number,
+  cursor?: string
+) => followService.getFollowers(targetUserId, viewerId, limit, cursor);
+export const getFollowing = (
+  targetUserId: string,
+  viewerId?: string,
+  limit?: number,
+  cursor?: string
+) => followService.getFollowing(targetUserId, viewerId, limit, cursor);

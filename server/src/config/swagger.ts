@@ -236,6 +236,74 @@ export const swaggerSpec: OpenAPIV3.Document = {
                 },
             },
         },
+        "/api/users/{id}/followers": {
+            get: {
+                tags: ["Users"],
+                summary: "Get list of followers for a user",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string" },
+                        description: "Target User ID",
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        schema: { type: "integer", default: 10 },
+                        description: "Number of users per page",
+                    },
+                    {
+                        name: "cursor",
+                        in: "query",
+                        schema: { type: "string" },
+                        description: "Pagination cursor",
+                    },
+                ],
+                responses: {
+                    "200": { description: "Followers list returned successfully with isFollowing status" },
+                    "400": { description: "Invalid User ID format" },
+                    "401": { description: "Unauthorized" },
+                    "404": { description: "User not found" },
+                },
+            },
+        },
+        "/api/users/{id}/following": {
+            get: {
+                tags: ["Users"],
+                summary: "Get list of users followed by target user",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string" },
+                        description: "Target User ID",
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        schema: { type: "integer", default: 10 },
+                        description: "Number of users per page",
+                    },
+                    {
+                        name: "cursor",
+                        in: "query",
+                        schema: { type: "string" },
+                        description: "Pagination cursor",
+                    },
+                ],
+                responses: {
+                    "200": { description: "Following list returned successfully with isFollowing status" },
+                    "400": { description: "Invalid User ID format" },
+                    "401": { description: "Unauthorized" },
+                    "404": { description: "User not found" },
+                },
+            },
+        },
 
         // ==========================================
         // 📝 POSTS

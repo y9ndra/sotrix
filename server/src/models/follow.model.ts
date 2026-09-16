@@ -35,6 +35,9 @@ followSchema.index(
   }
 );
 
+followSchema.index({ following: 1, createdAt: -1 });
+followSchema.index({ follower: 1, createdAt: -1 });
+
 const Follow = mongoose.model<IFollow>("Follow", followSchema);
 
 export default Follow;
