@@ -28,11 +28,12 @@
     </filter>
 
     <!-- Base 3D Cube Block -->
-    <g id="bannerCube">
-      <polygon points="0,0 -34.64,-20 0,-40 34.64,-20" fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"/>
-      <polygon points="0,0 -34.64,-20 -34.64,20 0,40" fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"/>
-      <polygon points="0,0 34.64,-20 34.64,20 0,40" fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"/>
-    </g>
+    <!-- Subtle Emerald Ambient Aura -->
+    <radialGradient id="bannerAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.14" />
+      <stop offset="50%" stop-color="#10b981" stop-opacity="0.03" />
+      <stop offset="85%" stop-color="#10b981" stop-opacity="0" />
+    </radialGradient>
 
     <!-- Subtle Dot Grid -->
     <pattern id="dotGrid" width="30" height="30" patternUnits="userSpaceOnUse">
@@ -47,17 +48,117 @@
   <!-- Outer Border Frame -->
   <rect x="1" y="1" width="1198" height="398" rx="16" fill="none" stroke="#1f2633" stroke-width="1.5" />
 
-  <!-- Emblem on Left (Vertically centered at y=200) -->
-  <g transform="translate(260, 270) scale(1.05)" filter="url(#bannerEmblemShadow)">
-    <use href="#bannerCube" x="0" y="-160" />
-    <use href="#bannerCube" x="-34.64" y="-100" />
-    <use href="#bannerCube" x="-34.64" y="-140" />
-    <use href="#bannerCube" x="34.64" y="-140" />
-    <use href="#bannerCube" x="0" y="-80" />
-    <use href="#bannerCube" x="-34.64" y="-20" />
-    <use href="#bannerCube" x="34.64" y="-20" />
-    <use href="#bannerCube" x="34.64" y="-60" />
-    <use href="#bannerCube" x="0" y="0" />
+  <!-- Emblem on Left (Vertically centered at x=260, y=200) -->
+  <circle cx="260" cy="200" r="140" fill="url(#bannerAura)" pointer-events="none" />
+  <g transform="translate(260, 200) scale(0.82)" filter="url(#bannerEmblemShadow)">
+      <!-- Cube T3 -->
+      <g id="banner-cube-T3" transform="translate(0.00, -108.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube M2 -->
+      <g id="banner-cube-M2" transform="translate(-46.77, -27.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube T2 -->
+      <g id="banner-cube-T2" transform="translate(-46.77, -81.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube T6 -->
+      <g id="banner-cube-T6" transform="translate(46.77, -81.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube M5 -->
+      <g id="banner-cube-M5" transform="translate(0.00, 0.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube B4 -->
+      <g id="banner-cube-B4" transform="translate(-46.77, 81.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube B8 -->
+      <g id="banner-cube-B8" transform="translate(46.77, 81.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube M8 -->
+      <g id="banner-cube-M8" transform="translate(46.77, 27.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
+      <!-- Cube B7 -->
+      <g id="banner-cube-B7" transform="translate(0.00, 108.00)">
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+        <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+              fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+              transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+      </g>
   </g>
 
   <!-- Vertical Divider Line -->

@@ -1,67 +1,195 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 -220 240 280" width="800" height="800" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-185 -185 370 370" width="800" height="800" fill="none">
   <defs>
-    <!-- Top Face (Subtle metallic obsidian reflection) -->
-    <linearGradient id="topFace" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#222834" />
-      <stop offset="100%" stop-color="#161a22" />
+    <!-- Top Face Gradient: metallic obsidian reflection -->
+    <linearGradient id="sotrixGradU" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#28303f" />
+      <stop offset="100%" stop-color="#181d26" />
     </linearGradient>
 
-    <!-- Left Face (Deep obsidian shadow) -->
-    <linearGradient id="leftFace" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Front-Left Face Gradient: deep obsidian shadow -->
+    <linearGradient id="sotrixGradF" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#0e1015" />
-      <stop offset="100%" stop-color="#060709" />
+      <stop offset="100%" stop-color="#050608" />
     </linearGradient>
 
-    <!-- Right Face (Mid graphite obsidian) -->
-    <linearGradient id="rightFace" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#181c24" />
-      <stop offset="100%" stop-color="#0d0f13" />
+    <!-- Front-Right Face Gradient: mid graphite obsidian -->
+    <linearGradient id="sotrixGradR" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a1e27" />
+      <stop offset="100%" stop-color="#0d0f14" />
     </linearGradient>
 
-    <!-- Clean 3D Drop Shadow: Elevates the 'S' and defines its contours (Zero glow) -->
-    <filter id="cubeShadow" x="-30%" y="-30%" width="160%" height="170%">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.85"/>
+    <!-- Subtle Emerald Ambient Aura -->
+    <radialGradient id="sotrixAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.14" />
+      <stop offset="50%" stop-color="#10b981" stop-opacity="0.03" />
+      <stop offset="85%" stop-color="#10b981" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Crisp Depth Drop Shadow -->
+    <filter id="sotrixShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.85"/>
       <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.9"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#10b981" flood-opacity="0.15"/>
     </filter>
-
-    <!-- Base 3D Cube Block with Razor-Sharp Emerald Lines -->
-    <g id="cube">
-      <!-- Top face -->
-      <polygon points="0,0 -34.64,-20 0,-40 34.64,-20" fill="url(#topFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"/>
-      <!-- Left face -->
-      <polygon points="0,0 -34.64,-20 -34.64,20 0,40" fill="url(#leftFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"/>
-      <!-- Right face -->
-      <polygon points="0,0 34.64,-20 34.64,20 0,40" fill="url(#rightFace)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"/>
-    </g>
   </defs>
 
-  <!-- Blocks drawn back-to-front with depth shadow -->
-  <g filter="url(#cubeShadow)">
-    <!-- 1. T3 (Back-Right, Top) -->
-    <use href="#cube" x="0" y="-160" />
-    
-    <!-- 2. M2 (Back-Mid, Middle) -->
-    <use href="#cube" x="-34.64" y="-100" />
-    
-    <!-- 3. T2 (Back-Mid, Top) -->
-    <use href="#cube" x="-34.64" y="-140" />
-    
-    <!-- 4. T6 (Mid-Right, Top) -->
-    <use href="#cube" x="34.64" y="-140" />
-    
-    <!-- 5. M5 (Core Center, Middle) -->
-    <use href="#cube" x="0" y="-80" />
-    
-    <!-- 6. B4 (Mid-Left, Bottom) -->
-    <use href="#cube" x="-34.64" y="-20" />
-    
-    <!-- 7. B8 (Front-Mid, Bottom) -->
-    <use href="#cube" x="34.64" y="-20" />
-    
-    <!-- 8. M8 (Front-Mid, Middle) -->
-    <use href="#cube" x="34.64" y="-60" />
-    
-    <!-- 9. B7 (Front-Left, Bottom) -->
-    <use href="#cube" x="0" y="0" />
+  <!-- Ambient Aura -->
+  <circle cx="0" cy="0" r="170" fill="url(#sotrixAura)" pointer-events="none" />
+
+  <!-- 9 Isometric Rubik's Cubes Forming 'S' -->
+  <g filter="url(#sotrixShadow)">
+    <!-- Cube 1: T3 (-1, -1, -1) -->
+    <g id="cube-T3" transform="translate(0.00, -108.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 2: M2 (-1, 0, 0) -->
+    <g id="cube-M2" transform="translate(-46.77, -27.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 3: T2 (-1, -1, 0) -->
+    <g id="cube-T2" transform="translate(-46.77, -81.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 4: T6 (0, -1, -1) -->
+    <g id="cube-T6" transform="translate(46.77, -81.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 5: M5 (0, 0, 0) -->
+    <g id="cube-M5" transform="translate(0.00, 0.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 6: B4 (0, 1, 1) -->
+    <g id="cube-B4" transform="translate(-46.77, 81.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 7: B8 (1, 1, 0) -->
+    <g id="cube-B8" transform="translate(46.77, 81.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 8: M8 (1, 0, 0) -->
+    <g id="cube-M8" transform="translate(46.77, 27.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
+    <!-- Cube 9: B7 (1, 1, 1) -->
+    <g id="cube-B7" transform="translate(0.00, 108.00)">
+      <!-- Front-Left Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradF)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, 0, 1, -22.52, 13.00)" />
+
+      <!-- Front-Right Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradR)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, -0.5, 0, 1, 22.52, 13.00)" />
+
+      <!-- Top Face -->
+      <rect x="-26" y="-26" width="52" height="52" rx="4" ry="4"
+            fill="url(#sotrixGradU)" stroke="#10b981" stroke-width="2.2" stroke-linejoin="round"
+            transform="matrix(0.8660254037844387, 0.5, -0.8660254037844387, 0.5, 0, -26)" />
+    </g>
   </g>
 </svg>
