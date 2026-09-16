@@ -26,7 +26,11 @@ const app: Application = express();
 
 app.set("trust proxy", 1);
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
 
 app.use(
   cors({
@@ -105,10 +109,17 @@ app.use('/api', uploadRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api/conversations', conversationRoutes);
 
+// Swagger API Documentation (mounted before errorHandler)
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: "Sotrix API Docs",
+  })
+);
+
 // Register centralized error handling middleware after all routes
 app.use(errorHandler);
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 export default app;
 
