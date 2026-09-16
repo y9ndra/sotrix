@@ -17,6 +17,7 @@ import { removeToken } from "../services/token.service";
 import { useNotificationStore } from "../store/notification.store";
 import { useTheme } from "../context/ThemeContext";
 import RubiksLoader from "../components/RubiksLoader";
+import FollowListModal from "../components/FollowListModal";
 
 // Canvas Helper Utilities for Image Cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -105,6 +106,20 @@ const Profile = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
+  // Follow List Modal State
+  const [isFollowModalOpen, setIsFollowModalOpen] = useState<boolean>(false);
+  const [followModalTab, setFollowModalTab] = useState<"followers" | "following">("followers");
+
+  const openFollowersModal = () => {
+    setFollowModalTab("followers");
+    setIsFollowModalOpen(true);
+  };
+
+  const openFollowingModal = () => {
+    setFollowModalTab("following");
+    setIsFollowModalOpen(true);
+  };
   // Theme State
   const { theme, toggleTheme } = useTheme();
 
@@ -650,13 +665,39 @@ const Profile = () => {
                       </span>
                       posts
                     </div>
-                    <div className="profile-stat-item">
+                    <div
+                      className="profile-stat-item clickable"
+                      onClick={openFollowersModal}
+                      style={{ cursor: "pointer", transition: "opacity 0.15s ease" }}
+                      title="Click to view followers"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openFollowersModal();
+                        }
+                      }}
+                    >
                       <span className="profile-stat-number">
                         {formatFollowers(user.followersCount ?? 0)}
                       </span>
                       followers
                     </div>
-                    <div className="profile-stat-item">
+                    <div
+                      className="profile-stat-item clickable"
+                      onClick={openFollowingModal}
+                      style={{ cursor: "pointer", transition: "opacity 0.15s ease" }}
+                      title="Click to view following"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openFollowingModal();
+                        }
+                      }}
+                    >
                       <span className="profile-stat-number">
                         {formatFollowers(user.followingCount ?? 0)}
                       </span>
@@ -1096,6 +1137,31 @@ const Profile = () => {
           </div>,
           document.body
         )}
+
+      {/* Followers / Following List Modal */}
+      {isFollowModalOpen && user && (
+        <FollowListModal
+          isOpen={isFollowModalOpen}
+          onClose={() => setIsFollowModalOpen(false)}
+          userId={user._id || (user as any).id}
+          initialTab={followModalTab}
+          followersCount={user.followersCount ?? 0}
+          followingCount={user.followingCount ?? 0}
+          onFollowStateChange={(_targetUserId, isFollowing) => {
+            const isMe = (user._id || (user as any).id) === (currentUser?._id || (currentUser as any)?.id);
+            if (isMe) {
+              setUser((prev: any) => {
+                if (!prev) return prev;
+                const delta = isFollowing ? 1 : -1;
+                return {
+                  ...prev,
+                  followingCount: Math.max(0, (prev.followingCount ?? 0) + delta),
+                };
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
