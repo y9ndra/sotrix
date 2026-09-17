@@ -342,9 +342,114 @@ function App() {
         }
       };
 
+      const handleGlobalMessageDeleted = ({
+        conversationId,
+        messageId,
+        lastMessage,
+      }: {
+        conversationId: string;
+        messageId: string;
+        lastMessage?: any;
+      }) => {
+        if (window.location.pathname.startsWith("/messages")) {
+          return;
+        }
+
+        queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+          queryKeys.conversations.messages(conversationId),
+          (oldData) => {
+            if (!oldData) return oldData;
+            if ("pages" in oldData) {
+              return {
+                ...oldData,
+                pages: oldData.pages.map((page) => ({
+                  ...page,
+                  data: page.data.filter((m) => m._id !== messageId),
+                })),
+              };
+            }
+            if ("data" in oldData && Array.isArray(oldData.data)) {
+              return {
+                ...oldData,
+                data: oldData.data.filter((m) => m._id !== messageId),
+              };
+            }
+            return oldData;
+          }
+        );
+
+        queryClient.setQueryData<Conversation[]>(
+          queryKeys.conversations.all,
+          (old = []) =>
+            old.map((c) => {
+              if (c._id === conversationId) {
+                return {
+                  ...c,
+                  lastMessage: lastMessage || undefined,
+                };
+              }
+              return c;
+            })
+        );
+      };
+
+      const handleGlobalMessageBatchDeleted = ({
+        conversationId,
+        messageIds,
+        lastMessage,
+      }: {
+        conversationId: string;
+        messageIds: string[];
+        lastMessage?: any;
+      }) => {
+        if (window.location.pathname.startsWith("/messages")) {
+          return;
+        }
+        const idSet = new Set(messageIds);
+
+        queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+          queryKeys.conversations.messages(conversationId),
+          (oldData) => {
+            if (!oldData) return oldData;
+            if ("pages" in oldData) {
+              return {
+                ...oldData,
+                pages: oldData.pages.map((page) => ({
+                  ...page,
+                  data: page.data.filter((m) => !idSet.has(m._id)),
+                })),
+              };
+            }
+            if ("data" in oldData && Array.isArray(oldData.data)) {
+              return {
+                ...oldData,
+                data: oldData.data.filter((m) => !idSet.has(m._id)),
+              };
+            }
+            return oldData;
+          }
+        );
+
+        queryClient.setQueryData<Conversation[]>(
+          queryKeys.conversations.all,
+          (old = []) =>
+            old.map((c) => {
+              if (c._id === conversationId) {
+                return {
+                  ...c,
+                  lastMessage: lastMessage || undefined,
+                };
+              }
+              return c;
+            })
+        );
+      };
+
       socket.on("message:new", handleGlobalMessageNew);
       socket.on("conversation:new", handleGlobalConversationNew);
       socket.on("conversation:read", handleGlobalConversationRead);
+      socket.on("message:deleted", handleGlobalMessageDeleted);
+      socket.on("message:batch-deleted", handleGlobalMessageBatchDeleted);
 
       socket.on("disconnect", () => {
         console.log("Disconnected from Socket.IO server");
@@ -360,6 +465,8 @@ function App() {
         socket.off("message:new", handleGlobalMessageNew);
         socket.off("conversation:new", handleGlobalConversationNew);
         socket.off("conversation:read", handleGlobalConversationRead);
+        socket.off("message:deleted", handleGlobalMessageDeleted);
+        socket.off("message:batch-deleted", handleGlobalMessageBatchDeleted);
         socket.off("disconnect");
         disconnectSocket();
       };

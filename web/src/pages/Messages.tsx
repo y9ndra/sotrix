@@ -1117,7 +1117,32 @@ const Messages: React.FC = () => {
         }
       );
 
-      // Invalidate conversation list to update lastMessage
+      // Calculate remaining messages and determine new latest message
+      const remaining = displayMessages.filter((m) => !idSet.has(m._id));
+      const nextLatest = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+
+      // Optimistically update conversation preview in sidebar
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) =>
+          old.map((c) => {
+            if (c._id === selectedConversationId) {
+              return {
+                ...c,
+                lastMessage: nextLatest
+                  ? {
+                      content: nextLatest.content,
+                      sender: nextLatest.sender,
+                      createdAt: nextLatest.createdAt,
+                    }
+                  : undefined,
+              };
+            }
+            return c;
+          })
+      );
+
+      // Invalidate conversation list to synchronize with backend
       queryClient.invalidateQueries({
         queryKey: queryKeys.conversations.all,
         exact: true,
@@ -1167,7 +1192,32 @@ const Messages: React.FC = () => {
         }
       );
 
-      // Invalidate conversation list to update lastMessage
+      // Calculate remaining messages and determine new latest message
+      const remaining = displayMessages.filter((m) => m._id !== msgId);
+      const nextLatest = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+
+      // Optimistically update conversation preview in sidebar
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) =>
+          old.map((c) => {
+            if (c._id === selectedConversationId) {
+              return {
+                ...c,
+                lastMessage: nextLatest
+                  ? {
+                      content: nextLatest.content,
+                      sender: nextLatest.sender,
+                      createdAt: nextLatest.createdAt,
+                    }
+                  : undefined,
+              };
+            }
+            return c;
+          })
+      );
+
+      // Invalidate conversation list to synchronize with backend
       queryClient.invalidateQueries({
         queryKey: queryKeys.conversations.all,
         exact: true,
@@ -1766,31 +1816,69 @@ const Messages: React.FC = () => {
     const handleMessageDeleted = ({
       conversationId,
       messageId,
+      lastMessage,
     }: {
       conversationId: string;
       messageId: string;
+      lastMessage?: any;
     }) => {
+      let remainingLatest: ChatMessage | null | undefined = undefined;
+
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
         queryKeys.conversations.messages(conversationId),
         (oldData) => {
           if (!oldData) return oldData;
           if ("pages" in oldData) {
+            const updatedPages = oldData.pages.map((page) => ({
+              ...page,
+              data: page.data.filter((m) => m._id !== messageId),
+            }));
+            const allRemaining = updatedPages.flatMap((p) => p.data || []);
+            remainingLatest = allRemaining.length > 0 ? allRemaining[0] : null;
             return {
               ...oldData,
-              pages: oldData.pages.map((page) => ({
-                ...page,
-                data: page.data.filter((m) => m._id !== messageId),
-              })),
+              pages: updatedPages,
             };
           }
           if ("data" in oldData && Array.isArray(oldData.data)) {
+            const remaining = oldData.data.filter((m) => m._id !== messageId);
+            remainingLatest = remaining.length > 0 ? remaining[0] : null;
             return {
               ...oldData,
-              data: oldData.data.filter((m) => m._id !== messageId),
+              data: remaining,
             };
           }
           return oldData;
         }
+      );
+
+      // Update sidebar conversation preview
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) =>
+          old.map((c) => {
+            if (c._id === conversationId) {
+              if (lastMessage !== undefined) {
+                return {
+                  ...c,
+                  lastMessage: lastMessage || undefined,
+                };
+              }
+              if (remainingLatest !== undefined) {
+                return {
+                  ...c,
+                  lastMessage: remainingLatest
+                    ? {
+                        content: remainingLatest.content,
+                        sender: remainingLatest.sender,
+                        createdAt: remainingLatest.createdAt,
+                      }
+                    : undefined,
+                };
+              }
+            }
+            return c;
+          })
       );
 
       queryClient.invalidateQueries({
@@ -1803,32 +1891,70 @@ const Messages: React.FC = () => {
     const handleMessageBatchDeleted = ({
       conversationId,
       messageIds,
+      lastMessage,
     }: {
       conversationId: string;
       messageIds: string[];
+      lastMessage?: any;
     }) => {
       const idSet = new Set(messageIds);
+      let remainingLatest: ChatMessage | null | undefined = undefined;
+
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
         queryKeys.conversations.messages(conversationId),
         (oldData) => {
           if (!oldData) return oldData;
           if ("pages" in oldData) {
+            const updatedPages = oldData.pages.map((page) => ({
+              ...page,
+              data: page.data.filter((m) => !idSet.has(m._id)),
+            }));
+            const allRemaining = updatedPages.flatMap((p) => p.data || []);
+            remainingLatest = allRemaining.length > 0 ? allRemaining[0] : null;
             return {
               ...oldData,
-              pages: oldData.pages.map((page) => ({
-                ...page,
-                data: page.data.filter((m) => !idSet.has(m._id)),
-              })),
+              pages: updatedPages,
             };
           }
           if ("data" in oldData && Array.isArray(oldData.data)) {
+            const remaining = oldData.data.filter((m) => !idSet.has(m._id));
+            remainingLatest = remaining.length > 0 ? remaining[0] : null;
             return {
               ...oldData,
-              data: oldData.data.filter((m) => !idSet.has(m._id)),
+              data: remaining,
             };
           }
           return oldData;
         }
+      );
+
+      // Update sidebar conversation preview
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) =>
+          old.map((c) => {
+            if (c._id === conversationId) {
+              if (lastMessage !== undefined) {
+                return {
+                  ...c,
+                  lastMessage: lastMessage || undefined,
+                };
+              }
+              if (remainingLatest !== undefined) {
+                return {
+                  ...c,
+                  lastMessage: remainingLatest
+                    ? {
+                        content: remainingLatest.content,
+                        sender: remainingLatest.sender,
+                        createdAt: remainingLatest.createdAt,
+                      }
+                    : undefined,
+                };
+              }
+            }
+            return c;
+          })
       );
 
       queryClient.invalidateQueries({
