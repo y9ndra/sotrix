@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { FollowService } from "../../src/services/follow.service";
+import User from "../../src/models/user.model";
+import Follow from "../../src/models/follow.model";
 import {
   IUserRepository,
   IFollowRepository,
@@ -226,6 +228,68 @@ describe("FollowService (with Dependency Injected Fake Repositories)", () => {
 
       const isFollowing = await fakeFollowRepo.isFollowing(followerId, targetId);
       expect(isFollowing).toBe(false);
+    });
+  });
+
+  describe("Followers & Following Search", () => {
+    let aliceId: string;
+    let bobId: string;
+
+    beforeEach(async () => {
+      aliceId = new mongoose.Types.ObjectId().toString();
+      bobId = new mongoose.Types.ObjectId().toString();
+
+      // Create users in MongoDB so aggregation $lookup works
+      await User.create([
+        {
+          _id: aliceId,
+          username: "alice_wonder",
+          name: "Alice Wonderland",
+          email: "alice@example.com",
+          password: "password123",
+          followersCount: 0,
+          followingCount: 0,
+        },
+        {
+          _id: bobId,
+          username: "bob_builder",
+          name: "Bob Builder",
+          email: "bob@example.com",
+          password: "password123",
+          followersCount: 0,
+          followingCount: 0,
+        },
+      ]);
+
+      // Target user follows Alice and Bob (they are following target)
+      await Follow.create([
+        { follower: aliceId, following: targetId },
+        { follower: bobId, following: targetId },
+        { follower: targetId, following: aliceId },
+        { follower: targetId, following: bobId },
+      ]);
+    });
+
+    it("should search followers by username or name using server-side query", async () => {
+      const result = await followService.getFollowers(targetId, followerId, 10, undefined, "alice");
+
+      expect(result.data.length).toBe(1);
+      expect(result.data[0].username).toBe("alice_wonder");
+      expect(result.data[0].name).toBe("Alice Wonderland");
+    });
+
+    it("should return empty list when no followers match search query", async () => {
+      const result = await followService.getFollowers(targetId, followerId, 10, undefined, "nonexistent");
+
+      expect(result.data.length).toBe(0);
+    });
+
+    it("should search following by username or name using server-side query", async () => {
+      const result = await followService.getFollowing(targetId, followerId, 10, undefined, "builder");
+
+      expect(result.data.length).toBe(1);
+      expect(result.data[0].username).toBe("bob_builder");
+      expect(result.data[0].name).toBe("Bob Builder");
     });
   });
 });

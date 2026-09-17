@@ -37,10 +37,12 @@ export interface FollowUsersResponse {
 export const getFollowers = async (
   userId: string,
   limit: number = 20,
-  cursor?: string
+  cursor?: string,
+  q?: string
 ): Promise<FollowUsersResponse> => {
   const params: Record<string, any> = { limit };
   if (cursor) params.cursor = cursor;
+  if (q && q.trim()) params.q = q.trim();
   const response = await api.get<FollowUsersResponse>(`/users/${userId}/followers`, { params });
   return response.data;
 };
@@ -48,10 +50,12 @@ export const getFollowers = async (
 export const getFollowing = async (
   userId: string,
   limit: number = 20,
-  cursor?: string
+  cursor?: string,
+  q?: string
 ): Promise<FollowUsersResponse> => {
   const params: Record<string, any> = { limit };
   if (cursor) params.cursor = cursor;
+  if (q && q.trim()) params.q = q.trim();
   const response = await api.get<FollowUsersResponse>(`/users/${userId}/following`, { params });
   return response.data;
 };

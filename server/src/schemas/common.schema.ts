@@ -50,10 +50,15 @@ export const searchUsersQuerySchema = z.object({
   cursor: z.string().optional(),
 });
 
+export const followListQuerySchema = paginationQuerySchema.extend({
+  q: z.string().trim().max(50, "Search query is too long").optional(),
+});
+
 export type IdParam = z.infer<typeof idParamSchema>;
 export type PostIdParam = z.infer<typeof postIdParamSchema>;
 export type CommentIdParam = z.infer<typeof commentIdParamSchema>;
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;
+export type FollowListQuery = z.infer<typeof followListQuerySchema>;
 

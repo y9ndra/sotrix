@@ -3,7 +3,7 @@ import {
   toggleFollow as toggleFollowService,
   followService,
 } from "../services/follow.service";
-import { IdParam, PaginationQuery } from "../schemas/common.schema";
+import { IdParam, PaginationQuery, FollowListQuery } from "../schemas/common.schema";
 import { addNotificationJob } from "../jobs/notification.job";
 import { removeNotification } from "../services/notification.service";
 
@@ -20,10 +20,6 @@ export const toggleFollow = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    if (!targetUserId) {
-      return res.status(400).json({ message: "Target user ID is required" });
-    }
-
     const result = await toggleFollowService(followerId, targetUserId);
 
     if (result.following) {
@@ -31,15 +27,21 @@ export const toggleFollow = async (
         recipientId: targetUserId,
         actorId: followerId,
         type: "follow",
+      }).catch((err) => {
+        console.error("Failed to queue follow notification job:", err);
       });
     } else {
-      await removeNotification(targetUserId, followerId, "follow");
+      await removeNotification(targetUserId, followerId, "follow").catch((err) => {
+        console.error("Failed to remove follow notification:", err);
+      });
     }
 
     return res.status(200).json({
       success: true,
-      following: result.following,
-      followersCount: result.followersCount,
+      message: result.following
+        ? "Successfully followed user"
+        : "Successfully unfollowed user",
+      data: result,
     });
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -65,13 +67,14 @@ export const getFollowers = async (
   try {
     const targetUserId = req.params.id;
     const viewerId = req.user?.id;
-    const { limit, cursor } = req.query as PaginationQuery;
+    const { limit, cursor, q } = req.query as FollowListQuery;
 
     const result = await followService.getFollowers(
       targetUserId,
       viewerId,
       limit ? Number(limit) : 10,
-      cursor
+      cursor,
+      q
     );
 
     return res.status(200).json({
@@ -100,13 +103,14 @@ export const getFollowing = async (
   try {
     const targetUserId = req.params.id;
     const viewerId = req.user?.id;
-    const { limit, cursor } = req.query as PaginationQuery;
+    const { limit, cursor, q } = req.query as FollowListQuery;
 
     const result = await followService.getFollowing(
       targetUserId,
       viewerId,
       limit ? Number(limit) : 10,
-      cursor
+      cursor,
+      q
     );
 
     return res.status(200).json({

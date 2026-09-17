@@ -202,7 +202,8 @@ export class FollowService {
     targetUserId: string,
     viewerId?: string,
     limit: number = 10,
-    cursor?: string
+    cursor?: string,
+    searchQuery?: string
   ): Promise<PaginatedFollowUsersResult> {
     if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
       throw new Error("Invalid User ID format");
@@ -213,27 +214,82 @@ export class FollowService {
       throw new Error("User not found");
     }
 
-    const query: any = { following: targetUserId };
+    let follows: any[];
+    let totalCount = 0;
+    const trimmedQuery = searchQuery?.trim();
 
-    if (cursor) {
-      const decoded = decodeCursor(cursor);
-      if (decoded) {
-        const cursorDate = new Date(decoded.createdAt);
-        query.$or = [
-          { createdAt: { $lt: cursorDate } },
-          { createdAt: cursorDate, _id: { $lt: decoded.id } },
-        ];
+    if (trimmedQuery) {
+      const escapedSearch = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escapedSearch, "i");
+
+      const matchStage: any = {
+        following: new mongoose.Types.ObjectId(targetUserId),
+      };
+
+      if (cursor) {
+        const decoded = decodeCursor(cursor);
+        if (decoded) {
+          const cursorDate = new Date(decoded.createdAt);
+          matchStage.$or = [
+            { createdAt: { $lt: cursorDate } },
+            {
+              createdAt: cursorDate,
+              _id: { $lt: new mongoose.Types.ObjectId(decoded.id) },
+            },
+          ];
+        }
       }
-    }
 
-    const [follows, totalCount] = await Promise.all([
-      Follow.find(query)
-        .sort({ createdAt: -1, _id: -1 })
-        .limit(limit + 1)
-        .populate("follower", "name username bio profilePicUrl followersCount")
-        .exec(),
-      Follow.countDocuments({ following: targetUserId }),
-    ]);
+      const pipeline: any[] = [
+        { $match: matchStage },
+        { $sort: { createdAt: -1, _id: -1 } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "follower",
+            foreignField: "_id",
+            as: "follower",
+          },
+        },
+        { $unwind: "$follower" },
+        {
+          $match: {
+            $or: [
+              { "follower.username": { $regex: regex } },
+              { "follower.name": { $regex: regex } },
+            ],
+          },
+        },
+        { $limit: limit + 1 },
+      ];
+
+      [follows, totalCount] = await Promise.all([
+        Follow.aggregate(pipeline).exec(),
+        Follow.countDocuments({ following: targetUserId }),
+      ]);
+    } else {
+      const query: any = { following: targetUserId };
+
+      if (cursor) {
+        const decoded = decodeCursor(cursor);
+        if (decoded) {
+          const cursorDate = new Date(decoded.createdAt);
+          query.$or = [
+            { createdAt: { $lt: cursorDate } },
+            { createdAt: cursorDate, _id: { $lt: decoded.id } },
+          ];
+        }
+      }
+
+      [follows, totalCount] = await Promise.all([
+        Follow.find(query)
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(limit + 1)
+          .populate("follower", "name username bio profilePicUrl followersCount")
+          .exec(),
+        Follow.countDocuments({ following: targetUserId }),
+      ]);
+    }
 
     const hasMore = follows.length > limit;
     const items = follows.slice(0, limit);
@@ -241,8 +297,12 @@ export class FollowService {
     let nextCursor: string | null = null;
     if (hasMore && items.length > 0) {
       const last = items[items.length - 1];
+      const createdAtDate =
+        last.createdAt instanceof Date
+          ? last.createdAt
+          : new Date(last.createdAt);
       nextCursor = encodeCursor({
-        createdAt: (last.createdAt as Date).toISOString(),
+        createdAt: createdAtDate.toISOString(),
         id: last._id.toString(),
       });
     }
@@ -293,7 +353,8 @@ export class FollowService {
     targetUserId: string,
     viewerId?: string,
     limit: number = 10,
-    cursor?: string
+    cursor?: string,
+    searchQuery?: string
   ): Promise<PaginatedFollowUsersResult> {
     if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
       throw new Error("Invalid User ID format");
@@ -304,27 +365,82 @@ export class FollowService {
       throw new Error("User not found");
     }
 
-    const query: any = { follower: targetUserId };
+    let follows: any[];
+    let totalCount = 0;
+    const trimmedQuery = searchQuery?.trim();
 
-    if (cursor) {
-      const decoded = decodeCursor(cursor);
-      if (decoded) {
-        const cursorDate = new Date(decoded.createdAt);
-        query.$or = [
-          { createdAt: { $lt: cursorDate } },
-          { createdAt: cursorDate, _id: { $lt: decoded.id } },
-        ];
+    if (trimmedQuery) {
+      const escapedSearch = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escapedSearch, "i");
+
+      const matchStage: any = {
+        follower: new mongoose.Types.ObjectId(targetUserId),
+      };
+
+      if (cursor) {
+        const decoded = decodeCursor(cursor);
+        if (decoded) {
+          const cursorDate = new Date(decoded.createdAt);
+          matchStage.$or = [
+            { createdAt: { $lt: cursorDate } },
+            {
+              createdAt: cursorDate,
+              _id: { $lt: new mongoose.Types.ObjectId(decoded.id) },
+            },
+          ];
+        }
       }
-    }
 
-    const [follows, totalCount] = await Promise.all([
-      Follow.find(query)
-        .sort({ createdAt: -1, _id: -1 })
-        .limit(limit + 1)
-        .populate("following", "name username bio profilePicUrl followersCount")
-        .exec(),
-      Follow.countDocuments({ follower: targetUserId }),
-    ]);
+      const pipeline: any[] = [
+        { $match: matchStage },
+        { $sort: { createdAt: -1, _id: -1 } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "following",
+            foreignField: "_id",
+            as: "following",
+          },
+        },
+        { $unwind: "$following" },
+        {
+          $match: {
+            $or: [
+              { "following.username": { $regex: regex } },
+              { "following.name": { $regex: regex } },
+            ],
+          },
+        },
+        { $limit: limit + 1 },
+      ];
+
+      [follows, totalCount] = await Promise.all([
+        Follow.aggregate(pipeline).exec(),
+        Follow.countDocuments({ follower: targetUserId }),
+      ]);
+    } else {
+      const query: any = { follower: targetUserId };
+
+      if (cursor) {
+        const decoded = decodeCursor(cursor);
+        if (decoded) {
+          const cursorDate = new Date(decoded.createdAt);
+          query.$or = [
+            { createdAt: { $lt: cursorDate } },
+            { createdAt: cursorDate, _id: { $lt: decoded.id } },
+          ];
+        }
+      }
+
+      [follows, totalCount] = await Promise.all([
+        Follow.find(query)
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(limit + 1)
+          .populate("following", "name username bio profilePicUrl followersCount")
+          .exec(),
+        Follow.countDocuments({ follower: targetUserId }),
+      ]);
+    }
 
     const hasMore = follows.length > limit;
     const items = follows.slice(0, limit);
@@ -332,8 +448,12 @@ export class FollowService {
     let nextCursor: string | null = null;
     if (hasMore && items.length > 0) {
       const last = items[items.length - 1];
+      const createdAtDate =
+        last.createdAt instanceof Date
+          ? last.createdAt
+          : new Date(last.createdAt);
       nextCursor = encodeCursor({
-        createdAt: (last.createdAt as Date).toISOString(),
+        createdAt: createdAtDate.toISOString(),
         id: last._id.toString(),
       });
     }
@@ -388,11 +508,14 @@ export const getFollowers = (
   targetUserId: string,
   viewerId?: string,
   limit?: number,
-  cursor?: string
-) => followService.getFollowers(targetUserId, viewerId, limit, cursor);
+  cursor?: string,
+  searchQuery?: string
+) => followService.getFollowers(targetUserId, viewerId, limit, cursor, searchQuery);
 export const getFollowing = (
   targetUserId: string,
   viewerId?: string,
   limit?: number,
-  cursor?: string
-) => followService.getFollowing(targetUserId, viewerId, limit, cursor);
+  cursor?: string,
+  searchQuery?: string
+) => followService.getFollowing(targetUserId, viewerId, limit, cursor, searchQuery);
+

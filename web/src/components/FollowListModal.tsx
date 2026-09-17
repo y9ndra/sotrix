@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,20 +43,35 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  // Sync tab when initialTab changes or modal opens
+  // Sync tab and search when initialTab changes or modal opens
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
       setSearchQuery("");
+      setDebouncedQuery("");
     }
   }, [isOpen, initialTab]);
 
-  // Fetch users when tab or userId changes
+  // Debounce search query input by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch users from server when tab, userId, or debouncedQuery changes
   const fetchUsers = useCallback(
-    async (tab: "followers" | "following", cursor?: string, isAppend = false) => {
+    async (
+      tab: "followers" | "following",
+      cursor?: string,
+      isAppend = false,
+      query?: string
+    ) => {
       if (!userId) return;
 
       if (isAppend) {
@@ -68,7 +83,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
 
       try {
         const fetcher = tab === "followers" ? getFollowers : getFollowing;
-        const res = await fetcher(userId, 20, cursor);
+        const res = await fetcher(userId, 20, cursor, query);
 
         if (res && res.data) {
           setUsers((prev) => (isAppend ? [...prev, ...res.data] : res.data));
@@ -88,13 +103,21 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchUsers(activeTab);
+      fetchUsers(activeTab, undefined, false, debouncedQuery);
     } else {
       setUsers([]);
       setNextCursor(null);
       setHasMore(false);
     }
-  }, [isOpen, activeTab, fetchUsers]);
+  }, [isOpen, activeTab, debouncedQuery, fetchUsers]);
+
+  const handleTabChange = (tab: "followers" | "following") => {
+    if (tab !== activeTab) {
+      setActiveTab(tab);
+      setSearchQuery("");
+      setDebouncedQuery("");
+    }
+  };
 
   // Handle ESC key to close
   useEffect(() => {
@@ -159,21 +182,9 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
 
   const handleLoadMore = () => {
     if (hasMore && nextCursor && !loadingMore) {
-      fetchUsers(activeTab, nextCursor, true);
+      fetchUsers(activeTab, nextCursor, true, debouncedQuery);
     }
   };
-
-  // Filter users by client-side search query
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-    const q = searchQuery.toLowerCase().trim();
-    return users.filter(
-      (u) =>
-        u.username?.toLowerCase().includes(q) ||
-        u.name?.toLowerCase().includes(q) ||
-        u.bio?.toLowerCase().includes(q)
-    );
-  }, [users, searchQuery]);
 
   if (!isOpen) return null;
 
@@ -214,7 +225,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
             <div style={{ display: "flex", gap: "8px" }}>
               <button
                 type="button"
-                onClick={() => setActiveTab("followers")}
+                onClick={() => handleTabChange("followers")}
                 className={`profile-filter-btn ${activeTab === "followers" ? "active" : ""}`}
                 style={{
                   fontFamily: "var(--font-mono)",
@@ -234,7 +245,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab("following")}
+                onClick={() => handleTabChange("following")}
                 className={`profile-filter-btn ${activeTab === "following" ? "active" : ""}`}
                 style={{
                   fontFamily: "var(--font-mono)",
@@ -305,7 +316,10 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setDebouncedQuery("");
+                }}
                 style={{
                   position: "absolute",
                   right: "10px",
@@ -363,7 +377,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
             </div>
           )}
 
-          {!loading && !error && filteredUsers.length === 0 && (
+          {!loading && !error && users.length === 0 && (
             <div
               style={{
                 display: "flex",
@@ -389,7 +403,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
                 />
               </svg>
               <span style={{ fontSize: "14px", fontWeight: 500 }}>
-                {searchQuery
+                {debouncedQuery || searchQuery
                   ? `no matches for "${searchQuery}"`
                   : activeTab === "followers"
                   ? "no followers yet"
@@ -399,7 +413,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
           )}
 
           {!loading &&
-            filteredUsers.map((item) => {
+            users.map((item) => {
               const isMe = currentUserId === item._id;
               const initialLetter = (item.name || item.username || "U").charAt(0).toUpperCase();
 
