@@ -2309,6 +2309,16 @@ const Messages: React.FC = () => {
     isFollowingOther && otherParticipantId && onlineUserIds.has(otherParticipantId)
   );
 
+  if (conversationsLoading && conversations.length === 0) {
+    return (
+      <div className="chat-page-layout chat-page-loading">
+        <div className="chat-tab-loading-state">
+          <RubiksLoader text="INITIALIZING MATRIX COMMS" size="md" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`chat-page-layout ${
@@ -2323,7 +2333,7 @@ const Messages: React.FC = () => {
 
         <div className="chat-inbox-list">
           {conversationsLoading ? (
-            <div style={{ padding: "48px 16px", display: "flex", justifyContent: "center" }}>
+            <div className="chat-sidebar-loading-wrap">
               <RubiksLoader text="SYNCING COMMS" size="sm" />
             </div>
           ) : conversations.length === 0 ? (
@@ -2523,8 +2533,8 @@ const Messages: React.FC = () => {
               onScroll={handleMessagesScroll}
             >
               {messagesLoading ? (
-                <div className="chat-loading-wrap" style={{ padding: "48px 0" }}>
-                  <RubiksLoader text="DECRYPTING TRANSMISSIONS" size="sm" />
+                <div className="chat-loading-wrap">
+                  <RubiksLoader text="DECRYPTING TRANSMISSIONS" size="md" />
                 </div>
               ) : displayMessages.length === 0 ? (
                 <div className="chat-empty-conversation">
@@ -2827,6 +2837,10 @@ const Messages: React.FC = () => {
               </div>
             )}
           </>
+        ) : selectedConversationId ? (
+          <div className="chat-loading-wrap">
+            <RubiksLoader text="CONNECTING SECURE CHANNEL" size="md" />
+          </div>
         ) : (
           <div className="chat-placeholder-state">
             <div className="chat-placeholder-box">
