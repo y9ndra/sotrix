@@ -6,6 +6,7 @@ import {
   markConversationAsRead,
 } from "../services/conversation.service";
 import {
+  createMessage as createMessageService,
   getMessages as getMessagesService,
   editMessage as editMessageService,
   deleteMessage as deleteMessageService,
@@ -133,6 +134,30 @@ export const getConversationMessages = async (
 
     const result = await getMessagesService(id, userId, cursor, limit);
 
+    // If opening conversation (initial load without pagination cursor), broadcast conversation:read
+    if (!cursor) {
+      try {
+        const io = getSocketIO();
+        if (io) {
+          const conversation = await Conversation.findById(id).select("participants");
+          let emitter: any = io.to(id);
+          if (conversation && conversation.participants) {
+            for (const p of conversation.participants) {
+              const pId = typeof p === "string" ? p : (p?._id || p)?.toString();
+              if (pId) {
+                emitter = emitter.to(pId).to(`user:${pId}`);
+              }
+            }
+          }
+          emitter.emit("conversation:read", {
+            conversationId: id,
+            readerId: userId,
+            readAt: new Date(),
+          });
+        }
+      } catch (_) {}
+    }
+
     return res.status(200).json({
       success: true,
       ...result,
@@ -155,6 +180,26 @@ export const markAsRead = async (
 
     const { id } = req.params;
     const conversation = await markConversationAsRead(id, userId);
+
+    try {
+      const io = getSocketIO();
+      if (io) {
+        let emitter: any = io.to(id);
+        if (conversation && conversation.participants) {
+          for (const p of conversation.participants) {
+            const pId = typeof p === "string" ? p : (p?._id || p)?.toString();
+            if (pId) {
+              emitter = emitter.to(pId).to(`user:${pId}`);
+            }
+          }
+        }
+        emitter.emit("conversation:read", {
+          conversationId: id,
+          readerId: userId,
+          readAt: new Date(),
+        });
+      }
+    } catch (_) {}
 
     return res.status(200).json({
       success: true,
@@ -377,6 +422,61 @@ export const batchDeleteMessagesController = async (
     ) {
       return res.status(403).json({ success: false, message: error.message });
     }
+    next(error);
+  }
+};
+
+export const sendMessageController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { conversationId } = req.params;
+    const { content, replyToId } = req.body;
+
+    if (!conversationId || !content) {
+      return res.status(400).json({
+        success: false,
+        message: "Conversation ID and content are required",
+      });
+    }
+
+    const message = await createMessageService(
+      conversationId,
+      userId,
+      content,
+      replyToId
+    );
+
+    // Broadcast over socket to all participants
+    try {
+      const io = getSocketIO();
+      if (io) {
+        const conversation = await Conversation.findById(conversationId).select(
+          "participants"
+        );
+        const participantIds = conversation?.participants || [];
+
+        let emitter: any = io.to(conversationId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+        }
+        emitter.emit("message:new", message);
+      }
+    } catch (_) {}
+
+    return res.status(201).json({
+      success: true,
+      data: message,
+    });
+  } catch (error: any) {
     next(error);
   }
 };

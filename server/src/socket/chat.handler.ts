@@ -44,10 +44,6 @@ export const registerChatHandlers = (
 
       socket.join(conversationId);
       socket.emit("conversation:joined", { conversationId });
-
-      // Mark conversation as read upon joining
-      markConversationAsRead(conversationId, userId).catch(() => {});
-
       console.log(`Socket ${socket.id} (user: ${userId}) joined room: ${conversationId}`);
     } catch (error: any) {
       socket.emit("chat:error", {
@@ -67,6 +63,18 @@ export const registerChatHandlers = (
           return;
         }
         await markConversationAsRead(conversationId, userId);
+        const conversation = await Conversation.findById(conversationId).select("participants");
+        const participantIds = conversation?.participants || [];
+        let emitter: any = io.to(conversationId);
+        for (const pId of participantIds) {
+          const pIdStr = pId.toString();
+          emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
+        }
+        emitter.emit("conversation:read", {
+          conversationId,
+          readerId: userId,
+          readAt: new Date(),
+        });
       } catch (error) {
         console.error("Error handling conversation:read event:", error);
       }
@@ -118,14 +126,17 @@ export const registerChatHandlers = (
         const participantIds = conversation?.participants || [];
 
         // Broadcast to conversation room AND each participant's personal room
-        // Socket.IO deduplicates targets across chained rooms automatically
         let emitter: any = io.to(conversationId);
         for (const pId of participantIds) {
           const pIdStr = pId.toString();
           emitter = emitter.to(pIdStr).to(getUserRoom(pIdStr));
         }
         emitter.emit("message:new", message);
+
+        // Also emit directly to the sender's current socket for immediate UI response
+        socket.emit("message:new", message);
       } catch (error: any) {
+        console.error("[SOCKET message:send ERROR]:", error);
         socket.emit("chat:error", {
           message: error.message || "Failed to send message",
         });

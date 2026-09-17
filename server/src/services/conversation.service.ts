@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Conversation, { IConversation } from "../models/conversation.model";
+import Message from "../models/message.model";
 import Follow from "../models/follow.model";
 import "../models/user.model"; // Ensure User model is registered for populate
 
@@ -177,7 +178,15 @@ export const getConversationForUser = async (
       }
     }
   }
-  convObj.hasUnread = hasUnread;
+
+  const unreadCount = await Message.countDocuments({
+    conversation: new mongoose.Types.ObjectId(conversationId),
+    sender: { $ne: new mongoose.Types.ObjectId(userId) },
+    isRead: { $ne: true },
+  });
+
+  convObj.hasUnread = unreadCount > 0 || hasUnread;
+  convObj.unreadCount = unreadCount;
 
   return convObj;
 };
@@ -211,6 +220,26 @@ export const getUserConversations = async (
 
   const followingSet = new Set(followings.map((f) => f.following.toString()));
 
+  const unreadCounts = await Message.aggregate([
+    {
+      $match: {
+        conversation: { $in: conversations.map((c) => c._id) },
+        sender: { $ne: new mongoose.Types.ObjectId(userId) },
+        isRead: { $ne: true },
+      },
+    },
+    {
+      $group: {
+        _id: "$conversation",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const unreadMap = new Map<string, number>(
+    unreadCounts.map((u: any) => [u._id.toString(), u.count])
+  );
+
   return conversations.map((conv) => {
     const convObj: any = conv.toObject();
     convObj.participants = (convObj.participants || []).map((p: any) => ({
@@ -236,7 +265,10 @@ export const getUserConversations = async (
         }
       }
     }
-    convObj.hasUnread = hasUnread;
+
+    const count = unreadMap.get(conv._id.toString()) || 0;
+    convObj.hasUnread = count > 0 || hasUnread;
+    convObj.unreadCount = count;
 
     return convObj;
   });
@@ -244,6 +276,7 @@ export const getUserConversations = async (
 
 /**
  * Marks a conversation as read for a given user by updating lastRead to now
+ * and marking all unread incoming messages as read
  */
 export const markConversationAsRead = async (
   conversationId: string,
@@ -257,24 +290,77 @@ export const markConversationAsRead = async (
   }
 
   const now = new Date();
-  const conversation = await Conversation.findOneAndUpdate(
-    {
-      _id: conversationId,
-      participants: userId,
-    },
-    {
-      $set: {
-        [`lastRead.${userId}`]: now,
+  const convObjectId = new mongoose.Types.ObjectId(conversationId);
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  const [conversation] = await Promise.all([
+    Conversation.findOneAndUpdate(
+      {
+        _id: convObjectId,
+        participants: userObjectId,
       },
-    },
-    { new: true }
-  ).populate("participants", "name username profilePicUrl");
+      {
+        $set: {
+          [`lastRead.${userId}`]: now,
+        },
+      },
+      { new: true }
+    ).populate("participants", "name username profilePicUrl"),
+    Message.updateMany(
+      {
+        conversation: convObjectId,
+        sender: { $ne: userObjectId },
+      },
+      {
+        $set: {
+          isRead: true,
+          readAt: now,
+        },
+      }
+    ),
+  ]);
 
   if (!conversation) {
     throw new Error("Conversation not found");
   }
 
+  if (!conversation.lastRead) {
+    conversation.lastRead = new Map();
+  }
+  conversation.lastRead.set(userId.toString(), now);
+  conversation.markModified("lastRead");
+  await conversation.save();
+
+  // Also check if the other participant read messages sent by this user
+  const otherParticipant = (conversation.participants || []).find(
+    (p: any) => (p._id || p).toString() !== userId.toString()
+  );
+  const otherId = (otherParticipant?._id || otherParticipant)?.toString();
+  const otherLastRead = otherId
+    ? (conversation.lastRead instanceof Map
+        ? conversation.lastRead.get(otherId)
+        : (conversation.lastRead as any)?.[otherId])
+    : null;
+
+  if (otherLastRead) {
+    await Message.updateMany(
+      {
+        conversation: convObjectId,
+        sender: userObjectId,
+        createdAt: { $lte: new Date(otherLastRead) },
+        isRead: { $ne: true },
+      },
+      {
+        $set: {
+          isRead: true,
+          readAt: new Date(otherLastRead),
+        },
+      }
+    );
+  }
+
   const convObj: any = conversation.toObject();
   convObj.hasUnread = false;
+  convObj.unreadCount = 0;
   return convObj;
 };

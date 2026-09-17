@@ -4,6 +4,8 @@ export interface IMessage extends Document {
   conversation: mongoose.Types.ObjectId;
   sender: mongoose.Types.ObjectId;
   content: string;
+  isRead?: boolean;
+  readAt?: Date;
   isEdited?: boolean;
   editedAt?: Date;
   deletedFor: mongoose.Types.ObjectId[];
@@ -30,6 +32,16 @@ const messageSchema = new Schema<IMessage>(
       type: String,
       required: true,
       trim: true,
+    },
+
+    isRead: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    readAt: {
+      type: Date,
     },
 
     isEdited: {
@@ -63,6 +75,13 @@ const messageSchema = new Schema<IMessage>(
 messageSchema.index({
   conversation: 1,
   createdAt: -1,
+});
+
+// Index for unread message queries and bulk mark-as-read operations
+messageSchema.index({
+  conversation: 1,
+  sender: 1,
+  isRead: 1,
 });
 
 export const Message = mongoose.model<IMessage>("Message", messageSchema);

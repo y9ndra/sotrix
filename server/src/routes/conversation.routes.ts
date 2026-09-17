@@ -9,6 +9,7 @@ import {
   editMessageController,
   deleteMessageController,
   batchDeleteMessagesController,
+  sendMessageController,
 } from "../controllers/conversation.controller";
 
 const router = Router();
@@ -30,6 +31,9 @@ router.patch("/:id/read", markAsRead);
 
 // Get cursor-paginated messages for a conversation
 router.get("/:id/messages", getConversationMessages);
+
+// Send a new message (HTTP channel fallback)
+router.post("/:conversationId/messages", sendMessageController);
 
 // Edit a message
 router.patch("/:conversationId/messages/:messageId", editMessageController);

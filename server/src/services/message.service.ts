@@ -125,9 +125,43 @@ export const getMessages = async (
     throw new Error("Conversation not found");
   }
 
+  const convObjectId = new mongoose.Types.ObjectId(conversationId);
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+  const now = new Date();
+
+
+
+  // Check if the other participant has read messages sent by this user
+  const otherParticipant = conversation.participants.find(
+    (p: any) => (p._id || p).toString() !== userId.toString()
+  );
+  const otherId = (otherParticipant?._id || otherParticipant)?.toString();
+  const otherLastRead = otherId
+    ? (conversation.lastRead instanceof Map
+        ? conversation.lastRead.get(otherId)
+        : (conversation.lastRead as any)?.[otherId])
+    : null;
+
+  if (otherLastRead) {
+    await Message.updateMany(
+      {
+        conversation: convObjectId,
+        sender: userObjectId,
+        createdAt: { $lte: new Date(otherLastRead) },
+        isRead: { $ne: true },
+      },
+      {
+        $set: {
+          isRead: true,
+          readAt: new Date(otherLastRead),
+        },
+      }
+    );
+  }
+
   const query: any = {
-    conversation: conversationId,
-    deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
+    conversation: convObjectId,
+    deletedFor: { $ne: userObjectId },
   };
 
   if (cursor) {
@@ -167,7 +201,7 @@ export const getMessages = async (
     .populate("sender", "name username profilePicUrl")
     .populate({
       path: "replyTo",
-      select: "content sender createdAt isEdited deletedFor",
+      select: "content sender createdAt isEdited deletedFor isRead readAt",
       populate: { path: "sender", select: "name username profilePicUrl" },
     })
     .sort({
@@ -178,6 +212,46 @@ export const getMessages = async (
 
   const hasMore = messages.length > limit;
   const data = hasMore ? messages.slice(0, limit) : messages;
+
+  // Check this user's lastRead timestamp to accurately determine incoming unread boundary
+  const myLastRead = conversation.lastRead instanceof Map
+    ? conversation.lastRead.get(userId.toString())
+    : (conversation.lastRead as any)?.[userId.toString()];
+  const myLastReadTime = myLastRead ? new Date(myLastRead).getTime() : 0;
+
+  // Sync isRead status:
+  // - On outgoing messages: mark read if sent before or at other user's lastRead
+  // - On incoming messages: mark read if sent before or at this user's lastRead
+  data.forEach((m: any) => {
+    const sId = (m.sender?._id || m.sender)?.toString();
+    if (sId === userId.toString()) {
+      if (otherLastRead) {
+        const otherReadTime = new Date(otherLastRead).getTime();
+        if (!m.isRead && new Date(m.createdAt).getTime() <= otherReadTime) {
+          m.isRead = true;
+          m.readAt = new Date(otherLastRead);
+          if (m._doc) {
+            m._doc.isRead = true;
+            m._doc.readAt = new Date(otherLastRead);
+          }
+        }
+      }
+    } else {
+      if (myLastReadTime > 0) {
+        const msgTime = new Date(m.createdAt).getTime();
+        if (msgTime <= myLastReadTime) {
+          m.isRead = true;
+          if (m._doc) m._doc.isRead = true;
+        } else {
+          m.isRead = false;
+          if (m._doc) m._doc.isRead = false;
+        }
+      } else {
+        m.isRead = false;
+        if (m._doc) m._doc.isRead = false;
+      }
+    }
+  });
 
   const lastMessage = data[data.length - 1];
 
@@ -193,6 +267,39 @@ export const getMessages = async (
       createdAt: (lastMessage.createdAt as Date).toISOString(),
       id: lastMessage._id.toString(),
     });
+  }
+
+  // If opening conversation (initial load without pagination cursor),
+  // permanently mark all incoming messages as read in the DB and update lastRead for subsequent visits.
+  // We do this AFTER querying messages so that this initial response preserves the incoming unread state,
+  // allowing the client to locate the unread boundary and position the view accurately.
+  if (!cursor) {
+    Promise.all([
+      Conversation.findById(convObjectId).then((conv) => {
+        if (conv) {
+          if (!conv.lastRead) {
+            conv.lastRead = new Map();
+          }
+          conv.lastRead.set(userId.toString(), now);
+          conv.markModified("lastRead");
+          return conv.save();
+        }
+      }),
+      Message.updateMany(
+        {
+          conversation: convObjectId,
+          sender: { $ne: userObjectId },
+        },
+        {
+          $set: {
+            isRead: true,
+            readAt: now,
+          },
+        }
+      ),
+    ]).catch((err) =>
+      console.error("Error permanently updating read status in getMessages:", err)
+    );
   }
 
   return {
