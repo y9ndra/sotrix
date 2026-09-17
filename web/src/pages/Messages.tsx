@@ -2313,7 +2313,7 @@ const Messages: React.FC = () => {
     return (
       <div className="chat-page-layout chat-page-loading">
         <div className="chat-tab-loading-state">
-          <RubiksLoader text="INITIALIZING MATRIX COMMS" size="md" />
+          <RubiksLoader text="LOADING MESSAGES" size="md" />
         </div>
       </div>
     );
@@ -2334,7 +2334,7 @@ const Messages: React.FC = () => {
         <div className="chat-inbox-list">
           {conversationsLoading ? (
             <div className="chat-sidebar-loading-wrap">
-              <RubiksLoader text="SYNCING COMMS" size="sm" />
+              <RubiksLoader text="LOADING..." size="sm" />
             </div>
           ) : conversations.length === 0 ? (
             <div className="chat-empty-inbox">
@@ -2534,7 +2534,7 @@ const Messages: React.FC = () => {
             >
               {messagesLoading ? (
                 <div className="chat-loading-wrap">
-                  <RubiksLoader text="DECRYPTING TRANSMISSIONS" size="md" />
+                  <RubiksLoader text="LOADING MESSAGES" size="md" />
                 </div>
               ) : displayMessages.length === 0 ? (
                 <div className="chat-empty-conversation">
@@ -2839,7 +2839,7 @@ const Messages: React.FC = () => {
           </>
         ) : selectedConversationId ? (
           <div className="chat-loading-wrap">
-            <RubiksLoader text="CONNECTING SECURE CHANNEL" size="md" />
+            <RubiksLoader text="LOADING CONVERSATION" size="md" />
           </div>
         ) : (
           <div className="chat-placeholder-state">
