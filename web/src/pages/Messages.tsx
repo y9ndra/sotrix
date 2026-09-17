@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { usePresenceStore } from "../store/presenceStore";
-import { getSocket } from "../services/socket.service";
+import { getSocket, connectSocket } from "../services/socket.service";
 import { queryKeys } from "../lib/queryKeys";
 import {
   getConversations,
@@ -14,6 +14,7 @@ import {
   editMessage,
   deleteMessage,
   batchDeleteMessages,
+  sendMessageApi,
 } from "../services/chat.service";
 import type { Conversation, ChatMessage, MessagesResponse } from "../types/chat.types";
 import EmojiPicker from "../components/EmojiPicker";
@@ -491,6 +492,51 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
                   minute: "2-digit",
                 })}
               </span>
+              {isSender && (
+                <span
+                  className={`chat-message-receipt ${msg.isRead ? "read" : "delivered"}`}
+                  title={
+                    msg.isRead
+                      ? msg.readAt
+                        ? `Read ${new Date(msg.readAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}`
+                        : "Read"
+                      : "Delivered"
+                  }
+                  aria-label={msg.isRead ? "Read" : "Delivered"}
+                >
+                  {msg.isRead ? (
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 6L7 17l-5-5" />
+                      <path d="M22 10l-7.5 7.5-2-2" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  )}
+                </span>
+              )}
             </div>
           </>
         )}
@@ -602,7 +648,7 @@ const Messages: React.FC = () => {
   const isAtBottomRef = useRef(true);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadBelowCount, setUnreadBelowCount] = useState(0);
-  const hasInitialScrolledRef = useRef<Record<string, boolean>>({});
+  const initialPositionedConvIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
   const prevScrollHeightRef = useRef<number | null>(null);
   const prevLastMessageIdRef = useRef<string | null>(null);
@@ -624,6 +670,18 @@ const Messages: React.FC = () => {
     isBatch?: boolean;
   } | null>(null);
 
+  // Unread divider tracking ref: keeps the captured unread cutoff stable throughout
+  // the conversation session so that background DB updates do not wipe out the divider
+  const unreadCutoffRef = useRef<{
+    convId: string;
+    messageId: string | null;
+    initialUnreadCount: number;
+  }>({
+    convId: "",
+    messageId: null,
+    initialUnreadCount: 0,
+  });
+
   // Auto-focus and position cursor at end when entering edit mode
   useEffect(() => {
     if (editingMessageId && editInputRef.current) {
@@ -633,13 +691,15 @@ const Messages: React.FC = () => {
     }
   }, [editingMessageId]);
 
-  // Reset selection, reply, and modal state on conversation switch
+  // Reset selection, reply, modal state on conversation switch
   useEffect(() => {
     setIsSelectMode(false);
     setSelectedMessageIds(new Set());
     setDeleteModal(null);
     setEditingMessageId(null);
     setReplyingToMessage(null);
+    prevLastMessageIdRef.current = null;
+    initialPositionedConvIdRef.current = null;
   }, [selectedConversationId]);
 
   // Close delete modal, cancel select mode, cancel edit, or cancel reply on Escape key press
@@ -899,8 +959,8 @@ const Messages: React.FC = () => {
     getNextPageParam: (lastPage) =>
       lastPage?.hasMore && lastPage?.nextCursor ? lastPage.nextCursor : undefined,
     enabled: !!selectedConversationId,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Flatten and deduplicate all messages across pages (newest-first)
@@ -923,6 +983,71 @@ const Messages: React.FC = () => {
 
   // Messages are returned newest-first from backend: reverse for natural bottom-up chat display
   const displayMessages = useMemo(() => [...rawMessages].reverse(), [rawMessages]);
+
+  // Synchronously compute unread cutoff message ID for the active conversation
+  // so the divider is rendered in the DOM on the very first render pass without layout delay.
+  // Persists throughout the active conversation session even when messages are marked read in DB.
+  const unreadCutoffMessageId = useMemo(() => {
+    if (!selectedConversationId || displayMessages.length === 0) return null;
+
+    if (
+      unreadCutoffRef.current.convId === selectedConversationId &&
+      unreadCutoffRef.current.messageId !== null
+    ) {
+      return unreadCutoffRef.current.messageId;
+    }
+
+    // 1. Primary check: first incoming message explicitly marked !isRead
+    const firstUnread = displayMessages.find((m) => {
+      const sId =
+        typeof m.sender === "string"
+          ? m.sender
+          : m.sender?._id || (m.sender as any)?.id;
+      return String(sId) !== String(currentUserId) && !m.isRead;
+    });
+
+    if (firstUnread) {
+      unreadCutoffRef.current = {
+        convId: selectedConversationId,
+        messageId: firstUnread._id,
+        initialUnreadCount: unreadCutoffRef.current.initialUnreadCount || 1,
+      };
+      return firstUnread._id;
+    }
+
+    // 2. Fallback check: if DB already had isRead: true, but conversation had unread count on entry
+    const count = unreadCutoffRef.current.initialUnreadCount || 0;
+    if (count > 0) {
+      const incomingMsgs = displayMessages.filter((m) => {
+        const sId =
+          typeof m.sender === "string"
+            ? m.sender
+            : m.sender?._id || (m.sender as any)?.id;
+        return String(sId) !== String(currentUserId);
+      });
+
+      if (incomingMsgs.length > 0) {
+        const cutoffMsg =
+          incomingMsgs[Math.max(0, incomingMsgs.length - count)];
+        if (cutoffMsg) {
+          unreadCutoffRef.current = {
+            convId: selectedConversationId,
+            messageId: cutoffMsg._id,
+            initialUnreadCount: count,
+          };
+          return cutoffMsg._id;
+        }
+      }
+    }
+
+    // No unread messages
+    unreadCutoffRef.current = {
+      convId: selectedConversationId,
+      messageId: null,
+      initialUnreadCount: 0,
+    };
+    return null;
+  }, [selectedConversationId, displayMessages, currentUserId]);
 
   const handleToggleSelectAll = () => {
     if (selectedMessageIds.size === displayMessages.length && displayMessages.length > 0) {
@@ -1101,6 +1226,24 @@ const Messages: React.FC = () => {
     }
   }, [directConversation, queryClient]);
 
+  // Capture unread count if opening via direct URL parameter and not yet captured
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    if (unreadCutoffRef.current.convId !== selectedConversationId) {
+      const conv =
+        directConversation ||
+        conversations.find((c) => c._id === selectedConversationId);
+      if (conv) {
+        const unreadCount = conv.unreadCount || (conv.hasUnread ? 1 : 0);
+        unreadCutoffRef.current = {
+          convId: selectedConversationId,
+          messageId: null,
+          initialUnreadCount: unreadCount,
+        };
+      }
+    }
+  }, [selectedConversationId, conversations, directConversation]);
+
   // Preserve scroll position when older messages are prepended at the top
   useLayoutEffect(() => {
     const container = chatMessagesContainerRef.current;
@@ -1158,39 +1301,171 @@ const Messages: React.FC = () => {
     }
   };
 
-  // Initial scroll to bottom when opening/switching a conversation
-  useEffect(() => {
+  // Initial positioning when opening/switching a conversation:
+  // If there are unread messages, start at the unread convo (divider/first unread message).
+  // Otherwise, pop directly in at the end of the convo (bottom) with zero animated scroll!
+  useLayoutEffect(() => {
     if (
-      selectedConversationId &&
-      displayMessages.length > 0 &&
-      !hasInitialScrolledRef.current[selectedConversationId]
+      !selectedConversationId ||
+      displayMessages.length === 0 ||
+      initialPositionedConvIdRef.current === selectedConversationId
     ) {
-      hasInitialScrolledRef.current[selectedConversationId] = true;
+      return;
+    }
+
+    const container = chatMessagesContainerRef.current;
+    if (!container) return;
+
+    const lastMsg = displayMessages[displayMessages.length - 1];
+    if (lastMsg) {
+      prevLastMessageIdRef.current = lastMsg._id;
+    }
+    prevMessagesLengthRef.current = displayMessages.length;
+
+    if (unreadCutoffMessageId) {
+      const dividerEl = container.querySelector(
+        ".chat-unread-divider-row"
+      ) as HTMLElement | null;
+      const messageEl = document.getElementById(
+        `chat-message-${unreadCutoffMessageId}`
+      );
+      // Target the unread messages divider tag so it lands right at the top of the display!
+      const targetEl = dividerEl || messageEl;
+
+      if (!targetEl) {
+        // Wait until target element is mounted in DOM
+        return;
+      }
+
+      initialPositionedConvIdRef.current = selectedConversationId;
+
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+      const maxScrollTop = Math.max(
+        0,
+        container.scrollHeight - container.clientHeight
+      );
+      // Ideal scroll position to put the NEW MESSAGES divider right at the top of the display:
+      const idealScrollTop =
+        targetRect.top - containerRect.top + container.scrollTop - 8;
+
+      // Check if there are enough unread messages below to place divider at top of display:
+      // If idealScrollTop is near or past maxScrollTop, there are NOT enough messages below it,
+      // so land at the last (end of conversation) with the divider and unread messages visible!
+      if (idealScrollTop < maxScrollTop - 25) {
+        container.scrollTop = Math.max(0, idealScrollTop);
+        isAtBottomRef.current = false;
+        const firstUnreadIndex = displayMessages.findIndex(
+          (m) => m._id === unreadCutoffMessageId
+        );
+        const countBelow =
+          firstUnreadIndex !== -1
+            ? displayMessages.length - 1 - firstUnreadIndex
+            : 0;
+        setShowScrollBottom(countBelow > 0);
+        setUnreadBelowCount(Math.max(0, countBelow));
+      } else {
+        // Land at last!
+        container.scrollTop = container.scrollHeight;
+        isAtBottomRef.current = true;
+        setShowScrollBottom(false);
+        setUnreadBelowCount(0);
+      }
+
+      // Re-affirm position in case sub-elements or images settle without animated scroll
+      requestAnimationFrame(() => {
+        if (
+          container &&
+          initialPositionedConvIdRef.current === selectedConversationId
+        ) {
+          const dEl = container.querySelector(
+            ".chat-unread-divider-row"
+          ) as HTMLElement | null;
+          const mEl = document.getElementById(
+            `chat-message-${unreadCutoffMessageId}`
+          );
+          const tEl = dEl || mEl;
+          if (tEl) {
+            const maxScroll = Math.max(
+              0,
+              container.scrollHeight - container.clientHeight
+            );
+            const cRect = container.getBoundingClientRect();
+            const tRect = tEl.getBoundingClientRect();
+            const idealTop =
+              tRect.top - cRect.top + container.scrollTop - 8;
+
+            if (idealTop < maxScroll - 25) {
+              container.scrollTop = Math.max(0, idealTop);
+            } else {
+              container.scrollTop = container.scrollHeight;
+            }
+          }
+        }
+      });
+    } else {
+      initialPositionedConvIdRef.current = selectedConversationId;
+
+      // No unread messages: POP IN AT THE END OF THE CONVO IMMEDIATELY!
+      container.scrollTop = container.scrollHeight;
       isAtBottomRef.current = true;
       setShowScrollBottom(false);
       setUnreadBelowCount(0);
-      const container = chatMessagesContainerRef.current;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-      const lastMsg = displayMessages[displayMessages.length - 1];
-      if (lastMsg) {
-        prevLastMessageIdRef.current = lastMsg._id;
-      }
+
+      // Re-affirm position in case sub-elements or images settle
+      requestAnimationFrame(() => {
+        if (
+          container &&
+          initialPositionedConvIdRef.current === selectedConversationId
+        ) {
+          container.scrollTop = container.scrollHeight;
+        }
+      });
     }
-  }, [selectedConversationId, displayMessages]);
+  }, [selectedConversationId, displayMessages, unreadCutoffMessageId]);
+
+  // Mark conversation as read on backend and in socket room when viewing
+  useEffect(() => {
+    if (!selectedConversationId || displayMessages.length === 0) return;
+
+    // 1. Call API to mark conversation as read in MongoDB
+    markConversationAsRead(selectedConversationId).catch((err) =>
+      console.warn("[MESSAGES] Failed to mark conversation as read via API:", err)
+    );
+
+    // 2. Broadcast via socket to room and participants
+    const socket = getSocket();
+    if (socket && socket.connected) {
+      socket.emit("conversation:read", { conversationId: selectedConversationId });
+    }
+
+    // 3. Mark conversation in sidebar list cache as read immediately
+    queryClient.setQueryData<Conversation[]>(
+      queryKeys.conversations.all,
+      (old = []) =>
+        old.map((c) =>
+          c._id === selectedConversationId
+            ? { ...c, hasUnread: false, unreadCount: 0 }
+            : c
+        )
+    );
+  }, [selectedConversationId, displayMessages.length, queryClient]);
 
   // Handle incoming messages: ONLY auto-scroll if the user is ALREADY at the bottom
+  // and initial positioning for this conversation has already completed
   useEffect(() => {
     const container = chatMessagesContainerRef.current;
     if (!container) return;
+
+    if (initialPositionedConvIdRef.current !== selectedConversationId) return;
 
     const currentLastMessage = displayMessages[displayMessages.length - 1];
     const currentLastId = currentLastMessage?._id || null;
     const isNewMessageAtBottom =
       currentLastId !== null &&
       prevLastMessageIdRef.current !== null &&
-      currentLastId !== prevLastMessageIdRef.current;
+      currentLastId !== prevLastMessageIdRef.current &&
+      displayMessages.length > prevMessagesLengthRef.current;
 
     prevLastMessageIdRef.current = currentLastId;
     prevMessagesLengthRef.current = displayMessages.length;
@@ -1203,17 +1478,17 @@ const Messages: React.FC = () => {
         setUnreadBelowCount((prev) => prev + 1);
       }
     }
-  }, [displayMessages]);
+  }, [displayMessages, selectedConversationId]);
 
   // When remote user starts typing: NEVER scroll if user is reading older messages!
   useEffect(() => {
     if (remoteTypingUserId && isAtBottomRef.current) {
       const container = chatMessagesContainerRef.current;
-      if (container) {
+      if (container && initialPositionedConvIdRef.current === selectedConversationId) {
         container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
       }
     }
-  }, [remoteTypingUserId]);
+  }, [remoteTypingUserId, selectedConversationId]);
 
   // Request fresh presence list and attach real-time presence listeners
   useEffect(() => {
@@ -1243,25 +1518,15 @@ const Messages: React.FC = () => {
     };
   }, []);
 
-  // Real-time Chat Room (Join/Leave), Message & Typing Listeners
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket || !selectedConversationId) return;
+  // Handle new incoming canonical message (from Socket or HTTP fallback)
+  const handleNewMessage = useCallback(
+    (newMsg: ChatMessage) => {
+      const convId =
+        typeof newMsg.conversation === "string"
+          ? newMsg.conversation
+          : (newMsg.conversation as any)?._id || (newMsg.conversation as any)?.id;
 
-    // Join the conversation room
-    socket.emit("conversation:join", selectedConversationId);
-
-    // Re-join room on socket reconnection
-    const handleSocketConnect = () => {
-      if (selectedConversationId) {
-        socket.emit("conversation:join", selectedConversationId);
-      }
-    };
-    socket.on("connect", handleSocketConnect);
-
-    // Handle new incoming canonical message
-    const handleNewMessage = (newMsg: ChatMessage) => {
-      const isCurrentConversation = newMsg.conversation === selectedConversationId;
+      const isCurrentConversation = convId === selectedConversationId;
       const senderId =
         typeof newMsg.sender === "string"
           ? newMsg.sender
@@ -1269,7 +1534,7 @@ const Messages: React.FC = () => {
       const isSentByMe = senderId === currentUserId;
 
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
-        queryKeys.conversations.messages(newMsg.conversation),
+        queryKeys.conversations.messages(convId),
         (oldData) => {
           if (!oldData) {
             return {
@@ -1327,7 +1592,16 @@ const Messages: React.FC = () => {
         (old = []) => {
           return old
             .map((conv) => {
-              if (conv._id === newMsg.conversation) {
+              if (conv._id === convId) {
+                // Prevent duplicate counting if this message was already applied
+                if (
+                  conv.lastMessage &&
+                  conv.lastMessage.createdAt === newMsg.createdAt &&
+                  conv.lastMessage.content === newMsg.content
+                ) {
+                  return conv;
+                }
+
                 return {
                   ...conv,
                   updatedAt: newMsg.createdAt,
@@ -1341,6 +1615,11 @@ const Messages: React.FC = () => {
                     : isCurrentConversation
                     ? false
                     : true,
+                  unreadCount: isSentByMe
+                    ? 0
+                    : isCurrentConversation
+                    ? 0
+                    : ((conv.unreadCount || 0) + 1),
                 };
               }
               return conv;
@@ -1352,17 +1631,49 @@ const Messages: React.FC = () => {
         }
       );
 
-      // If we are actively viewing this conversation, mark as read on backend
-      if (isCurrentConversation) {
-        markConversationAsRead(newMsg.conversation).catch(console.error);
-        socket.emit("conversation:read", { conversationId: newMsg.conversation });
+      // If we are actively viewing this conversation and it's from another user, mark as read on backend
+      if (isCurrentConversation && !isSentByMe) {
+        markConversationAsRead(convId).catch(console.error);
+        const socket = getSocket();
+        if (socket && socket.connected) {
+          socket.emit("conversation:read", { conversationId: convId });
+        }
       }
 
       // Play soft synthesized chime for incoming message from other user
       if (!isSentByMe) {
         playMessageChime();
       }
+    },
+    [selectedConversationId, currentUserId, queryClient]
+  );
+
+  // Real-time Chat Room (Join/Leave), Message & Typing Listeners
+  useEffect(() => {
+    let socket = getSocket();
+    if (!socket || !socket.connected) {
+      socket = connectSocket();
+    }
+    if (!socket || !selectedConversationId) return;
+
+    // Join the conversation room immediately if already connected
+    if (socket.connected) {
+      socket.emit("conversation:join", selectedConversationId);
+    }
+
+    // Re-join room on socket reconnection
+    const handleSocketConnect = () => {
+      if (selectedConversationId) {
+        socket?.emit("conversation:join", selectedConversationId);
+      }
     };
+    socket.on("connect", handleSocketConnect);
+
+    const handleChatError = (err: any) => {
+      console.warn("[SOCKET chat:error]:", err);
+    };
+    socket.on("chat:error", handleChatError);
+
 
     // Handle typing events
     const handleTypingStart = ({
@@ -1526,26 +1837,94 @@ const Messages: React.FC = () => {
       });
     };
 
+    const handleConversationRead = ({
+      conversationId,
+      readerId,
+      readAt,
+    }: {
+      conversationId: string;
+      readerId: string;
+      readAt?: string | Date;
+    }) => {
+      if (readerId !== currentUserId) {
+        queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+          queryKeys.conversations.messages(conversationId),
+          (oldData) => {
+            if (!oldData) return oldData;
+            const markMsgRead = (m: ChatMessage) => {
+              const sId =
+                typeof m.sender === "string"
+                  ? m.sender
+                  : m.sender?._id || (m.sender as any)?.id;
+              if (sId === currentUserId && !m.isRead) {
+                return {
+                  ...m,
+                  isRead: true,
+                  readAt:
+                    typeof readAt === "string"
+                      ? readAt
+                      : readAt
+                      ? new Date(readAt).toISOString()
+                      : new Date().toISOString(),
+                };
+              }
+              return m;
+            };
+
+            if ("pages" in oldData) {
+              return {
+                ...oldData,
+                pages: oldData.pages.map((page) => ({
+                  ...page,
+                  data: page.data.map(markMsgRead),
+                })),
+              };
+            }
+            if ("data" in oldData && Array.isArray(oldData.data)) {
+              return {
+                ...oldData,
+                data: oldData.data.map(markMsgRead),
+              };
+            }
+            return oldData;
+          }
+        );
+      }
+
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) =>
+          old.map((c) => {
+            if (c._id === conversationId && readerId === currentUserId) {
+              return { ...c, hasUnread: false, unreadCount: 0 };
+            }
+            return c;
+          })
+      );
+    };
+
     socket.on("message:new", handleNewMessage);
     socket.on("message:edited", handleMessageEdited);
     socket.on("message:deleted", handleMessageDeleted);
     socket.on("message:batch-deleted", handleMessageBatchDeleted);
+    socket.on("conversation:read", handleConversationRead);
     socket.on("typing:start", handleTypingStart);
     socket.on("typing:stop", handleTypingStop);
 
     return () => {
       // Leave room on cleanup
-      socket.emit("conversation:leave", selectedConversationId);
       socket.off("connect", handleSocketConnect);
+      socket.off("chat:error", handleChatError);
       socket.off("message:new", handleNewMessage);
       socket.off("message:edited", handleMessageEdited);
       socket.off("message:deleted", handleMessageDeleted);
       socket.off("message:batch-deleted", handleMessageBatchDeleted);
+      socket.off("conversation:read", handleConversationRead);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
       setRemoteTypingUserId(null);
     };
-  }, [selectedConversationId, currentUserId, queryClient]);
+  }, [selectedConversationId, currentUserId, queryClient, handleNewMessage]);
 
   // Sync active remote typing indicator when selected conversation changes
   useEffect(() => {
@@ -1616,34 +1995,48 @@ const Messages: React.FC = () => {
     textarea.style.height = `${computedHeight}px`;
   }, [inputContent]);
 
-  // Send message handler
-  const handleSendMessage = (e?: React.FormEvent) => {
+  // Send message handler (Socket with automatic HTTP fallback)
+  const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const content = inputContent.trim();
-    const socket = getSocket();
+    if (!content || !selectedConversationId) return;
 
-    if (!content || !socket || !selectedConversationId) return;
+    const targetConvId = selectedConversationId;
+    const replyId = replyingToMessage?._id || undefined;
 
-    // Send to server
-    socket.emit("message:send", {
-      conversationId: selectedConversationId,
-      content,
-      replyToId: replyingToMessage?._id || undefined,
-    });
-
-    // Reset typing state immediately
+    // Reset input fields immediately so user experiences zero latency
+    setInputContent("");
+    setReplyingToMessage(null);
+    if (chatInputRef.current) {
+      chatInputRef.current.style.height = "auto";
+    }
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    socket.emit("typing:stop", { conversationId: selectedConversationId });
     isTypingEmittedRef.current = false;
 
-    setInputContent("");
-    setReplyingToMessage(null);
+    let socket = getSocket();
+    if (!socket || !socket.connected) {
+      socket = connectSocket();
+    }
 
-    // Reset textarea height to initial single line
-    if (chatInputRef.current) {
-      chatInputRef.current.style.height = "auto";
+    if (socket && socket.connected) {
+      socket.emit("typing:stop", { conversationId: targetConvId });
+      socket.emit("message:send", {
+        conversationId: targetConvId,
+        content,
+        replyToId: replyId,
+      });
+    } else {
+      // Fallback: If socket is connecting or offline, send via HTTP endpoint
+      try {
+        const savedMsg = await sendMessageApi(targetConvId, content, replyId);
+        if (savedMsg) {
+          handleNewMessage(savedMsg);
+        }
+      } catch (httpErr) {
+        console.error("[MESSAGES] Failed to send message via HTTP API:", httpErr);
+      }
     }
 
     setTimeout(() => {
@@ -1652,49 +2045,133 @@ const Messages: React.FC = () => {
   };
 
   const handleSelectConversation = (id: string) => {
+    if (id === selectedConversationId) {
+      // Re-clicking the same conversation: clear unread divider and scroll to bottom
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(id),
+        (oldData) => {
+          if (!oldData) return oldData;
+          const markRead = (m: ChatMessage) => ({ ...m, isRead: true });
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.map(markRead),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.map(markRead),
+            };
+          }
+          return oldData;
+        }
+      );
+      unreadCutoffRef.current = { convId: id, messageId: null, initialUnreadCount: 0 };
+      scrollToBottom("smooth");
+      return;
+    }
+
+    // When switching away from a previously selected conversation, mark its messages in cache as read
+    // so that opening it a second time shows zero unread messages!
+    if (selectedConversationId) {
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(selectedConversationId),
+        (oldData) => {
+          if (!oldData) return oldData;
+          const markRead = (m: ChatMessage) => ({ ...m, isRead: true });
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.map(markRead),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.map(markRead),
+            };
+          }
+          return oldData;
+        }
+      );
+    }
+
+    // Capture unread count before updating sidebar state
+    const targetConv = conversations.find((c) => c._id === id);
+    const unreadCount = targetConv?.unreadCount || (targetConv?.hasUnread ? 1 : 0);
+
+    initialPositionedConvIdRef.current = null;
+    unreadCutoffRef.current = {
+      convId: id,
+      messageId: null,
+      initialUnreadCount: unreadCount,
+    };
+
     setSelectedConversationId(id);
     setSearchParams({ conversationId: id });
-    isAtBottomRef.current = true;
     setShowScrollBottom(false);
     setUnreadBelowCount(0);
 
-    // Mark as read in local cache immediately
+    // Mark as read in local cache immediately for fast responsive UI
     queryClient.setQueryData<Conversation[]>(
       queryKeys.conversations.all,
       (old = []) =>
-        old.map((c) => (c._id === id ? { ...c, hasUnread: false } : c))
+        old.map((c) =>
+          c._id === id ? { ...c, hasUnread: false, unreadCount: 0 } : c
+        )
     );
-
-    // Call backend API and emit socket event
-    markConversationAsRead(id).catch(console.error);
-    const socket = getSocket();
-    if (socket) {
-      socket.emit("conversation:read", { conversationId: id });
-    }
   };
 
-  // Auto-mark selected conversation as read if it has unread messages
+  // Keep selected conversation unread state cleared in sidebar
   useEffect(() => {
     if (selectedConversationId) {
-      const activeConv = conversations.find((c) => c._id === selectedConversationId);
-      if (activeConv?.hasUnread) {
-        queryClient.setQueryData<Conversation[]>(
-          queryKeys.conversations.all,
-          (old = []) =>
-            old.map((c) =>
-              c._id === selectedConversationId ? { ...c, hasUnread: false } : c
-            )
-        );
-        markConversationAsRead(selectedConversationId).catch(console.error);
-        const socket = getSocket();
-        if (socket) {
-          socket.emit("conversation:read", { conversationId: selectedConversationId });
-        }
-      }
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.conversations.all,
+        (old = []) =>
+          old.map((c) =>
+            c._id === selectedConversationId
+              ? { ...c, hasUnread: false, unreadCount: 0 }
+              : c
+          )
+      );
     }
-  }, [selectedConversationId, conversations, queryClient]);
+  }, [selectedConversationId, queryClient]);
 
   const handleBackToList = () => {
+    if (selectedConversationId) {
+      queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+        queryKeys.conversations.messages(selectedConversationId),
+        (oldData) => {
+          if (!oldData) return oldData;
+          const markRead = (m: ChatMessage) => ({ ...m, isRead: true });
+          if ("pages" in oldData) {
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.map(markRead),
+              })),
+            };
+          }
+          if ("data" in oldData && Array.isArray(oldData.data)) {
+            return {
+              ...oldData,
+              data: oldData.data.map(markRead),
+            };
+          }
+          return oldData;
+        }
+      );
+    }
+    initialPositionedConvIdRef.current = null;
+    unreadCutoffRef.current = { convId: "", messageId: null, initialUnreadCount: 0 };
     setSelectedConversationId(null);
     setSearchParams({});
   };
@@ -1739,11 +2216,17 @@ const Messages: React.FC = () => {
               const isOnline = Boolean(isFollowing && otherId && onlineUserIds.has(otherId));
               const isTypingHere = Boolean(typingConversations[conv._id]);
 
+              const isUnread =
+                Boolean(conv.unreadCount && conv.unreadCount > 0) ||
+                Boolean(conv.hasUnread);
+
               return (
                 <div
                   key={conv._id}
                   onClick={() => handleSelectConversation(conv._id)}
-                  className={`chat-inbox-item ${isSelected ? "selected" : ""}`}
+                  className={`chat-inbox-item ${isSelected ? "selected" : ""} ${
+                    isUnread ? "unread" : ""
+                  }`}
                 >
                   <div className="chat-avatar-wrapper">
                     {other?.profilePicUrl ? (
@@ -1771,9 +2254,6 @@ const Messages: React.FC = () => {
                         {other?.name || other?.username || "Unknown"}
                       </span>
                       <div className="chat-inbox-meta">
-                        {conv.hasUnread && (
-                          <span className="chat-unread-dot" title="Unread message" />
-                        )}
                         {isTypingHere ? (
                           <span className="chat-inbox-typing-status" title="Typing...">
                             typing
@@ -1789,6 +2269,26 @@ const Messages: React.FC = () => {
                           </span>
                         )}
                       </div>
+                    </div>
+
+                    <div className="chat-inbox-bottom">
+                      <span
+                        className={`chat-inbox-preview ${isUnread ? "unread" : ""}`}
+                      >
+                        {conv.lastMessage?.content
+                          ? conv.lastMessage.content
+                          : "Start a conversation"}
+                      </span>
+                      {isUnread && (
+                        <span
+                          className="chat-unread-badge"
+                          title={`${conv.unreadCount || 1} unread messages`}
+                        >
+                          {conv.unreadCount && conv.unreadCount > 99
+                            ? "99+"
+                            : conv.unreadCount || 1}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1967,6 +2467,28 @@ const Messages: React.FC = () => {
                             <span className="chat-date-divider-line" />
                           </div>
                         )}
+                        {unreadCutoffMessageId === msg._id && (
+                          <div id="chat-unread-divider" className="chat-unread-divider-row">
+                            <span className="chat-unread-divider-line" />
+                            <span className="chat-unread-divider-pill">
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M12 5v14" />
+                                <path d="M19 12l-7 7-7-7" />
+                              </svg>
+                              NEW MESSAGES
+                            </span>
+                            <span className="chat-unread-divider-line" />
+                          </div>
+                        )}
                         <ChatMessageRow
                           msg={msg}
                           isSender={isSender}
@@ -2033,7 +2555,7 @@ const Messages: React.FC = () => {
                 </svg>
                 {unreadBelowCount > 0 ? (
                   <>
-                    <span>new message</span>
+                    <span>{unreadBelowCount > 1 ? "new messages" : "new message"}</span>
                     <span className="chat-scroll-unread-badge">
                       {unreadBelowCount}
                     </span>
