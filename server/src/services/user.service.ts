@@ -138,7 +138,7 @@ export class UserService {
   ) {
     const search = query.trim().toLowerCase();
     const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`^${escapedSearch}`, "i");
+    const regex = new RegExp(escapedSearch, "i");
 
     const filter: any = {
       $and: [

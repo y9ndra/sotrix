@@ -54,6 +54,13 @@ describe("Day 37 — Text Search & Index Optimization Tests", () => {
       expect(usernames).not.toContain("other_user");
     });
 
+    it("should search users using substring matching", async () => {
+      const results = await searchUsersService("fan", currentUserId);
+
+      expect(results.length).toBe(1);
+      expect(results[0].username).toBe("yugen_fan");
+    });
+
     it("should verify explain('executionStats') on prefix vs unanchored substring query", async () => {
       // Anchored prefix query
       const prefixExplain: any = await User.find({

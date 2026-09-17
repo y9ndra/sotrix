@@ -45,6 +45,14 @@ const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearchQuery, setActiveSearchQuery] = useState("");
 
+  // Debounce search query changes by 300ms for live search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setActiveSearchQuery(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchSuggestedUsers = async () => {
     try {
       setUsersLoading(true);
