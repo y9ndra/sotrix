@@ -309,6 +309,7 @@ export const deleteMessageController = async (
           conversationId: targetConvId,
           messageId: result.messageId,
           mode: "for_everyone",
+          lastMessage: result.lastMessage,
         });
       } else {
         // "for_me": Only emit to requesting user's personal room across all their active tabs
@@ -318,6 +319,7 @@ export const deleteMessageController = async (
             conversationId: targetConvId,
             messageId: result.messageId,
             mode: "for_me",
+            lastMessage: result.lastMessage,
           });
       }
     } catch (socketErr) {
@@ -396,6 +398,7 @@ export const batchDeleteMessagesController = async (
           conversationId: targetConvId,
           messageIds: result.messageIds,
           mode: "for_everyone",
+          lastMessage: result.lastMessage,
         });
       } else {
         io.to(userId.toString())
@@ -404,6 +407,7 @@ export const batchDeleteMessagesController = async (
             conversationId: targetConvId,
             messageIds: result.messageIds,
             mode: "for_me",
+            lastMessage: result.lastMessage,
           });
       }
     } catch (socketErr) {

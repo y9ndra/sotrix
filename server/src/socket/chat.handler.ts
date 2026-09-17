@@ -230,6 +230,7 @@ export const registerChatHandlers = (
             conversationId: targetConvId,
             messageId: result.messageId,
             mode: "for_everyone",
+            lastMessage: result.lastMessage,
           });
         } else {
           // for_me: only emit to requesting user's room
@@ -239,6 +240,7 @@ export const registerChatHandlers = (
               conversationId: targetConvId,
               messageId: result.messageId,
               mode: "for_me",
+              lastMessage: result.lastMessage,
             });
         }
       } catch (error: any) {
@@ -299,6 +301,7 @@ export const registerChatHandlers = (
             conversationId: targetConvId,
             messageIds: result.messageIds,
             mode: "for_everyone",
+            lastMessage: result.lastMessage,
           });
         } else {
           // for_me: only emit to requesting user's room
@@ -308,6 +311,7 @@ export const registerChatHandlers = (
               conversationId: targetConvId,
               messageIds: result.messageIds,
               mode: "for_me",
+              lastMessage: result.lastMessage,
             });
         }
       } catch (error: any) {

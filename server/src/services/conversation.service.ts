@@ -160,6 +160,22 @@ export const getConversationForUser = async (
     isFollowing: followingSet.has((p._id || p).toString()),
   }));
 
+  // Determine latest non-deleted message for requesting user
+  const latestMsg = await Message.findOne({
+    conversation: new mongoose.Types.ObjectId(conversationId),
+    deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
+  }).sort({ createdAt: -1, _id: -1 });
+
+  if (latestMsg) {
+    convObj.lastMessage = {
+      content: latestMsg.content,
+      sender: latestMsg.sender,
+      createdAt: latestMsg.createdAt,
+    };
+  } else {
+    convObj.lastMessage = undefined;
+  }
+
   // Determine unread status for requesting user
   let hasUnread = false;
   if (convObj.lastMessage && convObj.lastMessage.sender) {
@@ -183,6 +199,7 @@ export const getConversationForUser = async (
     conversation: new mongoose.Types.ObjectId(conversationId),
     sender: { $ne: new mongoose.Types.ObjectId(userId) },
     isRead: { $ne: true },
+    deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
   });
 
   convObj.hasUnread = unreadCount > 0 || hasUnread;
@@ -220,24 +237,64 @@ export const getUserConversations = async (
 
   const followingSet = new Set(followings.map((f) => f.following.toString()));
 
-  const unreadCounts = await Message.aggregate([
-    {
-      $match: {
-        conversation: { $in: conversations.map((c) => c._id) },
-        sender: { $ne: new mongoose.Types.ObjectId(userId) },
-        isRead: { $ne: true },
+  const convIds = conversations.map((c) => c._id);
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  // Compute unread counts and accurate latest non-deleted message for each conversation in parallel
+  const [unreadCounts, latestMessages] = await Promise.all([
+    Message.aggregate([
+      {
+        $match: {
+          conversation: { $in: convIds },
+          sender: { $ne: userObjectId },
+          isRead: { $ne: true },
+          deletedFor: { $ne: userObjectId },
+        },
       },
-    },
-    {
-      $group: {
-        _id: "$conversation",
-        count: { $sum: 1 },
+      {
+        $group: {
+          _id: "$conversation",
+          count: { $sum: 1 },
+        },
       },
-    },
+    ]),
+    Message.aggregate([
+      {
+        $match: {
+          conversation: { $in: convIds },
+          deletedFor: { $ne: userObjectId },
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+          _id: -1,
+        },
+      },
+      {
+        $group: {
+          _id: "$conversation",
+          content: { $first: "$content" },
+          sender: { $first: "$sender" },
+          createdAt: { $first: "$createdAt" },
+        },
+      },
+    ]),
   ]);
 
   const unreadMap = new Map<string, number>(
     unreadCounts.map((u: any) => [u._id.toString(), u.count])
+  );
+
+  const latestMap = new Map<string, any>(
+    latestMessages.map((lm: any) => [
+      lm._id.toString(),
+      {
+        content: lm.content,
+        sender: lm.sender,
+        createdAt: lm.createdAt,
+      },
+    ])
   );
 
   return conversations.map((conv) => {
@@ -246,6 +303,10 @@ export const getUserConversations = async (
       ...p,
       isFollowing: followingSet.has((p._id || p).toString()),
     }));
+
+    // Use the actual latest non-deleted message for this user (or clear if none remain)
+    const activeLastMessage = latestMap.get(conv._id.toString()) || null;
+    convObj.lastMessage = activeLastMessage || undefined;
 
     // Determine unread status for requesting user
     let hasUnread = false;

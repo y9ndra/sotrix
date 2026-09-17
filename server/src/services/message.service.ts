@@ -393,6 +393,7 @@ export const deleteMessage = async (
   conversationId: string;
   messageId: string;
   mode: DeleteMessageMode;
+  lastMessage?: any;
 }> => {
   if (
     !mongoose.Types.ObjectId.isValid(messageId) ||
@@ -420,7 +421,23 @@ export const deleteMessage = async (
 
   if (mode === "for_me") {
     await messageRepository.deleteForUser(messageId, userId);
-    return { conversationId, messageId, mode: "for_me" };
+    const latestForUser = await Message.findOne({
+      conversation: new mongoose.Types.ObjectId(conversationId),
+      deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
+    }).sort({ createdAt: -1, _id: -1 });
+
+    return {
+      conversationId,
+      messageId,
+      mode: "for_me",
+      lastMessage: latestForUser
+        ? {
+            content: latestForUser.content,
+            sender: latestForUser.sender,
+            createdAt: latestForUser.createdAt,
+          }
+        : null,
+    };
   }
 
   // mode === "for_everyone": Only the message author can delete for everyone
@@ -435,18 +452,29 @@ export const deleteMessage = async (
     conversationId
   );
 
+  let newLastMessage: any = null;
   if (latestMsg) {
-    conversation.lastMessage = {
+    newLastMessage = {
       content: latestMsg.content,
       sender: latestMsg.sender,
       createdAt: latestMsg.createdAt,
-    } as any;
+    };
+    conversation.lastMessage = newLastMessage as any;
+    await conversation.save();
   } else {
-    conversation.lastMessage = undefined;
+    conversation.set("lastMessage", undefined);
+    await Conversation.updateOne(
+      { _id: conversationId },
+      { $unset: { lastMessage: 1 } }
+    );
   }
-  await conversation.save();
 
-  return { conversationId, messageId, mode: "for_everyone" };
+  return {
+    conversationId,
+    messageId,
+    mode: "for_everyone",
+    lastMessage: newLastMessage,
+  };
 };
 
 /**
@@ -462,6 +490,7 @@ export const batchDeleteMessages = async (
   conversationId: string;
   messageIds: string[];
   mode: DeleteMessageMode;
+  lastMessage?: any;
 }> => {
   if (!Array.isArray(messageIds) || messageIds.length === 0) {
     throw new Error("Message IDs array is required");
@@ -495,7 +524,23 @@ export const batchDeleteMessages = async (
 
   if (mode === "for_me") {
     await messageRepository.deleteManyForUser(validIds, userId);
-    return { conversationId, messageIds: validIds, mode: "for_me" };
+    const latestForUser = await Message.findOne({
+      conversation: new mongoose.Types.ObjectId(conversationId),
+      deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
+    }).sort({ createdAt: -1, _id: -1 });
+
+    return {
+      conversationId,
+      messageIds: validIds,
+      mode: "for_me",
+      lastMessage: latestForUser
+        ? {
+            content: latestForUser.content,
+            sender: latestForUser.sender,
+            createdAt: latestForUser.createdAt,
+          }
+        : null,
+    };
   }
 
   // mode === "for_everyone": Ensure all messages belong to requesting user
@@ -511,16 +556,27 @@ export const batchDeleteMessages = async (
     conversationId
   );
 
+  let newLastMessage: any = null;
   if (latestMsg) {
-    conversation.lastMessage = {
+    newLastMessage = {
       content: latestMsg.content,
       sender: latestMsg.sender,
       createdAt: latestMsg.createdAt,
-    } as any;
+    };
+    conversation.lastMessage = newLastMessage as any;
+    await conversation.save();
   } else {
-    conversation.lastMessage = undefined;
+    conversation.set("lastMessage", undefined);
+    await Conversation.updateOne(
+      { _id: conversationId },
+      { $unset: { lastMessage: 1 } }
+    );
   }
-  await conversation.save();
 
-  return { conversationId, messageIds: validIds, mode: "for_everyone" };
+  return {
+    conversationId,
+    messageIds: validIds,
+    mode: "for_everyone",
+    lastMessage: newLastMessage,
+  };
 };
