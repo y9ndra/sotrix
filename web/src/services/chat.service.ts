@@ -72,3 +72,16 @@ export const batchDeleteMessages = async (
   return response.data.data;
 };
 
+export const sendMessageApi = async (
+  conversationId: string,
+  content: string,
+  replyToId?: string
+): Promise<ChatMessage> => {
+  const response = await api.post(`/conversations/${conversationId}/messages`, {
+    content,
+    replyToId,
+  });
+  return response.data.data;
+};
+
+

@@ -135,6 +135,12 @@ function App() {
       });
 
       const handleGlobalMessageNew = (newMsg: ChatMessage) => {
+        // If user is currently on the Messages page, Messages.tsx manages active chat,
+        // message cache, audio chimes, and conversation list updates without double-counting
+        if (window.location.pathname.startsWith("/messages")) {
+          return;
+        }
+
         // Optimistically update conversation message cache if loaded
         queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
           queryKeys.conversations.messages(newMsg.conversation),
@@ -213,6 +219,15 @@ function App() {
             return old
               .map((conv) => {
                 if (conv._id === newMsg.conversation) {
+                  // Prevent duplicate processing if already updated
+                  if (
+                    conv.lastMessage &&
+                    conv.lastMessage.createdAt === newMsg.createdAt &&
+                    conv.lastMessage.content === newMsg.content
+                  ) {
+                    return conv;
+                  }
+
                   return {
                     ...conv,
                     updatedAt: newMsg.createdAt,
@@ -222,6 +237,7 @@ function App() {
                       createdAt: newMsg.createdAt,
                     },
                     hasUnread: isSentByMe ? false : true,
+                    unreadCount: isSentByMe ? 0 : ((conv.unreadCount || 0) + 1),
                   };
                 }
                 return conv;
@@ -258,8 +274,77 @@ function App() {
         });
       };
 
+      const handleGlobalConversationRead = ({
+        conversationId,
+        readerId,
+        readAt,
+      }: {
+        conversationId: string;
+        readerId: string;
+        readAt?: string | Date;
+      }) => {
+        if (window.location.pathname.startsWith("/messages")) {
+          return;
+        }
+
+        const currentUserId = user?._id || (user as any)?.id;
+        if (readerId === currentUserId) {
+          queryClient.setQueryData<Conversation[]>(
+            queryKeys.conversations.all,
+            (old = []) =>
+              old.map((c) =>
+                c._id === conversationId ? { ...c, hasUnread: false, unreadCount: 0 } : c
+              )
+          );
+        } else {
+          queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
+            queryKeys.conversations.messages(conversationId),
+            (oldData) => {
+              if (!oldData) return oldData;
+              const markMsgRead = (m: ChatMessage) => {
+                const sId =
+                  typeof m.sender === "string"
+                    ? m.sender
+                    : m.sender?._id || (m.sender as any)?.id;
+                if (sId === currentUserId && !m.isRead) {
+                  return {
+                    ...m,
+                    isRead: true,
+                    readAt:
+                      typeof readAt === "string"
+                        ? readAt
+                        : readAt
+                        ? new Date(readAt).toISOString()
+                        : new Date().toISOString(),
+                  };
+                }
+                return m;
+              };
+
+              if ("pages" in oldData) {
+                return {
+                  ...oldData,
+                  pages: oldData.pages.map((page) => ({
+                    ...page,
+                    data: page.data.map(markMsgRead),
+                  })),
+                };
+              }
+              if ("data" in oldData && Array.isArray(oldData.data)) {
+                return {
+                  ...oldData,
+                  data: oldData.data.map(markMsgRead),
+                };
+              }
+              return oldData;
+            }
+          );
+        }
+      };
+
       socket.on("message:new", handleGlobalMessageNew);
       socket.on("conversation:new", handleGlobalConversationNew);
+      socket.on("conversation:read", handleGlobalConversationRead);
 
       socket.on("disconnect", () => {
         console.log("Disconnected from Socket.IO server");
@@ -274,6 +359,7 @@ function App() {
         socket.off("notification:new");
         socket.off("message:new", handleGlobalMessageNew);
         socket.off("conversation:new", handleGlobalConversationNew);
+        socket.off("conversation:read", handleGlobalConversationRead);
         socket.off("disconnect");
         disconnectSocket();
       };

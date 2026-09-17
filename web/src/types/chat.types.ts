@@ -16,6 +16,7 @@ export interface Conversation {
     createdAt: string;
   };
   hasUnread?: boolean;
+  unreadCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +26,8 @@ export interface QuotedMessage {
   sender: ChatUser;
   content: string;
   createdAt: string;
+  isRead?: boolean;
+  readAt?: string;
   isEdited?: boolean;
   deletedFor?: string[];
 }
@@ -34,6 +37,8 @@ export interface ChatMessage {
   conversation: string;
   sender: ChatUser;
   content: string;
+  isRead?: boolean;
+  readAt?: string;
   isEdited?: boolean;
   editedAt?: string;
   deletedFor?: string[];
