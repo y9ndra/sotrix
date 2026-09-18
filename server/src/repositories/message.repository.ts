@@ -38,6 +38,16 @@ export interface IMessageRepository {
     userId: string | mongoose.Types.ObjectId,
     session?: ClientSession
   ): Promise<any>;
+  softDeleteForEveryone(
+    id: string | mongoose.Types.ObjectId,
+    userId: string | mongoose.Types.ObjectId,
+    session?: ClientSession
+  ): Promise<IMessage | null>;
+  softDeleteManyForEveryone(
+    ids: (string | mongoose.Types.ObjectId)[],
+    userId: string | mongoose.Types.ObjectId,
+    session?: ClientSession
+  ): Promise<any>;
   findLatestInConversation(
     conversationId: string | mongoose.Types.ObjectId,
     session?: ClientSession
@@ -135,6 +145,47 @@ export class MongoMessageRepository implements IMessageRepository {
     const query = Message.updateMany(
       { _id: { $in: ids } },
       { $addToSet: { deletedFor: userId } }
+    );
+    if (session) query.session(session);
+    return query.exec();
+  }
+
+  async softDeleteForEveryone(
+    id: string | mongoose.Types.ObjectId,
+    userId: string | mongoose.Types.ObjectId,
+    session?: ClientSession
+  ): Promise<IMessage | null> {
+    const query = Message.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: userId,
+          content: "",
+        },
+      },
+      { returnDocument: "after" }
+    );
+    if (session) query.session(session);
+    return query.exec();
+  }
+
+  async softDeleteManyForEveryone(
+    ids: (string | mongoose.Types.ObjectId)[],
+    userId: string | mongoose.Types.ObjectId,
+    session?: ClientSession
+  ): Promise<any> {
+    const query = Message.updateMany(
+      { _id: { $in: ids } },
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: userId,
+          content: "",
+        },
+      }
     );
     if (session) query.session(session);
     return query.exec();

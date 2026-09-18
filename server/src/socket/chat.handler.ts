@@ -230,6 +230,7 @@ export const registerChatHandlers = (
             conversationId: targetConvId,
             messageId: result.messageId,
             mode: "for_everyone",
+            isDeleted: true,
             lastMessage: result.lastMessage,
           });
         } else {
@@ -301,6 +302,7 @@ export const registerChatHandlers = (
             conversationId: targetConvId,
             messageIds: result.messageIds,
             mode: "for_everyone",
+            isDeleted: true,
             lastMessage: result.lastMessage,
           });
         } else {

@@ -201,7 +201,7 @@ export const getMessages = async (
     .populate("sender", "name username profilePicUrl")
     .populate({
       path: "replyTo",
-      select: "content sender createdAt isEdited deletedFor isRead readAt",
+      select: "content sender createdAt isEdited isDeleted deletedFor isRead readAt",
       populate: { path: "sender", select: "name username profilePicUrl" },
     })
     .sort({
@@ -249,6 +249,19 @@ export const getMessages = async (
       } else {
         m.isRead = false;
         if (m._doc) m._doc.isRead = false;
+      }
+    }
+
+    if (m.isDeleted) {
+      m.content = "This message was deleted";
+      if (m._doc) {
+        m._doc.content = "This message was deleted";
+      }
+    }
+    if (m.replyTo && m.replyTo.isDeleted) {
+      m.replyTo.content = "This message was deleted";
+      if (m.replyTo._doc) {
+        m.replyTo._doc.content = "This message was deleted";
       }
     }
   });
@@ -382,8 +395,8 @@ export type DeleteMessageMode = "for_me" | "for_everyone";
 
 /**
  * Deletes a message selectively:
- * - "for_me": Hides message for requesting user by adding their ID to deletedFor
- * - "for_everyone": Purges message from database and updates conversation lastMessage (author only)
+ * - "for_me": Hides message for requesting user. If all participants have deleted it, permanently purges from DB.
+ * - "for_everyone": Soft-deletes message (tombstone) and updates conversation lastMessage (author only).
  */
 export const deleteMessage = async (
   messageId: string,
@@ -393,6 +406,7 @@ export const deleteMessage = async (
   conversationId: string;
   messageId: string;
   mode: DeleteMessageMode;
+  isDeleted?: boolean;
   lastMessage?: any;
 }> => {
   if (
@@ -421,22 +435,42 @@ export const deleteMessage = async (
 
   if (mode === "for_me") {
     await messageRepository.deleteForUser(messageId, userId);
+
+    // Convergence Purge Check:
+    // If all participants in the conversation have hidden this message for themselves,
+    // permanently purge it from MongoDB.
+    const updatedMsg = await messageRepository.findById(messageId);
+    if (updatedMsg) {
+      const participantIds = (conversation.participants || []).map((p) => p.toString());
+      const deletedForIds = (updatedMsg.deletedFor || []).map((d) => d.toString());
+      const isFullyDeleted =
+        participantIds.length > 0 &&
+        participantIds.every((pid) => deletedForIds.includes(pid));
+
+      if (isFullyDeleted) {
+        await messageRepository.deleteById(messageId);
+      }
+    }
+
     const latestForUser = await Message.findOne({
       conversation: new mongoose.Types.ObjectId(conversationId),
       deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
     }).sort({ createdAt: -1, _id: -1 });
 
+    const formattedLastMessage = latestForUser
+      ? {
+          content: latestForUser.isDeleted ? "This message was deleted" : latestForUser.content,
+          sender: latestForUser.sender,
+          createdAt: latestForUser.createdAt,
+          isDeleted: latestForUser.isDeleted || false,
+        }
+      : null;
+
     return {
       conversationId,
       messageId,
       mode: "for_me",
-      lastMessage: latestForUser
-        ? {
-            content: latestForUser.content,
-            sender: latestForUser.sender,
-            createdAt: latestForUser.createdAt,
-          }
-        : null,
+      lastMessage: formattedLastMessage,
     };
   }
 
@@ -445,9 +479,10 @@ export const deleteMessage = async (
     throw new Error("You are not authorized to delete this message for everyone");
   }
 
-  await messageRepository.deleteById(messageId);
+  // Soft delete message in database
+  await messageRepository.softDeleteForEveryone(messageId, userId);
 
-  // Update conversation lastMessage to the next latest message (or clear it)
+  // Update conversation lastMessage (either to tombstone or to latest message)
   const latestMsg = await messageRepository.findLatestInConversation(
     conversationId
   );
@@ -455,9 +490,10 @@ export const deleteMessage = async (
   let newLastMessage: any = null;
   if (latestMsg) {
     newLastMessage = {
-      content: latestMsg.content,
+      content: latestMsg.isDeleted ? "This message was deleted" : latestMsg.content,
       sender: latestMsg.sender,
       createdAt: latestMsg.createdAt,
+      isDeleted: latestMsg.isDeleted || false,
     };
     conversation.lastMessage = newLastMessage as any;
     await conversation.save();
@@ -473,14 +509,15 @@ export const deleteMessage = async (
     conversationId,
     messageId,
     mode: "for_everyone",
+    isDeleted: true,
     lastMessage: newLastMessage,
   };
 };
 
 /**
  * Batch deletes multiple messages selectively:
- * - "for_me": Hides all specified messages for requesting user
- * - "for_everyone": Purges messages sent by the user for everyone
+ * - "for_me": Hides specified messages for requesting user. If all participants have deleted them, permanently purges from DB.
+ * - "for_everyone": Soft-deletes messages sent by the user for everyone.
  */
 export const batchDeleteMessages = async (
   messageIds: string[],
@@ -490,6 +527,7 @@ export const batchDeleteMessages = async (
   conversationId: string;
   messageIds: string[];
   mode: DeleteMessageMode;
+  isDeleted?: boolean;
   lastMessage?: any;
 }> => {
   if (!Array.isArray(messageIds) || messageIds.length === 0) {
@@ -524,22 +562,45 @@ export const batchDeleteMessages = async (
 
   if (mode === "for_me") {
     await messageRepository.deleteManyForUser(validIds, userId);
+
+    // Batch Convergence Purge Check:
+    const participantIds = (conversation.participants || []).map((p) => p.toString());
+    const updatedMsgs = await Message.find({ _id: { $in: validIds } });
+    const fullyDeletedIds: mongoose.Types.ObjectId[] = [];
+
+    for (const msg of updatedMsgs) {
+      const deletedForIds = (msg.deletedFor || []).map((id) => id.toString());
+      if (
+        participantIds.length > 0 &&
+        participantIds.every((pid) => deletedForIds.includes(pid))
+      ) {
+        fullyDeletedIds.push(msg._id as mongoose.Types.ObjectId);
+      }
+    }
+
+    if (fullyDeletedIds.length > 0) {
+      await messageRepository.deleteManyByIds(fullyDeletedIds);
+    }
+
     const latestForUser = await Message.findOne({
       conversation: new mongoose.Types.ObjectId(conversationId),
       deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
     }).sort({ createdAt: -1, _id: -1 });
 
+    const formattedLastMessage = latestForUser
+      ? {
+          content: latestForUser.isDeleted ? "This message was deleted" : latestForUser.content,
+          sender: latestForUser.sender,
+          createdAt: latestForUser.createdAt,
+          isDeleted: latestForUser.isDeleted || false,
+        }
+      : null;
+
     return {
       conversationId,
       messageIds: validIds,
       mode: "for_me",
-      lastMessage: latestForUser
-        ? {
-            content: latestForUser.content,
-            sender: latestForUser.sender,
-            createdAt: latestForUser.createdAt,
-          }
-        : null,
+      lastMessage: formattedLastMessage,
     };
   }
 
@@ -549,9 +610,10 @@ export const batchDeleteMessages = async (
     throw new Error("You can only delete messages sent by you for everyone");
   }
 
-  await messageRepository.deleteManyByIds(validIds);
+  // Soft delete messages in database
+  await messageRepository.softDeleteManyForEveryone(validIds, userId);
 
-  // Update conversation lastMessage to the next latest remaining message
+  // Update conversation lastMessage
   const latestMsg = await messageRepository.findLatestInConversation(
     conversationId
   );
@@ -559,9 +621,10 @@ export const batchDeleteMessages = async (
   let newLastMessage: any = null;
   if (latestMsg) {
     newLastMessage = {
-      content: latestMsg.content,
+      content: latestMsg.isDeleted ? "This message was deleted" : latestMsg.content,
       sender: latestMsg.sender,
       createdAt: latestMsg.createdAt,
+      isDeleted: latestMsg.isDeleted || false,
     };
     conversation.lastMessage = newLastMessage as any;
     await conversation.save();
@@ -577,6 +640,7 @@ export const batchDeleteMessages = async (
     conversationId,
     messageIds: validIds,
     mode: "for_everyone",
+    isDeleted: true,
     lastMessage: newLastMessage,
   };
 };

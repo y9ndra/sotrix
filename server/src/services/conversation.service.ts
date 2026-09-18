@@ -168,9 +168,10 @@ export const getConversationForUser = async (
 
   if (latestMsg) {
     convObj.lastMessage = {
-      content: latestMsg.content,
+      content: latestMsg.isDeleted ? "This message was deleted" : latestMsg.content,
       sender: latestMsg.sender,
       createdAt: latestMsg.createdAt,
+      isDeleted: latestMsg.isDeleted || false,
     };
   } else {
     convObj.lastMessage = undefined;
@@ -200,6 +201,7 @@ export const getConversationForUser = async (
     sender: { $ne: new mongoose.Types.ObjectId(userId) },
     isRead: { $ne: true },
     deletedFor: { $ne: new mongoose.Types.ObjectId(userId) },
+    isDeleted: { $ne: true },
   });
 
   convObj.hasUnread = unreadCount > 0 || hasUnread;
@@ -249,6 +251,7 @@ export const getUserConversations = async (
           sender: { $ne: userObjectId },
           isRead: { $ne: true },
           deletedFor: { $ne: userObjectId },
+          isDeleted: { $ne: true },
         },
       },
       {
@@ -277,6 +280,7 @@ export const getUserConversations = async (
           content: { $first: "$content" },
           sender: { $first: "$sender" },
           createdAt: { $first: "$createdAt" },
+          isDeleted: { $first: "$isDeleted" },
         },
       },
     ]),
@@ -290,9 +294,10 @@ export const getUserConversations = async (
     latestMessages.map((lm: any) => [
       lm._id.toString(),
       {
-        content: lm.content,
+        content: lm.isDeleted ? "This message was deleted" : lm.content,
         sender: lm.sender,
         createdAt: lm.createdAt,
+        isDeleted: lm.isDeleted || false,
       },
     ])
   );

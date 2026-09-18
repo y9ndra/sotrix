@@ -7,6 +7,7 @@ export interface IConversation extends Document {
     content: string;
     sender: mongoose.Types.ObjectId;
     createdAt: Date;
+    isDeleted?: boolean;
   };
   lastRead?: Map<string, Date>;
   createdAt: Date;
@@ -34,6 +35,7 @@ const conversationSchema = new Schema<IConversation>(
       content: { type: String },
       sender: { type: Schema.Types.ObjectId, ref: "User" },
       createdAt: { type: Date },
+      isDeleted: { type: Boolean, default: false },
     },
 
     lastRead: {
