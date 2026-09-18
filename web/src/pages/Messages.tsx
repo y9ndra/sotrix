@@ -146,7 +146,7 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
   const hasVibratedRef = useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (isSelectMode || isEditing || e.touches.length > 1) return;
+    if (isSelectMode || isEditing || msg.isDeleted || e.touches.length > 1) return;
     touchStartRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
@@ -157,7 +157,7 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartRef.current || isSelectMode || isEditing) return;
+    if (!touchStartRef.current || isSelectMode || isEditing || msg.isDeleted) return;
     const diffX = e.touches[0].clientX - touchStartRef.current.x;
     const diffY = e.touches[0].clientY - touchStartRef.current.y;
 
@@ -281,47 +281,51 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
       {/* Message actions for outgoing message: Reply, Edit, Delete */}
       {isSender && !isSelectMode && !isEditing && (
         <div className="chat-message-actions">
-          <button
-            type="button"
-            className="chat-action-btn reply"
-            onClick={() => onStartReplying(msg)}
-            title="Reply to message"
-            aria-label="Reply to message"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="9 17 4 12 9 7" />
-              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="chat-action-btn edit"
-            onClick={() => onStartEditing(msg)}
-            title="Edit message"
-            aria-label="Edit message"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            </svg>
-          </button>
+          {!msg.isDeleted && (
+            <>
+              <button
+                type="button"
+                className="chat-action-btn reply"
+                onClick={() => onStartReplying(msg)}
+                title="Reply to message"
+                aria-label="Reply to message"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 17 4 12 9 7" />
+                  <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="chat-action-btn edit"
+                onClick={() => onStartEditing(msg)}
+                title="Edit message"
+                aria-label="Edit message"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                </svg>
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="chat-action-btn delete"
@@ -350,7 +354,7 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
       <div
         className={`chat-message-bubble ${
           isSender ? "mine" : "theirs"
-        } ${isEditing ? "is-editing" : ""}`}
+        } ${isEditing ? "is-editing" : ""} ${msg.isDeleted ? "is-deleted" : ""}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -422,6 +426,35 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
               </div>
             </div>
           </div>
+        ) : msg.isDeleted ? (
+          <div className="chat-message-deleted">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="chat-message-deleted-icon"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+            <span className="chat-message-deleted-text">
+              {isSender ? "You deleted this message" : "This message was deleted"}
+            </span>
+            <span
+              className="chat-message-timestamp"
+              title={fullTimestampTooltip}
+            >
+              {new Date(msg.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
         ) : (
           <>
             {/* Quoted Message Card */}
@@ -460,7 +493,9 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
                     </span>
                   </div>
                   <p className="chat-quoted-text">
-                    {msg.replyTo.content || "[Original message deleted]"}
+                    {msg.replyTo.isDeleted
+                      ? "This message was deleted"
+                      : msg.replyTo.content || "[Original message deleted]"}
                   </p>
                 </div>
               </div>
@@ -545,33 +580,35 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
       {/* Message actions for incoming message: Reply, Delete */}
       {!isSender && !isSelectMode && (
         <div className="chat-message-actions">
-          <button
-            type="button"
-            className="chat-action-btn reply"
-            onClick={() => onStartReplying(msg)}
-            title="Reply to message"
-            aria-label="Reply to message"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {!msg.isDeleted && (
+            <button
+              type="button"
+              className="chat-action-btn reply"
+              onClick={() => onStartReplying(msg)}
+              title="Reply to message"
+              aria-label="Reply to message"
             >
-              <polyline points="9 17 4 12 9 7" />
-              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
-            </svg>
-          </button>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="9 17 4 12 9 7" />
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             className="chat-action-btn delete"
             onClick={() => onOpenDeleteModal(msg)}
-            title="Delete message for me"
-            aria-label="Delete message for me"
+            title="Delete message"
+            aria-label="Delete message"
           >
             <svg
               width="12"
@@ -1057,14 +1094,14 @@ const Messages: React.FC = () => {
     }
   };
 
-  // Determine if all target messages can be deleted for everyone (i.e. all authored by currentUser)
+  // Determine if all target messages can be deleted for everyone (i.e. all authored by currentUser and not already deleted)
   const canDeleteForEveryone = useMemo(() => {
     if (!deleteModal) return false;
     if (deleteModal.isBatch) {
       if (selectedMessageIds.size === 0) return false;
       return Array.from(selectedMessageIds).every((id) => {
         const msg = displayMessages.find((m) => m._id === id);
-        if (!msg) return false;
+        if (!msg || msg.isDeleted) return false;
         const sId =
           typeof msg.sender === "string"
             ? msg.sender
@@ -1073,6 +1110,7 @@ const Messages: React.FC = () => {
       });
     }
     if (deleteModal.targetMessage) {
+      if (deleteModal.targetMessage.isDeleted) return false;
       const sId =
         typeof deleteModal.targetMessage.sender === "string"
           ? deleteModal.targetMessage.sender
@@ -1093,7 +1131,7 @@ const Messages: React.FC = () => {
 
       const idSet = new Set(idsToDelete);
 
-      // Optimistically remove from React Query messages cache
+      // Optimistically update React Query messages cache
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
         queryKeys.conversations.messages(selectedConversationId),
         (oldData) => {
@@ -1103,14 +1141,28 @@ const Messages: React.FC = () => {
               ...oldData,
               pages: oldData.pages.map((page) => ({
                 ...page,
-                data: page.data.filter((m) => !idSet.has(m._id)),
+                data:
+                  mode === "for_everyone"
+                    ? page.data.map((m) =>
+                        idSet.has(m._id)
+                          ? { ...m, isDeleted: true, content: "This message was deleted" }
+                          : m
+                      )
+                    : page.data.filter((m) => !idSet.has(m._id)),
               })),
             };
           }
           if ("data" in oldData && Array.isArray(oldData.data)) {
             return {
               ...oldData,
-              data: oldData.data.filter((m) => !idSet.has(m._id)),
+              data:
+                mode === "for_everyone"
+                  ? oldData.data.map((m) =>
+                      idSet.has(m._id)
+                        ? { ...m, isDeleted: true, content: "This message was deleted" }
+                        : m
+                    )
+                  : oldData.data.filter((m) => !idSet.has(m._id)),
             };
           }
           return oldData;
@@ -1118,8 +1170,15 @@ const Messages: React.FC = () => {
       );
 
       // Calculate remaining messages and determine new latest message
-      const remaining = displayMessages.filter((m) => !idSet.has(m._id));
-      const nextLatest = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+      const updatedDisplay =
+        mode === "for_everyone"
+          ? displayMessages.map((m) =>
+              idSet.has(m._id)
+                ? { ...m, isDeleted: true, content: "This message was deleted" }
+                : m
+            )
+          : displayMessages.filter((m) => !idSet.has(m._id));
+      const nextLatest = updatedDisplay.length > 0 ? updatedDisplay[updatedDisplay.length - 1] : null;
 
       // Optimistically update conversation preview in sidebar
       queryClient.setQueryData<Conversation[]>(
@@ -1131,9 +1190,12 @@ const Messages: React.FC = () => {
                 ...c,
                 lastMessage: nextLatest
                   ? {
-                      content: nextLatest.content,
+                      content: nextLatest.isDeleted
+                        ? "This message was deleted"
+                        : nextLatest.content,
                       sender: nextLatest.sender,
                       createdAt: nextLatest.createdAt,
+                      isDeleted: nextLatest.isDeleted || false,
                     }
                   : undefined,
               };
@@ -1168,7 +1230,7 @@ const Messages: React.FC = () => {
       const msgId = deleteModal.targetMessage._id;
       closeDeleteModal();
 
-      // Optimistically remove from React Query messages cache
+      // Optimistically update React Query messages cache
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
         queryKeys.conversations.messages(selectedConversationId),
         (oldData) => {
@@ -1178,14 +1240,28 @@ const Messages: React.FC = () => {
               ...oldData,
               pages: oldData.pages.map((page) => ({
                 ...page,
-                data: page.data.filter((m) => m._id !== msgId),
+                data:
+                  mode === "for_everyone"
+                    ? page.data.map((m) =>
+                        m._id === msgId
+                          ? { ...m, isDeleted: true, content: "This message was deleted" }
+                          : m
+                      )
+                    : page.data.filter((m) => m._id !== msgId),
               })),
             };
           }
           if ("data" in oldData && Array.isArray(oldData.data)) {
             return {
               ...oldData,
-              data: oldData.data.filter((m) => m._id !== msgId),
+              data:
+                mode === "for_everyone"
+                  ? oldData.data.map((m) =>
+                      m._id === msgId
+                        ? { ...m, isDeleted: true, content: "This message was deleted" }
+                        : m
+                    )
+                  : oldData.data.filter((m) => m._id !== msgId),
             };
           }
           return oldData;
@@ -1193,8 +1269,15 @@ const Messages: React.FC = () => {
       );
 
       // Calculate remaining messages and determine new latest message
-      const remaining = displayMessages.filter((m) => m._id !== msgId);
-      const nextLatest = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+      const updatedDisplay =
+        mode === "for_everyone"
+          ? displayMessages.map((m) =>
+              m._id === msgId
+                ? { ...m, isDeleted: true, content: "This message was deleted" }
+                : m
+            )
+          : displayMessages.filter((m) => m._id !== msgId);
+      const nextLatest = updatedDisplay.length > 0 ? updatedDisplay[updatedDisplay.length - 1] : null;
 
       // Optimistically update conversation preview in sidebar
       queryClient.setQueryData<Conversation[]>(
@@ -1206,9 +1289,12 @@ const Messages: React.FC = () => {
                 ...c,
                 lastMessage: nextLatest
                   ? {
-                      content: nextLatest.content,
+                      content: nextLatest.isDeleted
+                        ? "This message was deleted"
+                        : nextLatest.content,
                       sender: nextLatest.sender,
                       createdAt: nextLatest.createdAt,
+                      isDeleted: nextLatest.isDeleted || false,
                     }
                   : undefined,
               };
@@ -1816,12 +1902,17 @@ const Messages: React.FC = () => {
     const handleMessageDeleted = ({
       conversationId,
       messageId,
+      mode,
+      isDeleted,
       lastMessage,
     }: {
       conversationId: string;
       messageId: string;
+      mode?: string;
+      isDeleted?: boolean;
       lastMessage?: any;
     }) => {
+      const isSoftDelete = mode === "for_everyone" || isDeleted;
       let remainingLatest: ChatMessage | null | undefined = undefined;
 
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
@@ -1831,7 +1922,13 @@ const Messages: React.FC = () => {
           if ("pages" in oldData) {
             const updatedPages = oldData.pages.map((page) => ({
               ...page,
-              data: page.data.filter((m) => m._id !== messageId),
+              data: isSoftDelete
+                ? page.data.map((m) =>
+                    m._id === messageId
+                      ? { ...m, isDeleted: true, content: "This message was deleted" }
+                      : m
+                  )
+                : page.data.filter((m) => m._id !== messageId),
             }));
             const allRemaining = updatedPages.flatMap((p) => p.data || []);
             remainingLatest = allRemaining.length > 0 ? allRemaining[0] : null;
@@ -1841,11 +1938,17 @@ const Messages: React.FC = () => {
             };
           }
           if ("data" in oldData && Array.isArray(oldData.data)) {
-            const remaining = oldData.data.filter((m) => m._id !== messageId);
-            remainingLatest = remaining.length > 0 ? remaining[0] : null;
+            const updated = isSoftDelete
+              ? oldData.data.map((m) =>
+                  m._id === messageId
+                    ? { ...m, isDeleted: true, content: "This message was deleted" }
+                    : m
+                )
+              : oldData.data.filter((m) => m._id !== messageId);
+            remainingLatest = updated.length > 0 ? updated[0] : null;
             return {
               ...oldData,
-              data: remaining,
+              data: updated,
             };
           }
           return oldData;
@@ -1869,9 +1972,12 @@ const Messages: React.FC = () => {
                   ...c,
                   lastMessage: remainingLatest
                     ? {
-                        content: remainingLatest.content,
+                        content: remainingLatest.isDeleted
+                          ? "This message was deleted"
+                          : remainingLatest.content,
                         sender: remainingLatest.sender,
                         createdAt: remainingLatest.createdAt,
+                        isDeleted: remainingLatest.isDeleted || false,
                       }
                     : undefined,
                 };
@@ -1891,13 +1997,18 @@ const Messages: React.FC = () => {
     const handleMessageBatchDeleted = ({
       conversationId,
       messageIds,
+      mode,
+      isDeleted,
       lastMessage,
     }: {
       conversationId: string;
       messageIds: string[];
+      mode?: string;
+      isDeleted?: boolean;
       lastMessage?: any;
     }) => {
       const idSet = new Set(messageIds);
+      const isSoftDelete = mode === "for_everyone" || isDeleted;
       let remainingLatest: ChatMessage | null | undefined = undefined;
 
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
@@ -1907,7 +2018,13 @@ const Messages: React.FC = () => {
           if ("pages" in oldData) {
             const updatedPages = oldData.pages.map((page) => ({
               ...page,
-              data: page.data.filter((m) => !idSet.has(m._id)),
+              data: isSoftDelete
+                ? page.data.map((m) =>
+                    idSet.has(m._id)
+                      ? { ...m, isDeleted: true, content: "This message was deleted" }
+                      : m
+                  )
+                : page.data.filter((m) => !idSet.has(m._id)),
             }));
             const allRemaining = updatedPages.flatMap((p) => p.data || []);
             remainingLatest = allRemaining.length > 0 ? allRemaining[0] : null;
@@ -1917,11 +2034,17 @@ const Messages: React.FC = () => {
             };
           }
           if ("data" in oldData && Array.isArray(oldData.data)) {
-            const remaining = oldData.data.filter((m) => !idSet.has(m._id));
-            remainingLatest = remaining.length > 0 ? remaining[0] : null;
+            const updated = isSoftDelete
+              ? oldData.data.map((m) =>
+                  idSet.has(m._id)
+                    ? { ...m, isDeleted: true, content: "This message was deleted" }
+                    : m
+                )
+              : oldData.data.filter((m) => !idSet.has(m._id));
+            remainingLatest = updated.length > 0 ? updated[0] : null;
             return {
               ...oldData,
-              data: remaining,
+              data: updated,
             };
           }
           return oldData;
@@ -1945,9 +2068,12 @@ const Messages: React.FC = () => {
                   ...c,
                   lastMessage: remainingLatest
                     ? {
-                        content: remainingLatest.content,
+                        content: remainingLatest.isDeleted
+                          ? "This message was deleted"
+                          : remainingLatest.content,
                         sender: remainingLatest.sender,
                         createdAt: remainingLatest.createdAt,
+                        isDeleted: remainingLatest.isDeleted || false,
                       }
                     : undefined,
                 };
@@ -2409,9 +2535,13 @@ const Messages: React.FC = () => {
 
                     <div className="chat-inbox-bottom">
                       <span
-                        className={`chat-inbox-preview ${isUnread ? "unread" : ""}`}
+                        className={`chat-inbox-preview ${isUnread ? "unread" : ""} ${
+                          conv.lastMessage?.isDeleted ? "is-deleted" : ""
+                        }`}
                       >
-                        {conv.lastMessage?.content
+                        {conv.lastMessage?.isDeleted
+                          ? "This message was deleted"
+                          : conv.lastMessage?.content
                           ? conv.lastMessage.content
                           : "Start a conversation"}
                       </span>

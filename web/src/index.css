@@ -4877,6 +4877,42 @@ button, input, textarea, select {
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
 }
 
+/* Deleted Message Soft Bubble (WhatsApp / Slack style in Obsidian Theme) */
+.chat-message-bubble.is-deleted {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.14) !important;
+  padding: 7px 12px !important;
+  user-select: none;
+}
+
+.chat-message-deleted {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-message-deleted-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.chat-message-deleted-text {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.chat-inbox-preview.is-deleted {
+  font-style: italic;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
 /* Quoted Message Card inside bubble */
 .chat-quoted-card {
   display: flex;

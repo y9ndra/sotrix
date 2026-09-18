@@ -345,15 +345,21 @@ function App() {
       const handleGlobalMessageDeleted = ({
         conversationId,
         messageId,
+        mode,
+        isDeleted,
         lastMessage,
       }: {
         conversationId: string;
         messageId: string;
+        mode?: string;
+        isDeleted?: boolean;
         lastMessage?: any;
       }) => {
         if (window.location.pathname.startsWith("/messages")) {
           return;
         }
+
+        const isSoftDelete = mode === "for_everyone" || isDeleted;
 
         queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
           queryKeys.conversations.messages(conversationId),
@@ -364,14 +370,26 @@ function App() {
                 ...oldData,
                 pages: oldData.pages.map((page) => ({
                   ...page,
-                  data: page.data.filter((m) => m._id !== messageId),
+                  data: isSoftDelete
+                    ? page.data.map((m) =>
+                        m._id === messageId
+                          ? { ...m, isDeleted: true, content: "This message was deleted" }
+                          : m
+                      )
+                    : page.data.filter((m) => m._id !== messageId),
                 })),
               };
             }
             if ("data" in oldData && Array.isArray(oldData.data)) {
               return {
                 ...oldData,
-                data: oldData.data.filter((m) => m._id !== messageId),
+                data: isSoftDelete
+                  ? oldData.data.map((m) =>
+                      m._id === messageId
+                        ? { ...m, isDeleted: true, content: "This message was deleted" }
+                        : m
+                    )
+                  : oldData.data.filter((m) => m._id !== messageId),
               };
             }
             return oldData;
@@ -396,16 +414,21 @@ function App() {
       const handleGlobalMessageBatchDeleted = ({
         conversationId,
         messageIds,
+        mode,
+        isDeleted,
         lastMessage,
       }: {
         conversationId: string;
         messageIds: string[];
+        mode?: string;
+        isDeleted?: boolean;
         lastMessage?: any;
       }) => {
         if (window.location.pathname.startsWith("/messages")) {
           return;
         }
         const idSet = new Set(messageIds);
+        const isSoftDelete = mode === "for_everyone" || isDeleted;
 
         queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
           queryKeys.conversations.messages(conversationId),
@@ -416,14 +439,26 @@ function App() {
                 ...oldData,
                 pages: oldData.pages.map((page) => ({
                   ...page,
-                  data: page.data.filter((m) => !idSet.has(m._id)),
+                  data: isSoftDelete
+                    ? page.data.map((m) =>
+                        idSet.has(m._id)
+                          ? { ...m, isDeleted: true, content: "This message was deleted" }
+                          : m
+                      )
+                    : page.data.filter((m) => !idSet.has(m._id)),
                 })),
               };
             }
             if ("data" in oldData && Array.isArray(oldData.data)) {
               return {
                 ...oldData,
-                data: oldData.data.filter((m) => !idSet.has(m._id)),
+                data: isSoftDelete
+                  ? oldData.data.map((m) =>
+                      idSet.has(m._id)
+                        ? { ...m, isDeleted: true, content: "This message was deleted" }
+                        : m
+                    )
+                  : oldData.data.filter((m) => !idSet.has(m._id)),
               };
             }
             return oldData;
