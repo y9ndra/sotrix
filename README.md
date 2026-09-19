@@ -32,11 +32,22 @@
     <img src="https://img.shields.io/badge/API%20Docs-Swagger-85EA2D?logo=swagger&logoColor=black&style=flat-square" alt="Swagger" />
   </p>
 
+  <p align="center">
+    <a href="https://sotrix.yugendhra.me">
+      <img src="https://img.shields.io/badge/Live%20Demo-sotrix.yugendhra.me-blueviolet?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+    </a>
+  </p>
+
 </div>
 
 <p align="center">
   <img src="web/public/banner.png" alt="Sotrix Banner" width="100%" style="border-radius: 10px; max-height: 400px; object-fit: cover;" />
 </p>
+
+> **🚀 Live Portfolio Showcase & Recruiter Demo:**
+> - **Web Client**: [https://sotrix.yugendhra.me](https://sotrix.yugendhra.me)
+> - **1-Click Demo Account**: Click **"✦ Explore as Demo User"** on the login page (or use `demo@sotrix.dev` / `demo123456`).
+> - **Swagger API Documentation**: [https://sotrix-backend.onrender.com/api-docs](https://sotrix-backend.onrender.com/api-docs)
 
 ---
 
