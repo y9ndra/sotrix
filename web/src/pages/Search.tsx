@@ -259,13 +259,26 @@ const Search = () => {
           {searchLoading && !isFetchingNextSearchPage && <p className="explore-loading">searching users...</p>}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {searchResults.map((user) => (
-              <UserCard
-                key={user._id}
-                user={user}
-                onFollowStateChange={handleUserFollowChange}
-              />
-            ))}
+            {searchResults.map((user, idx) => {
+              const showDivider =
+                idx > 0 &&
+                user.isFollowing &&
+                !searchResults[idx - 1].isFollowing;
+
+              return (
+                <div key={user._id} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {showDivider && (
+                    <div className="search-following-divider">
+                      <span>Already Following</span>
+                    </div>
+                  )}
+                  <UserCard
+                    user={user}
+                    onFollowStateChange={handleUserFollowChange}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {/* Infinite scroll sentinel for user search */}
@@ -294,18 +307,31 @@ const Search = () => {
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {users.map((user) => (
-              <UserCard
-                key={user._id}
-                user={user}
-                onFollowStateChange={handleUserFollowChange}
-              />
-            ))}
+            {users.map((user, idx) => {
+              const showDivider =
+                idx > 0 &&
+                user.isFollowing &&
+                !users[idx - 1].isFollowing;
+
+              return (
+                <div key={user._id} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {showDivider && (
+                    <div className="search-following-divider">
+                      <span>Already Following</span>
+                    </div>
+                  )}
+                  <UserCard
+                    user={user}
+                    onFollowStateChange={handleUserFollowChange}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {users.length === 0 && !usersLoading && !usersError && (
             <p className="explore-empty-msg">
-              you're already following everyone available or no suggested users match!
+              no users available to display
             </p>
           )}
 

@@ -24,6 +24,9 @@ export interface IFollowRepository {
     followerId: string,
     targetIds: any[]
   ): Promise<{ following: any }[]>;
+  findAllFollowingIds(
+    followerId: string
+  ): Promise<string[]>;
   createIndexes(): Promise<void>;
 }
 
@@ -89,6 +92,18 @@ export class MongoFollowRepository implements IFollowRepository {
     })
       .select("following")
       .exec();
+  }
+
+  async findAllFollowingIds(
+    followerId: string
+  ): Promise<string[]> {
+    const follows = await Follow.find({
+      follower: followerId,
+    })
+      .select("following")
+      .lean()
+      .exec();
+    return follows.map((f: any) => f.following.toString());
   }
 
   async createIndexes(): Promise<void> {

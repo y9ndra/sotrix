@@ -2893,6 +2893,26 @@ button, input, textarea, select {
   color: var(--text-primary);
 }
 
+.search-following-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 4px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.search-following-divider::before,
+.search-following-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-default);
+}
+
 .user-follow-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

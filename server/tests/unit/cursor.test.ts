@@ -49,4 +49,21 @@ describe("Cursor Utility", () => {
     expect(decodeCursor(encodeCursor(first))).toEqual(first);
     expect(decodeCursor(encodeCursor(second))).toEqual(second);
   });
+
+  it("should preserve phase (unfollowed/followed) when provided", () => {
+    const unfollowedCursor = {
+      createdAt: "2026-08-28T10:00:00.000Z",
+      id: "507f1f77bcf86cd799439011",
+      phase: "unfollowed" as const,
+    };
+
+    const followedCursor = {
+      createdAt: "2026-08-28T10:00:00.000Z",
+      id: "507f1f77bcf86cd799439022",
+      phase: "followed" as const,
+    };
+
+    expect(decodeCursor(encodeCursor(unfollowedCursor))).toEqual(unfollowedCursor);
+    expect(decodeCursor(encodeCursor(followedCursor))).toEqual(followedCursor);
+  });
 });

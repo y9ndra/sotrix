@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import redisClient from "../config/redis";
 import { uploadImage, deleteFromCloudinary } from "./cloudinary.service";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
+import Follow from "../models/follow.model";
 import {
   IUserRepository,
   userRepository,
@@ -140,19 +141,33 @@ export class UserService {
     const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(escapedSearch, "i");
 
-    const filter: any = {
-      $and: [
-        { _id: { $ne: currentUserId } },
-        {
-          $or: [{ username: regex }, { name: regex }],
-        },
-      ],
+    let followedUserIds: string[] = [];
+    if (this.followRepo && typeof (this.followRepo as any).findAllFollowingIds === "function") {
+      followedUserIds = await this.followRepo.findAllFollowingIds(currentUserId);
+    } else {
+      const follows = await Follow.find({ follower: currentUserId }).select("following").lean().exec();
+      followedUserIds = (follows || []).map((f: any) => f.following.toString());
+    }
+    const followedSet = new Set(followedUserIds);
+
+    const decoded = cursor ? decodeCursor(cursor) : null;
+    const phase = decoded?.phase || "unfollowed";
+
+    const baseSearchFilter = {
+      $or: [{ username: regex }, { name: regex }],
     };
 
-    if (cursor) {
-      const decoded = decodeCursor(cursor);
-      if (decoded) {
-        filter.$and.push({
+    if (phase === "unfollowed") {
+      const unfollowedFilter: any = {
+        $and: [
+          { _id: { $ne: currentUserId } },
+          ...(followedUserIds.length > 0 ? [{ _id: { $nin: followedUserIds } }] : []),
+          baseSearchFilter,
+        ],
+      };
+
+      if (decoded && decoded.phase === "unfollowed") {
+        unfollowedFilter.$and.push({
           $or: [
             {
               createdAt: {
@@ -168,12 +183,138 @@ export class UserService {
           ],
         });
       }
+
+      const unfollowedUsers = await this.userRepo.searchUsers(unfollowedFilter, limit + 1);
+
+      if (unfollowedUsers.length > limit) {
+        const rawData = unfollowedUsers.slice(0, limit);
+        const lastUser = rawData[rawData.length - 1];
+        const createdAtDate = (lastUser as any).createdAt
+          ? new Date((lastUser as any).createdAt)
+          : (lastUser._id as any).getTimestamp();
+        const nextCursor = encodeCursor({
+          phase: "unfollowed",
+          createdAt: createdAtDate.toISOString(),
+          id: lastUser._id.toString(),
+        });
+
+        const data = rawData.map((u) => {
+          const userObj = (u as any).toObject ? (u as any).toObject() : u;
+          return {
+            ...userObj,
+            isFollowing: false,
+          };
+        });
+
+        const pagination = {
+          hasMore: true,
+          nextCursor,
+        };
+
+        const result: any = data;
+        result.data = data;
+        result.pagination = pagination;
+        return result;
+      }
+
+      // Unfollowed users are exhausted or <= limit
+      const rawUnfollowed = unfollowedUsers;
+      const remainingLimit = limit - rawUnfollowed.length;
+
+      let rawFollowed: any[] = [];
+      let hasMore = false;
+      let nextCursor: string | null = null;
+
+      if (followedUserIds.length > 0 && remainingLimit > 0) {
+        const followedFilter: any = {
+          $and: [
+            { _id: { $in: followedUserIds } },
+            baseSearchFilter,
+          ],
+        };
+
+        const followedUsers = await this.userRepo.searchUsers(followedFilter, remainingLimit + 1);
+
+        if (followedUsers.length > remainingLimit) {
+          hasMore = true;
+          rawFollowed = followedUsers.slice(0, remainingLimit);
+          const lastUser = rawFollowed[rawFollowed.length - 1];
+          const createdAtDate = (lastUser as any).createdAt
+            ? new Date((lastUser as any).createdAt)
+            : (lastUser._id as any).getTimestamp();
+          nextCursor = encodeCursor({
+            phase: "followed",
+            createdAt: createdAtDate.toISOString(),
+            id: lastUser._id.toString(),
+          });
+        } else {
+          rawFollowed = followedUsers;
+          hasMore = false;
+          nextCursor = null;
+        }
+      }
+
+      const rawData = [...rawUnfollowed, ...rawFollowed];
+      const data = rawData.map((u) => {
+        const userObj = (u as any).toObject ? (u as any).toObject() : u;
+        return {
+          ...userObj,
+          isFollowing: followedSet.has(u._id.toString()),
+        };
+      });
+
+      const pagination = {
+        hasMore,
+        nextCursor,
+      };
+
+      const result: any = data;
+      result.data = data;
+      result.pagination = pagination;
+      return result;
     }
 
-    const users = await this.userRepo.searchUsers(filter, limit + 1);
+    // phase === "followed"
+    if (followedUserIds.length === 0) {
+      const data: any[] = [];
+      const pagination = {
+        hasMore: false,
+        nextCursor: null,
+      };
+      const result: any = data;
+      result.data = data;
+      result.pagination = pagination;
+      return result;
+    }
 
-    const hasMore = users.length > limit;
-    const rawData = users.slice(0, limit);
+    const followedFilter: any = {
+      $and: [
+        { _id: { $in: followedUserIds } },
+        baseSearchFilter,
+      ],
+    };
+
+    if (decoded && decoded.phase === "followed") {
+      followedFilter.$and.push({
+        $or: [
+          {
+            createdAt: {
+              $lt: new Date(decoded.createdAt),
+            },
+          },
+          {
+            createdAt: new Date(decoded.createdAt),
+            _id: {
+              $lt: decoded.id,
+            },
+          },
+        ],
+      });
+    }
+
+    const followedUsers = await this.userRepo.searchUsers(followedFilter, limit + 1);
+    const hasMore = followedUsers.length > limit;
+    const rawData = followedUsers.slice(0, limit);
 
     let nextCursor: string | null = null;
     if (hasMore && rawData.length > 0) {
@@ -182,25 +323,17 @@ export class UserService {
         ? new Date((lastUser as any).createdAt)
         : (lastUser._id as any).getTimestamp();
       nextCursor = encodeCursor({
+        phase: "followed",
         createdAt: createdAtDate.toISOString(),
         id: lastUser._id.toString(),
       });
     }
 
-    const followedUsers = await this.followRepo.findFollowingIn(
-      currentUserId,
-      rawData.map((u) => u._id)
-    );
-
-    const followedSet = new Set(
-      followedUsers.map((f) => f.following.toString())
-    );
-
     const data = rawData.map((u) => {
       const userObj = (u as any).toObject ? (u as any).toObject() : u;
       return {
         ...userObj,
-        isFollowing: followedSet.has(u._id.toString()),
+        isFollowing: true,
       };
     });
 
@@ -212,7 +345,6 @@ export class UserService {
     const result: any = data;
     result.data = data;
     result.pagination = pagination;
-
     return result;
   }
 }

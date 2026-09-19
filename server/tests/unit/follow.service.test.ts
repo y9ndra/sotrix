@@ -133,6 +133,16 @@ class FakeFollowRepository implements IFollowRepository {
     return results;
   }
 
+  async findAllFollowingIds(followerId: string): Promise<string[]> {
+    const results: string[] = [];
+    for (const record of this.follows.values()) {
+      if (record.follower === followerId) {
+        results.push(record.following.toString());
+      }
+    }
+    return results;
+  }
+
   async createIndexes(): Promise<void> {
     // No-op for in-memory fake
   }

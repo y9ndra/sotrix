@@ -1,6 +1,7 @@
 export interface PostCursor {
   createdAt: string;
   id: string;
+  phase?: "unfollowed" | "followed";
 }
 
 export const encodeCursor = (cursor: PostCursor): string => {
@@ -16,7 +17,13 @@ export const decodeCursor = (cursor: string): PostCursor | null => {
       typeof parsed.createdAt === "string" &&
       typeof parsed.id === "string"
     ) {
-      return parsed;
+      return {
+        createdAt: parsed.createdAt,
+        id: parsed.id,
+        ...(parsed.phase === "unfollowed" || parsed.phase === "followed"
+          ? { phase: parsed.phase }
+          : {}),
+      };
     }
     return null;
   } catch {

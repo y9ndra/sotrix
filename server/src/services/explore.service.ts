@@ -159,65 +159,205 @@ export const getExplorePosts = async (
   };
 };
 
+export interface SuggestedUsersCursor {
+  phase: "unfollowed" | "followed";
+  followersCount: number;
+  id: string;
+}
+
 export const getSuggestedUsers = async (
   currentUserId: string,
   limit: number = 10,
   cursor?: string
 ): Promise<PaginatedSuggestedUsersResult> => {
-  const follows = await Follow.find({ follower: currentUserId }).select("following");
-  const followedUserIds = follows.map((f) => f.following);
+  const follows = await Follow.find({ follower: currentUserId }).select("following").lean();
+  const followedUserIds = follows.map((f: any) => f.following.toString());
+  const followedSet = new Set(followedUserIds);
 
-  const excludedUserIds = [currentUserId, ...followedUserIds];
-
-  const query: any = {
-    _id: { $nin: excludedUserIds },
-  };
-
+  let cursorObj: SuggestedUsersCursor | null = null;
   if (cursor) {
     try {
       const decoded = JSON.parse(Buffer.from(cursor, "base64url").toString("utf-8"));
       if (decoded && typeof decoded.followersCount === "number" && decoded.id) {
-        query.$or = [
-          { followersCount: { $lt: decoded.followersCount } },
-          {
-            followersCount: decoded.followersCount,
-            _id: { $lt: decoded.id },
-          },
-        ];
+        cursorObj = {
+          phase: decoded.phase === "followed" ? "followed" : "unfollowed",
+          followersCount: decoded.followersCount,
+          id: decoded.id,
+        };
       }
     } catch {
       // Invalid cursor ignored
     }
   }
 
-  const users = await User.find(query)
+  const phase: "unfollowed" | "followed" = cursorObj?.phase || "unfollowed";
+
+  if (phase === "unfollowed") {
+    const excludedUserIds = [currentUserId, ...followedUserIds];
+    const unfollowedQuery: any = {
+      _id: { $nin: excludedUserIds },
+    };
+
+    if (cursorObj && cursorObj.phase === "unfollowed") {
+      unfollowedQuery.$or = [
+        { followersCount: { $lt: cursorObj.followersCount } },
+        {
+          followersCount: cursorObj.followersCount,
+          _id: { $lt: cursorObj.id },
+        },
+      ];
+    }
+
+    const unfollowedUsers = await User.find(unfollowedQuery)
+      .select("_id name username bio followersCount followingCount profilePicUrl")
+      .sort({
+        followersCount: -1,
+        _id: -1,
+      })
+      .limit(limit + 1)
+      .lean();
+
+    if (unfollowedUsers.length > limit) {
+      const rawData = unfollowedUsers.slice(0, limit);
+      const lastUser: any = rawData[rawData.length - 1];
+      const nextCursorObj: SuggestedUsersCursor = {
+        phase: "unfollowed",
+        followersCount: lastUser.followersCount || 0,
+        id: lastUser._id.toString(),
+      };
+      const nextCursor = Buffer.from(JSON.stringify(nextCursorObj)).toString("base64url");
+
+      return {
+        data: rawData.map((user: any) => ({
+          _id: user._id.toString(),
+          name: user.name || "",
+          username: user.username || "",
+          bio: user.bio || "",
+          followersCount: user.followersCount || 0,
+          isFollowing: false,
+          profilePicUrl: user.profilePicUrl || "",
+        })),
+        pagination: {
+          hasMore: true,
+          nextCursor,
+        },
+      };
+    }
+
+    // Unfollowed users are exhausted or count <= limit
+    const rawUnfollowed = unfollowedUsers;
+    const remainingLimit = limit - rawUnfollowed.length;
+
+    let rawFollowed: any[] = [];
+    let hasMore = false;
+    let nextCursor: string | null = null;
+
+    if (followedUserIds.length > 0 && remainingLimit > 0) {
+      const followedQuery: any = {
+        _id: { $in: followedUserIds },
+      };
+
+      const fetchedFollowed = await User.find(followedQuery)
+        .select("_id name username bio followersCount followingCount profilePicUrl")
+        .sort({
+          followersCount: -1,
+          _id: -1,
+        })
+        .limit(remainingLimit + 1)
+        .lean();
+
+      if (fetchedFollowed.length > remainingLimit) {
+        hasMore = true;
+        rawFollowed = fetchedFollowed.slice(0, remainingLimit);
+        const lastUser: any = rawFollowed[rawFollowed.length - 1];
+        const nextCursorObj: SuggestedUsersCursor = {
+          phase: "followed",
+          followersCount: lastUser.followersCount || 0,
+          id: lastUser._id.toString(),
+        };
+        nextCursor = Buffer.from(JSON.stringify(nextCursorObj)).toString("base64url");
+      } else {
+        rawFollowed = fetchedFollowed;
+        hasMore = false;
+        nextCursor = null;
+      }
+    }
+
+    const combinedRaw = [...rawUnfollowed, ...rawFollowed];
+    const data: SuggestedUserItem[] = combinedRaw.map((user: any) => ({
+      _id: user._id.toString(),
+      name: user.name || "",
+      username: user.username || "",
+      bio: user.bio || "",
+      followersCount: user.followersCount || 0,
+      isFollowing: followedSet.has(user._id.toString()),
+      profilePicUrl: user.profilePicUrl || "",
+    }));
+
+    return {
+      data,
+      pagination: {
+        hasMore,
+        nextCursor,
+      },
+    };
+  }
+
+  // phase === "followed"
+  if (followedUserIds.length === 0) {
+    return {
+      data: [],
+      pagination: {
+        hasMore: false,
+        nextCursor: null,
+      },
+    };
+  }
+
+  const followedQuery: any = {
+    _id: { $in: followedUserIds },
+  };
+
+  if (cursorObj && cursorObj.phase === "followed") {
+    followedQuery.$or = [
+      { followersCount: { $lt: cursorObj.followersCount } },
+      {
+        followersCount: cursorObj.followersCount,
+        _id: { $lt: cursorObj.id },
+      },
+    ];
+  }
+
+  const followedUsers = await User.find(followedQuery)
     .select("_id name username bio followersCount followingCount profilePicUrl")
     .sort({
       followersCount: -1,
       _id: -1,
     })
-    .limit(limit + 1);
+    .limit(limit + 1)
+    .lean();
 
-  const hasMore = users.length > limit;
-  const rawData = users.slice(0, limit);
+  const hasMore = followedUsers.length > limit;
+  const rawData = followedUsers.slice(0, limit);
 
   let nextCursor: string | null = null;
   if (hasMore && rawData.length > 0) {
-    const lastUser = rawData[rawData.length - 1];
-    const cursorObj = {
+    const lastUser: any = rawData[rawData.length - 1];
+    const nextCursorObj: SuggestedUsersCursor = {
+      phase: "followed",
       followersCount: lastUser.followersCount || 0,
       id: lastUser._id.toString(),
     };
-    nextCursor = Buffer.from(JSON.stringify(cursorObj)).toString("base64url");
+    nextCursor = Buffer.from(JSON.stringify(nextCursorObj)).toString("base64url");
   }
 
-  const data: SuggestedUserItem[] = rawData.map((user) => ({
+  const data: SuggestedUserItem[] = rawData.map((user: any) => ({
     _id: user._id.toString(),
     name: user.name || "",
     username: user.username || "",
     bio: user.bio || "",
     followersCount: user.followersCount || 0,
-    isFollowing: false,
+    isFollowing: true,
     profilePicUrl: user.profilePicUrl || "",
   }));
 
