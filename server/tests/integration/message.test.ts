@@ -139,13 +139,15 @@ describe("Message Edit & Delete Integration Tests", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.messageId).toBe(msg2._id.toString());
 
-      // Verify msg2 is deleted from DB
+      // Verify msg2 is soft-deleted in DB
       const dbMsg = await Message.findById(msg2._id);
-      expect(dbMsg).toBeNull();
+      expect(dbMsg).not.toBeNull();
+      expect(dbMsg?.isDeleted).toBe(true);
+      expect(dbMsg?.content).toBe("");
 
-      // Verify conversation lastMessage rolled back to the first message
+      // Verify conversation lastMessage displays tombstone for deleted message
       const updatedConv = await Conversation.findById(conversation._id);
-      expect(updatedConv?.lastMessage?.content).toBe(message.content);
+      expect(updatedConv?.lastMessage?.content).toBe("This message was deleted");
     });
 
     it("should prevent a non-author from deleting someone else's message", async () => {
@@ -225,8 +227,10 @@ describe("Message Edit & Delete Integration Tests", () => {
 
       const dbMsg1 = await Message.findById(msg1._id);
       const dbMsg2 = await Message.findById(msg2._id);
-      expect(dbMsg1).toBeNull();
-      expect(dbMsg2).toBeNull();
+      expect(dbMsg1).not.toBeNull();
+      expect(dbMsg1?.isDeleted).toBe(true);
+      expect(dbMsg2).not.toBeNull();
+      expect(dbMsg2?.isDeleted).toBe(true);
     });
 
     it("should allow batch deletion 'for_me' for any messages in the conversation", async () => {
