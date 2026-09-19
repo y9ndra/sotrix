@@ -30,12 +30,21 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
     try {
       setLoading(true);
       const result = await toggleFollowUser(targetUserId);
-      setIsFollowing(result.following);
-      setFollowersCount(result.followersCount);
+      const nextFollowing =
+        typeof result?.following === "boolean"
+          ? result.following
+          : !isFollowing;
+      const nextCount =
+        typeof result?.followersCount === "number"
+          ? result.followersCount
+          : followersCount + (nextFollowing ? 1 : -1);
+
+      setIsFollowing(nextFollowing);
+      setFollowersCount(Math.max(0, nextCount));
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.feed });
       if (onFollowStateChange) {
-        onFollowStateChange(targetUserId, result.following);
+        onFollowStateChange(targetUserId, nextFollowing);
       }
     } catch (err) {
       console.error("Failed to toggle follow status", err);
@@ -44,14 +53,15 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
     }
   };
 
-  const formatFollowers = (count: number) => {
-    if (count >= 1000000) {
-      return (count / 1000000).toFixed(1) + "M";
+  const formatFollowers = (count?: number | null) => {
+    const safeCount = typeof count === "number" && !isNaN(count) ? count : 0;
+    if (safeCount >= 1000000) {
+      return (safeCount / 1000000).toFixed(1) + "M";
     }
-    if (count >= 1000) {
-      return (count / 1000).toFixed(1) + "k";
+    if (safeCount >= 1000) {
+      return (safeCount / 1000).toFixed(1) + "k";
     }
-    return count.toString();
+    return safeCount.toString();
   };
 
   const initialLetter = (user.name || user.username || "U").charAt(0).toUpperCase();

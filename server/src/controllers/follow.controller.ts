@@ -42,6 +42,8 @@ export const toggleFollow = async (
         ? "Successfully followed user"
         : "Successfully unfollowed user",
       data: result,
+      following: result.following,
+      followersCount: result.followersCount,
     });
   } catch (error: unknown) {
     if (error instanceof Error) {

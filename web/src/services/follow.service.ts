@@ -4,13 +4,35 @@ export interface ToggleFollowResponse {
   success: boolean;
   following: boolean;
   followersCount: number;
+  data?: {
+    following: boolean;
+    followersCount: number;
+  };
 }
 
 export const toggleFollowUser = async (
   userId: string
 ): Promise<ToggleFollowResponse> => {
-  const response = await api.post<ToggleFollowResponse>(`/users/${userId}/follow`);
-  return response.data;
+  const response = await api.post<any>(`/users/${userId}/follow`);
+  const raw = response.data || {};
+  const following =
+    typeof raw.following === "boolean"
+      ? raw.following
+      : typeof raw.data?.following === "boolean"
+      ? raw.data.following
+      : false;
+  const followersCount =
+    typeof raw.followersCount === "number"
+      ? raw.followersCount
+      : typeof raw.data?.followersCount === "number"
+      ? raw.data.followersCount
+      : 0;
+
+  return {
+    ...raw,
+    following,
+    followersCount,
+  };
 };
 
 export interface FollowUserItem {

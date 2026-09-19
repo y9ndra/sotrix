@@ -159,15 +159,16 @@ const Search = () => {
   };
 
   const handleUserFollowChange = (userId: string, isFollowing: boolean) => {
+    const following = Boolean(isFollowing);
     setUsers((prev) =>
       prev.map((u) => {
         const currentId = u._id || (u as any).id;
         if (currentId === userId) {
-          const delta = isFollowing ? 1 : -1;
-          const currentCount = u.followersCount ?? 0;
+          const delta = following ? 1 : -1;
+          const currentCount = typeof u.followersCount === "number" ? u.followersCount : 0;
           return {
             ...u,
-            isFollowing,
+            isFollowing: following,
             followersCount: Math.max(0, currentCount + delta),
           };
         }
@@ -179,25 +180,28 @@ const Search = () => {
       queryClient.setQueryData<InfiniteData<SearchUsersResponse>>(
         queryKeys.users.search(activeSearchQuery),
         (oldData) => {
-          if (!oldData) return oldData;
+          if (!oldData || !Array.isArray(oldData.pages)) return oldData;
           return {
             ...oldData,
-            pages: oldData.pages.map((page) => ({
-              ...page,
-              data: page.data.map((u) => {
-                const currentId = u._id || (u as any).id;
-                if (currentId === userId) {
-                  const delta = isFollowing ? 1 : -1;
-                  const currentCount = u.followersCount ?? 0;
-                  return {
-                    ...u,
-                    isFollowing,
-                    followersCount: Math.max(0, currentCount + delta),
-                  };
-                }
-                return u;
-              }),
-            })),
+            pages: oldData.pages.map((page) => {
+              if (!page || !Array.isArray(page.data)) return page;
+              return {
+                ...page,
+                data: page.data.map((u) => {
+                  const currentId = u._id || (u as any).id;
+                  if (currentId === userId) {
+                    const delta = following ? 1 : -1;
+                    const currentCount = typeof u.followersCount === "number" ? u.followersCount : 0;
+                    return {
+                      ...u,
+                      isFollowing: following,
+                      followersCount: Math.max(0, currentCount + delta),
+                    };
+                  }
+                  return u;
+                }),
+              };
+            }),
           };
         }
       );
@@ -260,13 +264,13 @@ const Search = () => {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {searchResults.map((user, idx) => {
-              const showDivider =
-                idx > 0 &&
-                user.isFollowing &&
-                !searchResults[idx - 1].isFollowing;
+              const userId = user._id || (user as any)?.id || `search-user-${idx}`;
+              const isUserFollowing = Boolean(user?.isFollowing);
+              const prevUserFollowing = idx > 0 ? Boolean(searchResults[idx - 1]?.isFollowing) : false;
+              const showDivider = idx > 0 && isUserFollowing && !prevUserFollowing;
 
               return (
-                <div key={user._id} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div key={userId} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {showDivider && (
                     <div className="search-following-divider">
                       <span>Already Following</span>
@@ -308,13 +312,13 @@ const Search = () => {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {users.map((user, idx) => {
-              const showDivider =
-                idx > 0 &&
-                user.isFollowing &&
-                !users[idx - 1].isFollowing;
+              const userId = user._id || (user as any)?.id || `suggested-user-${idx}`;
+              const isUserFollowing = Boolean(user?.isFollowing);
+              const prevUserFollowing = idx > 0 ? Boolean(users[idx - 1]?.isFollowing) : false;
+              const showDivider = idx > 0 && isUserFollowing && !prevUserFollowing;
 
               return (
-                <div key={user._id} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div key={userId} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {showDivider && (
                     <div className="search-following-divider">
                       <span>Already Following</span>
