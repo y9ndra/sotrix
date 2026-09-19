@@ -487,6 +487,47 @@ button, input, textarea, select {
   color: #10b981;
 }
 
+.auth-form-overlay .auth-demo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 9999px;
+  color: #a1a1aa;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.auth-form-overlay .auth-demo-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.auth-form-overlay .auth-demo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-form-overlay .auth-demo-btn .auth-demo-sparkle {
+  color: #a1a1aa;
+  font-size: 11px;
+  transition: color var(--transition-fast);
+}
+
+.auth-form-overlay .auth-demo-btn:hover:not(:disabled) .auth-demo-sparkle {
+  color: #ffffff;
+}
+
 /* Responsive Split-Screen Stacking */
 @media (max-width: 840px) {
   .auth-split-layout {
@@ -726,6 +767,20 @@ button, input, textarea, select {
   font-size: 13px;
   margin-bottom: 20px;
   font-family: var(--font-sans);
+}
+
+.alert-info {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #d4d4d8;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  font-family: var(--font-sans);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Form Fields */

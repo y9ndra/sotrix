@@ -16,6 +16,7 @@ function Login() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [coldStartNotice, setColdStartNotice] = useState(false);
   const navigate = useNavigate();
 
   function handleusernamechange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -32,29 +33,19 @@ function Login() {
     }
   }
 
-  async function handlelogin() {
+  async function performLogin(loginId: string, pass: string) {
     setError("");
     setSuccess("");
-    const newFieldErrors: Record<string, string> = {};
-
-    const trimmedUsername = username.trim();
-    if (!trimmedUsername) {
-      newFieldErrors.username = "Username or email is required";
-    }
-    if (!password) {
-      newFieldErrors.password = "Password is required";
-    }
-
-    if (Object.keys(newFieldErrors).length > 0) {
-      setFieldErrors(newFieldErrors);
-      setError(Object.values(newFieldErrors)[0]);
-      return;
-    }
-
+    setColdStartNotice(false);
     setLoading(true);
+
+    const timer = setTimeout(() => {
+      setColdStartNotice(true);
+    }, 3500);
+
     try {
-      const response = await login({ identifier: trimmedUsername, password });
-      console.log(response);
+      const response = await login({ identifier: loginId, password: pass });
+      clearTimeout(timer);
       if (response.data && response.data.token) {
         saveToken(response.data.token);
 
@@ -73,6 +64,7 @@ function Login() {
         setError("Failed to obtain authentication token");
       }
     } catch (err: any) {
+      clearTimeout(timer);
       console.error(err);
       const serverErrors = err.response?.data?.errors;
       if (Array.isArray(serverErrors) && serverErrors.length > 0) {
@@ -89,8 +81,37 @@ function Login() {
         setError(errMsg);
       }
     } finally {
+      clearTimeout(timer);
       setLoading(false);
+      setColdStartNotice(false);
     }
+  }
+
+  async function handlelogin() {
+    const newFieldErrors: Record<string, string> = {};
+
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      newFieldErrors.username = "Username or email is required";
+    }
+    if (!password) {
+      newFieldErrors.password = "Password is required";
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      setError(Object.values(newFieldErrors)[0]);
+      return;
+    }
+
+    await performLogin(trimmedUsername, password);
+  }
+
+  async function handleDemoLogin() {
+    setUsername("demo@sotrix.dev");
+    setPassword("demo123456");
+    setFieldErrors({});
+    await performLogin("demo@sotrix.dev", "demo123456");
   }
 
   return (
@@ -110,6 +131,13 @@ function Login() {
             <div className="auth-header-overlay">
               <h2 className="auth-title">Log in</h2>
             </div>
+
+            {coldStartNotice && (
+              <div className="alert-info">
+                <span>⚡</span>
+                <span>Connecting to backend... Render free tier may take ~30s on first spin-up.</span>
+              </div>
+            )}
 
             {error && <div className="alert-error">{error}</div>}
             {success && <div className="alert-success">{success}</div>}
@@ -145,7 +173,21 @@ function Login() {
               />
 
               <div className="auth-link-group">
-                Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+                <div>
+                  Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleDemoLogin}
+                    disabled={loading}
+                    className="auth-demo-btn"
+                    title="Log in with pre-seeded demo credentials"
+                  >
+                    <span className="auth-demo-sparkle">✦</span>
+                    <span>Explore as Demo User</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
