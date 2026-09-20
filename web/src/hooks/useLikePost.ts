@@ -45,16 +45,26 @@ export const useLikePost = () => {
       // 3. Optimistically update all matching caches (feed, explore, profile, single post)
       updatePostInAllInfiniteCaches(queryClient, postId, (oldPost: Post) => {
         const nextLiked = !oldPost.isLiked;
+        const currentCount = Math.max(0, oldPost.likeCount ?? 0);
         return {
           ...oldPost,
           isLiked: nextLiked,
-          likeCount: nextLiked
-            ? (oldPost.likeCount ?? 0) + 1
-            : Math.max(0, (oldPost.likeCount ?? 1) - 1),
+          likeCount: nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1),
         };
       });
 
       return { previousQueries, previousDetailPost, postId };
+    },
+
+    onSuccess: (data, variables) => {
+      const postId = typeof variables === "string" ? variables : variables.postId;
+      if (data && typeof data.likeCount === "number") {
+        updatePostInAllInfiniteCaches(queryClient, postId, (oldPost: Post) => ({
+          ...oldPost,
+          isLiked: data.liked,
+          likeCount: Math.max(0, data.likeCount),
+        }));
+      }
     },
 
     onError: (_err, _variables, context) => {

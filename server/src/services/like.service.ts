@@ -24,14 +24,11 @@ const toggleLikeWithoutTransaction = async (
 
   if (existingLike) {
     await Like.findByIdAndDelete(existingLike._id);
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { $inc: { likeCount: -1 } },
-      { returnDocument: 'after' }
-    );
+    const count = await Like.countDocuments({ post: postId });
+    await Post.findByIdAndUpdate(postId, { likeCount: count });
     return {
       liked: false,
-      likeCount: updatedPost ? Math.max(0, updatedPost.likeCount) : 0,
+      likeCount: count,
       postAuthorId: post.author.toString(),
     };
   } else {
@@ -39,14 +36,11 @@ const toggleLikeWithoutTransaction = async (
       user: userId,
       post: postId,
     });
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { $inc: { likeCount: 1 } },
-      { returnDocument: 'after' }
-    );
+    const count = await Like.countDocuments({ post: postId });
+    await Post.findByIdAndUpdate(postId, { likeCount: count });
     return {
       liked: true,
-      likeCount: updatedPost ? Math.max(0, updatedPost.likeCount) : 0,
+      likeCount: count,
       postAuthorId: post.author.toString(),
     };
   }
@@ -81,16 +75,18 @@ export const toggleLike = async (
       }).session(session);
 
       let liked = false;
-      let updatedPost;
+      let newLikeCount = 0;
 
       if (existingLike) {
         await Like.findByIdAndDelete(existingLike._id).session(session);
-        updatedPost = await Post.findByIdAndUpdate(
+        const count = await Like.countDocuments({ post: postId }).session(session);
+        await Post.findByIdAndUpdate(
           postId,
-          { $inc: { likeCount: -1 } },
-          { returnDocument: 'after', session }
+          { likeCount: count },
+          { session }
         );
         liked = false;
+        newLikeCount = count;
       } else {
         await Like.create(
           [
@@ -101,12 +97,14 @@ export const toggleLike = async (
           ],
           { session }
         );
-        updatedPost = await Post.findByIdAndUpdate(
+        const count = await Like.countDocuments({ post: postId }).session(session);
+        await Post.findByIdAndUpdate(
           postId,
-          { $inc: { likeCount: 1 } },
-          { returnDocument: 'after', session }
+          { likeCount: count },
+          { session }
         );
         liked = true;
+        newLikeCount = count;
       }
 
       await session.commitTransaction();
@@ -114,7 +112,7 @@ export const toggleLike = async (
 
       return {
         liked,
-        likeCount: updatedPost ? Math.max(0, updatedPost.likeCount) : 0,
+        likeCount: newLikeCount,
         postAuthorId: post.author.toString(),
       };
     } catch (error: any) {
@@ -150,3 +148,28 @@ export const toggleLike = async (
 
   return toggleLikeWithoutTransaction(userId, postId);
 };
+
+export const syncLikeCounts = async (): Promise<void> => {
+  try {
+    // 1. Reset any posts with negative likeCount to 0
+    await Post.updateMany({ likeCount: { $lt: 0 } }, { $set: { likeCount: 0 } });
+
+    // 2. Count actual likes from Like collection
+    const likeCounts = await Like.aggregate([
+      { $group: { _id: "$post", count: { $sum: 1 } } },
+    ]);
+
+    if (likeCounts.length > 0) {
+      const bulkOps = likeCounts.map((lc) => ({
+        updateOne: {
+          filter: { _id: lc._id },
+          update: { $set: { likeCount: lc.count } },
+        },
+      }));
+      await Post.bulkWrite(bulkOps);
+    }
+  } catch (err) {
+    console.error("Failed to sync like counts:", err);
+  }
+};
+

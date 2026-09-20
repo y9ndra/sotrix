@@ -43,7 +43,11 @@ const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
     Comment.aggregate([
       { $match: { post: { $in: postIds } } },
       { $group: { _id: "$post", count: { $sum: 1 } } },
-    ])
+    ]),
+    Like.aggregate([
+      { $match: { post: { $in: postIds } } },
+      { $group: { _id: "$post", count: { $sum: 1 } } },
+    ]),
   ];
 
   if (currentUserId) {
@@ -57,11 +61,16 @@ const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
     );
   }
 
-  const [commentCounts, userLikes = [], userFollows = []] = await Promise.all(queries);
+  const [commentCounts, likeCounts, userLikes = [], userFollows = []] = await Promise.all(queries);
 
   const commentCountsMap = new Map<string, number>();
   commentCounts.forEach((c: any) => {
     commentCountsMap.set(c._id.toString(), c.count);
+  });
+
+  const likeCountsMap = new Map<string, number>();
+  likeCounts.forEach((l: any) => {
+    likeCountsMap.set(l._id.toString(), l.count);
   });
 
   userLikes.forEach((like: any) => {
@@ -87,7 +96,7 @@ const attachLikeStatus = async (posts: any[], currentUserId?: string) => {
     return {
       ...postObj,
       author: authorObj,
-      likeCount: postObj.likeCount || 0,
+      likeCount: likeCountsMap.get(postObj._id.toString()) ?? 0,
       commentCount: commentCountsMap.get(postObj._id.toString()) || 0,
       isLiked: currentUserId ? likedPostIdsSet.has(postObj._id.toString()) : false,
     };

@@ -42,7 +42,7 @@ const PostCard = ({
 
   // Like state initialized from backend post data
   const [liked, setLiked] = useState<boolean>(post.isLiked ?? false);
-  const [likeCount, setLikeCount] = useState<number>(post.likeCount ?? 0);
+  const [likeCount, setLikeCount] = useState<number>(Math.max(0, post.likeCount ?? 0));
 
   // Comment count state initialized from backend post data
   const [commentCount, setCommentCount] = useState<number>(post.commentCount ?? 0);
@@ -52,7 +52,7 @@ const PostCard = ({
 
   useEffect(() => {
     setLiked(post.isLiked ?? false);
-    setLikeCount(post.likeCount ?? 0);
+    setLikeCount(Math.max(0, post.likeCount ?? 0));
     setIsFollowing(post.author?.isFollowing ?? false);
     setCommentCount(post.commentCount ?? 0);
   }, [post.isLiked, post.likeCount, post.author?.isFollowing, post.commentCount]);

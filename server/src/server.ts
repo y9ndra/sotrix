@@ -9,6 +9,7 @@ import { connectRedis } from "./config/redis";
 import { startCleanupJob } from "./jobs/cron/cleanup.job";
 import { initializeSocket } from "./socket";
 import { logger } from "./config/logger";
+import { syncLikeCounts } from "./services/like.service";
 
 const httpServer = http.createServer(app);
 
@@ -17,6 +18,7 @@ const io = initializeSocket(httpServer);
 async function startServer() {
   try {
     await connectDB();
+    await syncLikeCounts();
     await connectRedis();
 
     // Start inline workers if configured (e.g. single-container deployment on Render free tier)

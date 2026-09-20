@@ -35,6 +35,8 @@ likeSchema.index(
   }
 );
 
+likeSchema.index({ post: 1 });
+
 const Like = mongoose.model<ILike>("Like", likeSchema);
 
 export default Like;
