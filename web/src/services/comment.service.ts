@@ -3,11 +3,12 @@ import type { CommentsResponse, CreateCommentResponse } from "../types/comment";
 
 export const getCommentsForPost = async (
   postId: string,
-  cursor?: string
+  cursor?: string,
+  limit: number = 50
 ): Promise<CommentsResponse> => {
   const response = await api.get(`/posts/${postId}/comments`, {
     params: {
-      limit: 10,
+      limit,
       cursor,
     },
   });

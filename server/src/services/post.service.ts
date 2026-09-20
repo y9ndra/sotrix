@@ -2,6 +2,7 @@ import Post, { IPost } from "../models/post.model";
 import Like from "../models/like.model";
 import Follow from "../models/follow.model";
 import Comment from "../models/comment.model";
+import Notification from "../models/notification.model";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
 import { deleteFromCloudinary } from "./cloudinary.service";
 
@@ -300,7 +301,12 @@ export const deletePost = async (
     }
   }
 
-  await Post.findByIdAndDelete(postId);
+  await Promise.all([
+    Post.findByIdAndDelete(postId),
+    Comment.deleteMany({ post: postId }),
+    Like.deleteMany({ post: postId }),
+    Notification.deleteMany({ post: postId }),
+  ]);
 
   return post;
 };
