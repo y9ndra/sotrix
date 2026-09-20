@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
+import { blockDemoUser } from "../middleware/blockDemo";
 import { userCreateContentLimiter } from "../middleware/rateLimiter";
 import upload from "../middleware/upload.middleware";
 import { validate } from "../middleware/validate";
@@ -18,8 +19,8 @@ import {
 
 const router = Router();
 
-// Create post (Authenticated + User Rate Limited)
-router.post("/", authenticate, userCreateContentLimiter, upload.single("image"), validate(createPostSchema, "body"), createPost);
+// Create post (Authenticated + Demo Guard + User Rate Limited)
+router.post("/", authenticate, blockDemoUser, userCreateContentLimiter, upload.single("image"), validate(createPostSchema, "body"), createPost);
 
 // Get authenticated user's posts (Authenticated)
 router.get("/me", authenticate, validate(paginationQuerySchema, "query"), getMyPosts);
@@ -36,10 +37,10 @@ router.get("/search", authenticate, validate(searchQuerySchema, "query"), search
 // Get single post by ID (Authenticated)
 router.get("/:id", authenticate, validate(idParamSchema, "params"), getPostById);
 
-// Update own post (Authenticated + Authorized)
-router.patch("/:id", authenticate, validate(idParamSchema, "params"), validate(updatePostSchema, "body"), updatePost);
+// Update own post (Authenticated + Demo Guard + Authorized)
+router.patch("/:id", authenticate, blockDemoUser, validate(idParamSchema, "params"), validate(updatePostSchema, "body"), updatePost);
 
-// Delete own post (Authenticated + Authorized)
-router.delete("/:id", authenticate, validate(idParamSchema, "params"), deletePost);
+// Delete own post (Authenticated + Demo Guard + Authorized)
+router.delete("/:id", authenticate, blockDemoUser, validate(idParamSchema, "params"), deletePost);
 
 export default router;

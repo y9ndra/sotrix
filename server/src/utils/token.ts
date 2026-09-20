@@ -15,12 +15,14 @@ export const hashToken = (token: string): string => {
 };
 
 export const generateAccessToken = (
-  userId: string
+  userId: string,
+  isDemo?: boolean
 ): string => {
   return jwt.sign(
     {
       id: userId,
       userId,
+      isDemo: Boolean(isDemo),
     },
     config.JWT_ACCESS_SECRET,
     {

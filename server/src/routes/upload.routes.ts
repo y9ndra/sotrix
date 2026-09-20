@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import upload from "../middleware/upload.middleware";
 import { authenticate } from "../middleware/authenticate";
+import { blockDemoUser } from "../middleware/blockDemo";
 import { uploadAndCreateMedia, getMediaStatus } from "../services/media.service";
 
 const router = Router();
@@ -8,6 +9,7 @@ const router = Router();
 router.post(
   ["/upload", "/media", "/media/upload", "/upload/media"],
   authenticate,
+  blockDemoUser,
   upload.single("image"),
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     try {

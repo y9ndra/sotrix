@@ -3,6 +3,9 @@ import { createPost } from "../services/post.service";
 import type { Post } from "../types/post";
 import EmojiPicker from "./EmojiPicker";
 import { convertEmojiShortcodes, insertEmojiAtCursor } from "../utils/emoji";
+import { useAuthStore } from "../store/authStore";
+import { isDemoUser } from "../utils/demo";
+import { useDemoModalStore } from "../store/demoModalStore";
 
 interface CreatePostProps {
   onPostCreated: (post: Post) => void;
@@ -15,6 +18,8 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const currentUser = useAuthStore((state) => state.user);
+  const isDemo = isDemoUser(currentUser);
 
   useEffect(() => {
     if (!image) {
@@ -57,6 +62,10 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("uploading images");
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -76,6 +85,11 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("publishing posts");
+      return;
+    }
 
     if (!content.trim()) {
       return;

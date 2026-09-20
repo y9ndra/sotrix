@@ -6,6 +6,7 @@ export interface AuthUser {
   bio?: string;
   profilePicUrl?: string;
   profilePicPublicId?: string;
+  isDemo?: boolean;
 }
 
 export interface LoginServiceResult {

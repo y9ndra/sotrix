@@ -15,6 +15,8 @@ import {
 import { updatePost, deletePost } from "../services/post.service";
 import { convertEmojiShortcodes } from "../utils/emoji";
 import { useLikePost } from "../hooks/useLikePost";
+import { isDemoUser } from "../utils/demo";
+import { useDemoModalStore } from "../store/demoModalStore";
 
 interface PostCardProps {
   post: Post;
@@ -75,6 +77,10 @@ const PostCard = ({
   const likeMutation = useLikePost();
 
   const handleToggleLike = () => {
+    if (isDemoUser(currentUser)) {
+      useDemoModalStore.getState().openDemoModal("liking posts");
+      return;
+    }
     if (likeMutation.isPending) return;
     likeMutation.mutate({
       postId: post._id,
@@ -144,11 +150,19 @@ const PostCard = ({
   const handleToggleFollow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isDemoUser(currentUser)) {
+      useDemoModalStore.getState().openDemoModal("following creators");
+      return;
+    }
     if (!authorId || followMutation.isPending) return;
     followMutation.mutate(authorId);
   };
 
   const handleSaveEdit = async () => {
+    if (isDemoUser(currentUser)) {
+      useDemoModalStore.getState().openDemoModal("editing posts");
+      return;
+    }
     const trimmed = editContent.trim();
     if (!trimmed) return;
     try {
@@ -172,6 +186,10 @@ const PostCard = ({
   };
 
   const handleConfirmDelete = async () => {
+    if (isDemoUser(currentUser)) {
+      useDemoModalStore.getState().openDemoModal("deleting posts");
+      return;
+    }
     try {
       setLoading(true);
       setError(null);

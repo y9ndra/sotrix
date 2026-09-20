@@ -21,6 +21,8 @@ import EmojiPicker from "../components/EmojiPicker";
 import { convertEmojiShortcodes, insertEmojiAtCursor } from "../utils/emoji";
 import { playMessageChime } from "../utils/sound";
 import RubiksLoader from "../components/RubiksLoader";
+import { isDemoUser } from "../utils/demo";
+import { useDemoModalStore } from "../store/demoModalStore";
 
 const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
@@ -2250,6 +2252,10 @@ const Messages: React.FC = () => {
   // Send message handler (Socket with automatic HTTP fallback)
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isDemoUser(currentUser)) {
+      useDemoModalStore.getState().openDemoModal("sending messages");
+      return;
+    }
     const content = inputContent.trim();
     if (!content || !selectedConversationId) return;
 

@@ -7081,3 +7081,62 @@ body:has(.chat-delete-modal-overlay) .rubiks-solve-symbol-btn {
     opacity: 1;
   }
 }
+
+/* ==========================================================================
+   Demo Mode Restriction Modal Action Buttons (Sotrix Obsidian/Matrix Design)
+   ========================================================================== */
+.demo-signup-btn {
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #09090b;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-signup-btn:hover {
+  background: #f4f4f5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="light"] .demo-signup-btn {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+[data-theme="light"] .demo-signup-btn:hover {
+  background: #1e293b;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+.demo-cancel-btn {
+  width: 100%;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.demo-cancel-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-active);
+}
+
+

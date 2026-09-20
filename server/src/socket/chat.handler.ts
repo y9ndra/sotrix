@@ -16,6 +16,7 @@ export const registerChatHandlers = (
   socket: Socket
 ) => {
   const userId = socket.data.userId;
+  const isDemo = Boolean(socket.data.isDemo);
 
   // Handle joining a private conversation room with authorization check
   socket.on("conversation:join", async (conversationId: string) => {
@@ -104,6 +105,14 @@ export const registerChatHandlers = (
           return;
         }
 
+        if (isDemo) {
+          socket.emit("chat:error", {
+            code: "DEMO_ACCOUNT_RESTRICTED",
+            message: "Demo account is view-only. Please create an account to send messages.",
+          });
+          return;
+        }
+
         const { conversationId, content, replyToId } = payload || {};
 
         if (!conversationId || !content) {
@@ -158,6 +167,14 @@ export const registerChatHandlers = (
           return;
         }
 
+        if (isDemo) {
+          socket.emit("chat:error", {
+            code: "DEMO_ACCOUNT_RESTRICTED",
+            message: "Demo account is view-only. Please create an account to edit messages.",
+          });
+          return;
+        }
+
         const { conversationId, messageId, content } = payload || {};
         if (!messageId || !content) {
           socket.emit("chat:error", {
@@ -200,6 +217,14 @@ export const registerChatHandlers = (
       try {
         if (!userId) {
           socket.emit("chat:error", { message: "Unauthorized" });
+          return;
+        }
+
+        if (isDemo) {
+          socket.emit("chat:error", {
+            code: "DEMO_ACCOUNT_RESTRICTED",
+            message: "Demo account is view-only. Please create an account to delete messages.",
+          });
           return;
         }
 
@@ -263,6 +288,14 @@ export const registerChatHandlers = (
       try {
         if (!userId) {
           socket.emit("chat:error", { message: "Unauthorized" });
+          return;
+        }
+
+        if (isDemo) {
+          socket.emit("chat:error", {
+            code: "DEMO_ACCOUNT_RESTRICTED",
+            message: "Demo account is view-only. Please create an account to delete messages.",
+          });
           return;
         }
 

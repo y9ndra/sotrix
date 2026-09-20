@@ -5,6 +5,7 @@ import { config } from "../../config/env";
 interface SocketTokenPayload {
   id?: string;
   userId?: string;
+  isDemo?: boolean;
 }
 
 export const authenticateSocket = (
@@ -29,6 +30,7 @@ export const authenticateSocket = (
     }
 
     socket.data.userId = userId.toString();
+    socket.data.isDemo = Boolean(decoded.isDemo);
 
     next();
   } catch (error) {

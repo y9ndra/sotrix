@@ -10,6 +10,7 @@ import { startCleanupJob } from "./jobs/cron/cleanup.job";
 import { initializeSocket } from "./socket";
 import { logger } from "./config/logger";
 import { syncLikeCounts } from "./services/like.service";
+import User from "./models/user.model";
 
 const httpServer = http.createServer(app);
 
@@ -18,6 +19,10 @@ const io = initializeSocket(httpServer);
 async function startServer() {
   try {
     await connectDB();
+    await User.updateMany(
+      { $or: [{ email: "demo@sotrix.dev" }, { username: "demo" }] },
+      { $set: { isDemo: true } }
+    );
     await syncLikeCounts();
     await connectRedis();
 

@@ -18,6 +18,8 @@ import { useNotificationStore } from "../store/notification.store";
 import { useTheme } from "../context/ThemeContext";
 import RubiksLoader from "../components/RubiksLoader";
 import FollowListModal from "../components/FollowListModal";
+import { isDemoUser } from "../utils/demo";
+import { useDemoModalStore } from "../store/demoModalStore";
 
 // Canvas Helper Utilities for Image Cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -170,6 +172,7 @@ const Profile = () => {
   const currentUser = useAuthStore((state) => state.user);
   const setAuthUser = useAuthStore((state) => state.setUser);
   const currentUserId = currentUser?._id || currentUser?.id || null;
+  const isDemo = isDemoUser(currentUser);
   const isOwnProfile =
     user && (user._id === currentUserId || user.id === currentUserId || id === currentUserId);
 
@@ -233,6 +236,10 @@ const Profile = () => {
   }, [postsHasMore, isFetchingNextPage, loadMoreUserPosts]);
 
   const handleStartEdit = () => {
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("editing profile");
+      return;
+    }
     setEditForm({
       name: user?.name || "",
       username: user?.username || "",
@@ -245,6 +252,10 @@ const Profile = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("updating profile picture");
+      return;
+    }
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
@@ -260,6 +271,10 @@ const Profile = () => {
   }, []);
 
   const handleCropSave = async () => {
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("updating profile picture");
+      return;
+    }
     if (imageToCrop && croppedAreaPixels) {
       try {
         const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
@@ -277,6 +292,10 @@ const Profile = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("editing profile");
+      return;
+    }
     setSaving(true);
     setEditError("");
     try {
@@ -308,6 +327,10 @@ const Profile = () => {
 
   const handleToggleFollow = async () => {
     if (!user || followLoading) return;
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("following creators");
+      return;
+    }
     const targetId = user._id || user.id || id;
     if (!targetId) return;
 
@@ -346,6 +369,10 @@ const Profile = () => {
   };
 
   const handleStartChat = async () => {
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("starting conversations");
+      return;
+    }
     const targetId = user?._id || user?.id || id;
     if (!targetId || chatLoading) return;
 

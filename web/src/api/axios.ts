@@ -6,6 +6,7 @@ import {
   removeToken,
 } from "../services/token.service";
 import { useAuthStore } from "../store/authStore";
+import { useDemoModalStore } from "../store/demoModalStore";
 import authApi from "./authApi";
 
 const API_BASE_URL =
@@ -69,6 +70,14 @@ api.interceptors.response.use(
     const originalRequest = error.config as RetryRequestConfig;
 
     if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    if (
+      error.response?.status === 403 &&
+      (error.response?.data as any)?.code === "DEMO_ACCOUNT_RESTRICTED"
+    ) {
+      useDemoModalStore.getState().openDemoModal();
       return Promise.reject(error);
     }
 

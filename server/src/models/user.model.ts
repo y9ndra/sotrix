@@ -10,6 +10,7 @@ export interface IUser extends Document {
   followingCount: number;
   profilePicUrl?: string;
   profilePicPublicId?: string;
+  isDemo?: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -23,6 +24,7 @@ const UserSchema = new Schema<IUser>(
     followingCount: { type: Number, default: 0 },
     profilePicUrl: { type: String, default: "" },
     profilePicPublicId: { type: String, default: "" },
+    isDemo: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

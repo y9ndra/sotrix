@@ -16,9 +16,16 @@ export const authenticate = (
     }
 
     const secret = config.JWT_ACCESS_SECRET;
-    const decodedToken = jwt.verify(token, secret);
+    const decodedToken = jwt.verify(token, secret) as {
+      id?: string;
+      userId?: string;
+      isDemo?: boolean;
+    };
 
-    req.user = decodedToken as { id: string };
+    req.user = {
+      id: decodedToken.id || decodedToken.userId || "",
+      isDemo: Boolean(decodedToken.isDemo),
+    };
 
     next();
   } catch (error: any) {

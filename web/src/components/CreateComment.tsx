@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import EmojiPicker from "./EmojiPicker";
 import { convertEmojiShortcodes, insertEmojiAtCursor } from "../utils/emoji";
+import { useAuthStore } from "../store/authStore";
+import { isDemoUser } from "../utils/demo";
+import { useDemoModalStore } from "../store/demoModalStore";
 
 interface CreateCommentProps {
   onAddComment: (content: string) => Promise<void>;
@@ -11,6 +14,8 @@ const CreateComment = ({ onAddComment }: CreateCommentProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const currentUser = useAuthStore((state) => state.user);
+  const isDemo = isDemoUser(currentUser);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const rawValue = e.target.value;
@@ -49,6 +54,10 @@ const CreateComment = ({ onAddComment }: CreateCommentProps) => {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isDemo) {
+      useDemoModalStore.getState().openDemoModal("commenting");
+      return;
+    }
     if (!content.trim() || loading) return;
 
     try {

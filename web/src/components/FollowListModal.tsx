@@ -11,6 +11,8 @@ import {
 import { useAuthStore } from "../store/authStore";
 import { queryKeys } from "../lib/queryKeys";
 import RubiksLoader from "./RubiksLoader";
+import { isDemoUser } from "../utils/demo";
+import { useDemoModalStore } from "../store/demoModalStore";
 
 interface FollowListModalProps {
   isOpen: boolean;
@@ -134,6 +136,10 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
   // Handle follow / unfollow toggle
   const handleToggleFollow = async (e: React.MouseEvent, targetUser: FollowUserItem) => {
     e.stopPropagation();
+    if (isDemoUser(currentUser)) {
+      useDemoModalStore.getState().openDemoModal("following creators");
+      return;
+    }
     if (actionLoadingId) return;
 
     setActionLoadingId(targetUser._id);

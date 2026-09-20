@@ -12,4 +12,5 @@ export interface User {
   updatedAt?: string;
   profilePicUrl?: string;
   profilePicPublicId?: string;
+  isDemo?: boolean;
 }

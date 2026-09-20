@@ -92,7 +92,18 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
     absoluteExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days absolute lifetime
   });
 
-  const accessToken = generateAccessToken(userId);
+  const isDemo = Boolean(
+    user.isDemo ||
+    user.email === "demo@sotrix.dev" ||
+    user.username === "demo"
+  );
+
+  if (isDemo && !user.isDemo) {
+    user.isDemo = true;
+    await user.save();
+  }
+
+  const accessToken = generateAccessToken(userId, isDemo);
 
   return {
     token: accessToken,
@@ -105,6 +116,7 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
       bio: user.bio,
       profilePicUrl: user.profilePicUrl,
       profilePicPublicId: user.profilePicPublicId,
+      isDemo,
     },
   };
 };
@@ -116,6 +128,12 @@ export const getUserProfile = async (userId: string): Promise<AuthUser> => {
     throw new Error("User not found");
   }
 
+  const isDemo = Boolean(
+    user.isDemo ||
+    user.email === "demo@sotrix.dev" ||
+    user.username === "demo"
+  );
+
   return {
     id: (user._id as any).toString(),
     username: user.username,
@@ -124,6 +142,7 @@ export const getUserProfile = async (userId: string): Promise<AuthUser> => {
     bio: user.bio,
     profilePicUrl: user.profilePicUrl,
     profilePicPublicId: user.profilePicPublicId,
+    isDemo,
   };
 };
 
@@ -206,7 +225,12 @@ export const refreshAccessToken = async (
     throw new Error("Invalid refresh token");
   }
 
-  const accessToken = generateAccessToken(payload.userId);
+  const user = await userRepository.findById(payload.userId, { select: "isDemo email username" });
+  const isDemo = user
+    ? Boolean(user.isDemo || user.email === "demo@sotrix.dev" || user.username === "demo")
+    : false;
+
+  const accessToken = generateAccessToken(payload.userId, isDemo);
 
   return {
     accessToken,
