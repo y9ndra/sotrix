@@ -131,7 +131,11 @@ const Notifications = () => {
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleActorClick = (
+    e: React.MouseEvent | React.KeyboardEvent,
+    notification: Notification
+  ) => {
+    e.stopPropagation();
     if (!notification.read) {
       markReadMutation.mutate(notification._id);
     }
@@ -139,6 +143,12 @@ const Notifications = () => {
     const destination = getNotificationDestination(notification);
     if (destination) {
       navigate(destination);
+    }
+  };
+
+  const handleCardClick = (notification: Notification) => {
+    if (!notification.read) {
+      markReadMutation.mutate(notification._id);
     }
   };
 
@@ -175,17 +185,28 @@ const Notifications = () => {
                 key={notification._id}
                 role="button"
                 tabIndex={0}
-                onClick={() => handleNotificationClick(notification)}
+                onClick={() => handleCardClick(notification)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    handleNotificationClick(notification);
+                    handleCardClick(notification);
                   }
                 }}
                 className={`notification-item ${notification.read ? "read" : "unread"}`}
               >
                 <div className="notification-content">
-                  <div className="notification-avatar">
+                  <div
+                    className="notification-avatar"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => handleActorClick(e, notification)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleActorClick(e, notification);
+                      }
+                    }}
+                  >
                     {notification.actor?.profilePicUrl ? (
                       <img
                         src={notification.actor.profilePicUrl}
@@ -197,7 +218,18 @@ const Notifications = () => {
                   </div>
                   <div className="notification-details">
                     <div className="notification-text">
-                      <span className="notification-actor">
+                      <span
+                        className="notification-actor"
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => handleActorClick(e, notification)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleActorClick(e, notification);
+                          }
+                        }}
+                      >
                         {actorName}
                       </span>{" "}
                       <span className="notification-action-text">

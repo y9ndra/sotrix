@@ -1289,6 +1289,13 @@ button, input, textarea, select {
   color: var(--accent-matrix);
   flex-shrink: 0;
   overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.notification-avatar:hover {
+  border-color: var(--accent-matrix);
+  transform: scale(1.05);
 }
 
 .notification-avatar img {
