@@ -7278,5 +7278,110 @@ body:has(.chat-delete-modal-overlay) .rubiks-solve-symbol-btn {
   color: var(--text-primary);
 }
 
+/* ==========================================================================
+   Slide To Logout Component
+   ========================================================================== */
+.slide-logout-track {
+  position: relative;
+  width: 100%;
+  height: 46px;
+  background-color: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.slide-logout-track:hover {
+  border-color: rgba(239, 68, 68, 0.45);
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.slide-logout-track.is-confirmed {
+  border-color: rgba(239, 68, 68, 0.7);
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+.slide-logout-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.35) 100%);
+  pointer-events: none;
+  border-radius: 10px;
+}
+
+.slide-logout-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  pointer-events: none;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+}
+
+.slide-logout-label svg {
+  color: #ef4444;
+  opacity: 0.7;
+}
+
+.slide-logout-thumb {
+  position: relative;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: var(--bg-card);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  color: #ef4444;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  outline: none;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.slide-logout-thumb:active {
+  cursor: grabbing;
+  border-color: #ef4444;
+  background-color: var(--bg-hover);
+}
+
+.slide-logout-thumb:focus-visible {
+  outline: 2px solid #ef4444;
+}
+
+.slide-logout-confirmed-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: #ef4444;
+  text-transform: lowercase;
+  pointer-events: none;
+}
+
+
 
 

@@ -20,6 +20,7 @@ import RubiksLoader from "../components/RubiksLoader";
 import FollowListModal from "../components/FollowListModal";
 import { isDemoUser } from "../utils/demo";
 import { useDemoModalStore } from "../store/demoModalStore";
+import SlideToLogout from "../components/SlideToLogout";
 
 // Canvas Helper Utilities for Image Cropping
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -106,7 +107,6 @@ const Profile = () => {
 
   // Profile Settings Modal State
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
   // Follow List Modal State
@@ -597,7 +597,6 @@ const Profile = () => {
                           <button
                             onClick={() => {
                               setIsSettingsOpen(true);
-                              setShowLogoutConfirm(false);
                             }}
                             className="profile-action-btn profile-settings-btn"
                             title="Account Settings"
@@ -901,7 +900,6 @@ const Profile = () => {
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setIsSettingsOpen(false);
-                setShowLogoutConfirm(false);
               }
             }}
           >
@@ -914,7 +912,6 @@ const Profile = () => {
                 <button
                   onClick={() => {
                     setIsSettingsOpen(false);
-                    setShowLogoutConfirm(false);
                   }}
                   className="settings-close-btn"
                   title="Close settings"
@@ -1128,52 +1125,7 @@ const Profile = () => {
                 {/* Session / Logout Section */}
                 <div className="settings-group" style={{ marginTop: "4px" }}>
                   <h4 className="settings-group-title">session</h4>
-                  {!showLogoutConfirm ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowLogoutConfirm(true)}
-                      className="settings-logout-btn"
-                    >
-                      <svg
-                        style={{ width: "15px", height: "15px", stroke: "currentColor" }}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="2"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
-                      </svg>
-                      log out
-                    </button>
-                  ) : (
-                    <div className="settings-confirm-box">
-                      <p className="settings-confirm-text">
-                        Are you sure you want to log out of your session?
-                      </p>
-                      <div className="settings-confirm-actions">
-                        <button
-                          type="button"
-                          onClick={() => setShowLogoutConfirm(false)}
-                          disabled={isLoggingOut}
-                          className="profile-action-btn"
-                        >
-                          cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleLogout}
-                          disabled={isLoggingOut}
-                          className="profile-action-btn primary"
-                          style={{ backgroundColor: "#ef4444", borderColor: "#ef4444", color: "#ffffff" }}
-                        >
-                          {isLoggingOut ? "logging out..." : "yes, log out"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <SlideToLogout onConfirm={handleLogout} isLoading={isLoggingOut} />
                 </div>
               </div>
             </div>
