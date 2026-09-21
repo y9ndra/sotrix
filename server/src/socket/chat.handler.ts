@@ -10,6 +10,7 @@ import {
 } from "../services/message.service";
 import { markConversationAsRead } from "../services/conversation.service";
 import { getUserRoom } from "./socketRooms";
+import { logger } from "../config/logger";
 
 export const registerChatHandlers = (
   io: SocketIOServer,
@@ -45,7 +46,7 @@ export const registerChatHandlers = (
 
       socket.join(conversationId);
       socket.emit("conversation:joined", { conversationId });
-      console.log(`Socket ${socket.id} (user: ${userId}) joined room: ${conversationId}`);
+      logger.debug({ socketId: socket.id, userId, conversationId }, "Socket joined conversation room");
     } catch (error: any) {
       socket.emit("chat:error", {
         message: error.message || "Failed to join conversation",
@@ -87,7 +88,7 @@ export const registerChatHandlers = (
     if (conversationId) {
       socket.leave(conversationId);
       socket.emit("conversation:left", { conversationId });
-      console.log(`Socket ${socket.id} left room: ${conversationId}`);
+      logger.debug({ socketId: socket.id, conversationId }, "Socket left conversation room");
     }
   });
 

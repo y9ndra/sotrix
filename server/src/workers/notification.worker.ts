@@ -2,19 +2,20 @@ import "dotenv/config";
 import { connectDB } from "../config/db";
 import { Worker } from "bullmq";
 import { bullMQConnection } from "../config/bullmq-redis";
+import { logger } from "../config/logger";
 import { createNotification } from "../services/notification.service";
 import type { NotificationJobData } from "../queues/notification.queue";
 
 // Connect to MongoDB
 connectDB().catch((err) => {
-  console.error("Failed to connect to MongoDB in worker process:", err);
+  logger.error(err, "Failed to connect to MongoDB in worker process");
   process.exit(1);
 });
 
 export const notificationWorker = new Worker<NotificationJobData>(
   "notifications",
   async (job) => {
-    console.log("Processing job:", job.id);
+    logger.debug({ jobId: job.id }, "Processing notification job");
     const { recipientId, actorId, type, postId } = job.data;
 
     const notification = await createNotification({
@@ -25,7 +26,7 @@ export const notificationWorker = new Worker<NotificationJobData>(
     });
 
     if (notification) {
-      console.log(`Notification created & emitted: ${notification._id}`);
+      logger.info({ notificationId: notification._id }, "Notification created and emitted");
     }
 
     return notification;
@@ -37,11 +38,11 @@ export const notificationWorker = new Worker<NotificationJobData>(
 );
 
 notificationWorker.on("completed", (job) => {
-  console.log(`Job ${job.id} completed ✅`);
+  logger.info({ jobId: job.id }, "Notification job completed ✅");
 });
 
 notificationWorker.on("failed", (job, error) => {
-  console.error(`Job ${job?.id} failed ❌`, error);
+  logger.error({ jobId: job?.id, err: error }, "Notification job failed ❌");
 });
 
-console.log("Notification worker started 🚀");
+logger.info("Notification worker started 🚀");

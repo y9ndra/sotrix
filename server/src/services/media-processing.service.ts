@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { logger } from "../config/logger";
 import Media, { IMedia } from "../models/media.model";
 import {
   uploadBufferToCloudinary,
@@ -45,7 +46,7 @@ export const processMediaDocument = async (mediaId: string): Promise<IMedia> => 
 
   // Idempotency check: If already completed, skip processing
   if (media.status === "completed") {
-    console.log(`[MEDIA PROCESSING] Media ${mediaId} is already completed. Skipping.`);
+    logger.info({ mediaId }, "Media is already completed. Skipping processing.");
     return media;
   }
 

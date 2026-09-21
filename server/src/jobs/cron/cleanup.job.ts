@@ -1,4 +1,5 @@
 import cron from "node-cron";
+import { logger } from "../../config/logger";
 import { maintenanceQueue } from "../../queues/maintenance.queue";
 
 const queueCleanupJob = async () => {
@@ -10,14 +11,9 @@ const queueCleanupJob = async () => {
       }
     );
 
-    console.log(
-      "[CRON] Notification cleanup job queued"
-    );
+    logger.info("[CRON] Notification cleanup job queued");
   } catch (error) {
-    console.error(
-      "[CRON] Failed to queue cleanup job:",
-      error
-    );
+    logger.error(error, "[CRON] Failed to queue cleanup job");
   }
 };
 
@@ -36,7 +32,5 @@ export const startCleanupJob = () => {
     }
   );
 
-  console.log(
-    "[CRON] Notification cleanup scheduler started (daily at 02:00 AM IST + on startup)"
-  );
+  logger.info("[CRON] Notification cleanup scheduler started (daily at 02:00 AM IST + on startup)");
 };

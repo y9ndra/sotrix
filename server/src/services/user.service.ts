@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import redisClient from "../config/redis";
+import { logger } from "../config/logger";
 import { uploadImage, deleteFromCloudinary } from "./cloudinary.service";
 import { decodeCursor, encodeCursor } from "../utils/cursor";
 import Follow from "../models/follow.model";
@@ -39,10 +40,10 @@ export class UserService {
     const cachedUser = await redisClient.get(key);
 
     if (cachedUser) {
-      console.log("CACHE HIT:", key);
+      logger.debug({ key }, "User cache hit");
       userObj = JSON.parse(cachedUser);
     } else {
-      console.log("CACHE MISS:", key);
+      logger.debug({ key }, "User cache miss");
       const user = await this.userRepo.findById(userId, {
         select: "-password",
       });
@@ -56,7 +57,7 @@ export class UserService {
       await redisClient.set(key, JSON.stringify(userObj), {
         EX: 300,
       });
-      console.log("USER CACHED (TTL 300s):", key);
+      logger.debug({ key }, "User cached");
     }
 
     let isFollowing = false;
@@ -138,7 +139,7 @@ export class UserService {
 
     const key = `user:${userId}`;
     await redisClient.del(key);
-    console.log("CACHE DELETED (INVALIDATED):", key);
+    logger.debug({ key }, "User cache invalidated");
 
     return user;
   }

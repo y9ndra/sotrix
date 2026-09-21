@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 import { bullMQConnection } from "../config/bullmq-redis";
+import { logger } from "../config/logger";
 import Media from "../models/media.model";
 import { processMedia } from "../services/media-processing.service";
 import type { ProcessMediaJobData } from "../queues/media.queue";
@@ -8,14 +9,14 @@ export const mediaWorker = new Worker<ProcessMediaJobData>(
   "media",
   async (job) => {
     const { mediaId } = job.data;
-    console.log(`[MEDIA WORKER] Processing job ${job.id} for media: ${mediaId}`);
+    logger.debug({ jobId: job.id, mediaId }, "Processing media job");
 
     try {
       const media = await processMedia(mediaId);
-      console.log(`[MEDIA WORKER] Media ${mediaId} processed successfully ✅`);
+      logger.info({ jobId: job.id, mediaId }, "Media processed successfully ✅");
       return { mediaId, status: media.status };
     } catch (error) {
-      console.error(`[MEDIA WORKER] Failed to process media ${mediaId}:`, error);
+      logger.error({ jobId: job.id, mediaId, err: error }, "Failed to process media");
 
       // If all attempts are exhausted, mark media as failed in DB
       const maxAttempts = job.opts.attempts ?? 3;
@@ -34,11 +35,11 @@ export const mediaWorker = new Worker<ProcessMediaJobData>(
 );
 
 mediaWorker.on("completed", (job) => {
-  console.log(`Media job ${job.id} completed`);
+  logger.info({ jobId: job.id }, "Media job completed");
 });
 
 mediaWorker.on("failed", (job, error) => {
-  console.error(`Media job ${job?.id} failed`, error);
+  logger.error({ jobId: job?.id, err: error }, "Media job failed");
 });
 
-console.log("Media worker started 🚀");
+logger.info("Media worker started 🚀");

@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 import { bullMQConnection } from "../config/bullmq-redis";
+import { logger } from "../config/logger";
 import { cleanupOldNotifications } from "../services/cleanup.service";
 import type { MaintenanceJobData } from "../queues/maintenance.queue";
 
@@ -11,7 +12,8 @@ export const maintenanceWorker = new Worker<MaintenanceJobData>(
       case "cleanup-notifications": {
         const deletedCount = await cleanupOldNotifications();
 
-        console.log(
+        logger.info(
+          { deletedCount },
           `[WORKER] Deleted ${deletedCount} old notifications`
         );
 
@@ -34,11 +36,11 @@ export const maintenanceWorker = new Worker<MaintenanceJobData>(
 );
 
 maintenanceWorker.on("completed", (job) => {
-  console.log(`[WORKER] Job ${job.id} completed ✅`);
+  logger.info({ jobId: job.id }, `[WORKER] Job ${job.id} completed ✅`);
 });
 
 maintenanceWorker.on("failed", (job, error) => {
-  console.error(`[WORKER] Job ${job?.id} failed ❌`, error);
+  logger.error({ jobId: job?.id, err: error }, `[WORKER] Job failed ❌`);
 });
 
-console.log("Maintenance worker started 🚀");
+logger.info("Maintenance worker started 🚀");
