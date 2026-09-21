@@ -41,7 +41,7 @@
 </div>
 
 <p align="center">
-  <img src="web/public/banner.png" alt="Sotrix Banner" width="100%" style="border-radius: 10px; max-height: 400px; object-fit: cover;" />
+  <img src="web/public/banner.jpg" alt="Sotrix Banner" width="100%" style="border-radius: 10px; max-height: 420px; object-fit: cover;" />
 </p>
 
 > **🚀 Live Portfolio Showcase & Recruiter Demo:**
@@ -77,12 +77,30 @@ Sotrix is a full-stack social web platform engineered for real-time messaging, a
 The application is structured into clearly separated layers: an Express REST and WebSocket gateway, background worker processes managed by BullMQ and Redis, MongoDB Atlas for persistence, and a React 19 single-page application built on Vite and TanStack Query.
 
 <details open>
-  <summary><strong>Interface Preview (Click to toggle)</strong></summary>
+  <summary><strong>Application Showcase (Click to toggle)</strong></summary>
   <br />
-  <p align="center">
-    <img src="web/public/preview-feed.png" alt="Home Feed & Post Composer" width="49%" style="border-radius: 8px; margin-right: 1%;" />
-    <img src="web/public/preview-explore.png" alt="Discover & Explore Feed" width="49%" style="border-radius: 8px;" />
-  </p>
+  <table width="100%">
+    <tr>
+      <td width="50%" align="center">
+        <strong>Home Feed & Real-Time Composer</strong><br/>
+        <img src="web/public/Home-page.png" alt="Home Feed & Composer" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+      </td>
+      <td width="50%" align="center">
+        <strong>Discover & Trending Explorer</strong><br/>
+        <img src="web/public/Explore-page.png" alt="Discover & Explorer" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+      </td>
+    </tr>
+    <tr>
+      <td width="50%" align="center">
+        <strong>Direct Messaging & Typing Indicators</strong><br/>
+        <img src="web/public/Messages.png" alt="Direct Messaging" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+      </td>
+      <td width="50%" align="center">
+        <strong>Interactive Profile & Activity Stream</strong><br/>
+        <img src="web/public/Profile-page.png" alt="User Profile" width="100%" style="border-radius: 8px; margin-top: 6px;" />
+      </td>
+    </tr>
+  </table>
 </details>
 
 ---
