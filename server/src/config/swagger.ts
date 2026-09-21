@@ -949,14 +949,14 @@ export const swaggerSpec: OpenAPIV3.Document = {
                 },
             },
         },
-        "/api/conversations/{id}/messages": {
+        "/api/conversations/{conversationId}/messages": {
             get: {
                 tags: ["Conversations"],
                 summary: "Get cursor-paginated messages for a conversation",
                 security: [{ bearerAuth: [] }],
                 parameters: [
                     {
-                        name: "id",
+                        name: "conversationId",
                         in: "path",
                         required: true,
                         schema: { type: "string" },
@@ -978,6 +978,51 @@ export const swaggerSpec: OpenAPIV3.Document = {
                 responses: {
                     "200": { description: "Messages list returned successfully" },
                     "401": { description: "Unauthorized" },
+                },
+            },
+            post: {
+                tags: ["Conversations"],
+                summary: "Send a direct message in a conversation",
+                description: "Sends a direct message to all conversation participants and broadcasts the message via Socket.IO `message:new` event",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "conversationId",
+                        in: "path",
+                        required: true,
+                        schema: { type: "string" },
+                        description: "Conversation ID",
+                    },
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["content"],
+                                properties: {
+                                    content: {
+                                        type: "string",
+                                        example: "Hey, are you free for a quick sync?",
+                                        description: "Message text content",
+                                    },
+                                    replyToId: {
+                                        type: "string",
+                                        example: "60d0fe4f5311236168a109ca",
+                                        description: "Optional parent message ID to reply to",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    "201": { description: "Message created and dispatched successfully" },
+                    "400": { description: "Conversation ID and content are required" },
+                    "401": { description: "Unauthorized" },
+                    "403": { description: "Action restricted for demo account" },
+                    "404": { description: "Conversation not found" },
                 },
             },
         },
@@ -1106,11 +1151,55 @@ export const swaggerSpec: OpenAPIV3.Document = {
         // ==========================================
         // ⚙️ SYSTEM & HEALTH
         // ==========================================
+        "/": {
+            get: {
+                tags: ["System"],
+                summary: "Root welcome probe",
+                description: "Basic root HTTP liveness probe confirming server availability",
+                responses: {
+                    "200": {
+                        description: "Welcome to Sotrix",
+                        content: {
+                            "text/plain": {
+                                schema: {
+                                    type: "string",
+                                    example: "Welcome to Sotrix",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
         "/health": {
             get: {
                 tags: ["System"],
                 summary: "Service health probe",
                 description: "Returns service status and timestamp. Also accessible at `/api/health`.",
+                responses: {
+                    "200": {
+                        description: "Service is running smoothly",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: { type: "string", example: "success" },
+                                        message: { type: "string", example: "Sotrix Backend is running smoothly" },
+                                        timestamp: { type: "string", format: "date-time" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        "/api/health": {
+            get: {
+                tags: ["System"],
+                summary: "API health probe",
+                description: "Returns service status and timestamp under the `/api` namespace. Mirror of `/health`.",
                 responses: {
                     "200": {
                         description: "Service is running smoothly",
