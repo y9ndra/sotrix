@@ -17,6 +17,7 @@ import { convertEmojiShortcodes } from "../utils/emoji";
 import { useLikePost } from "../hooks/useLikePost";
 import { isDemoUser } from "../utils/demo";
 import { useDemoModalStore } from "../store/demoModalStore";
+import DeleteButton from "./DeleteButton";
 
 interface PostCardProps {
   post: Post;
@@ -37,7 +38,6 @@ const PostCard = ({
 }: PostCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
-  const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
@@ -202,7 +202,6 @@ const PostCard = ({
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to delete post");
       setLoading(false);
-      setIsDeletingConfirm(false);
     }
   };
 
@@ -247,93 +246,54 @@ const PostCard = ({
 
         {canManage && (
           <div className="post-action-link-group">
-            {isDeletingConfirm ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 500, fontFamily: "var(--font-mono)" }}>delete?</span>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={loading}
-                  className="post-btn-text post-btn-text-confirm"
+            <button
+              onClick={() => {
+                if (isEditing) {
+                  setEditContent(post.content);
+                  setIsEditing(false);
+                } else {
+                  setIsEditing(true);
+                }
+              }}
+              className={`post-btn-text post-btn-text-edit ${isEditing ? "active" : ""}`.trim()}
+              title={isEditing ? "Cancel edit" : "Edit post"}
+              aria-label={isEditing ? "Cancel edit" : "Edit post"}
+            >
+              {isEditing ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  {loading ? "..." : "yes"}
-                </button>
-                <button
-                  onClick={() => setIsDeletingConfirm(false)}
-                  disabled={loading}
-                  className="post-btn-text post-btn-text-cancel"
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  no
-                </button>
-              </div>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    if (isEditing) {
-                      setEditContent(post.content);
-                      setIsEditing(false);
-                    } else {
-                      setIsEditing(true);
-                    }
-                  }}
-                  className="post-btn-text post-btn-text-edit"
-                  title={isEditing ? "Cancel edit" : "Edit post"}
-                  aria-label={isEditing ? "Cancel edit" : "Edit post"}
-                >
-                  {isEditing ? (
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  ) : (
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 1 1 3.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  )}
-                </button>
-                <button
-                  onClick={() => setIsDeletingConfirm(true)}
-                  disabled={loading}
-                  className="post-btn-text post-btn-text-delete"
-                  title="Delete post"
-                  aria-label="Delete post"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <line x1="10" y1="11" x2="10" y2="17" />
-                    <line x1="14" y1="11" x2="14" y2="17" />
-                  </svg>
-                </button>
-              </>
-            )}
+                  <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 1 1 3.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              )}
+            </button>
+            <DeleteButton
+              size="md"
+              onConfirm={handleConfirmDelete}
+              disabled={loading}
+              title="Delete post"
+            />
           </div>
         )}
       </div>

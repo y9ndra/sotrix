@@ -57,6 +57,18 @@
   padding: 0;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 html, body {
   background-color: var(--bg-matrix);
   background-image: radial-gradient(var(--matrix-dot-color) 1px, transparent 1px);
@@ -1696,12 +1708,26 @@ button, input, textarea, select {
 }
 
 .post-btn-text-edit {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-default);
   color: var(--text-secondary);
+  box-sizing: border-box;
 }
 
 .post-btn-text-edit:hover {
+  border-color: var(--border-active);
+  background-color: var(--bg-card);
   color: var(--text-primary);
-  background-color: var(--bg-hover);
+}
+
+.post-btn-text-edit.active {
+  border-color: var(--border-active);
+  background-color: var(--bg-card);
+  color: var(--accent-matrix);
 }
 
 .post-btn-text-delete {
@@ -7138,5 +7164,119 @@ body:has(.chat-delete-modal-overlay) .rubiks-solve-symbol-btn {
   color: var(--text-primary);
   border-color: var(--border-active);
 }
+
+/* ==========================================================================
+   Animated Interactive DeleteButton
+   ========================================================================== */
+.sotrix-delete-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  box-sizing: border-box;
+  vertical-align: middle;
+  overflow: visible;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.sotrix-delete-button:hover {
+  border-color: var(--border-active);
+  color: var(--text-primary);
+}
+
+.sotrix-delete-button[data-state="open"] {
+  border-color: var(--border-active);
+  background-color: var(--bg-card);
+}
+
+.sotrix-delete-button[data-status="deleted"] {
+  border-color: rgba(255, 95, 46, 0.5);
+}
+
+.sotrix-delete-trigger {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  border-radius: inherit;
+  transition: color var(--transition-fast);
+}
+
+.sotrix-delete-trigger:hover {
+  color: #FF5F2E;
+}
+
+.sotrix-delete-trigger:focus-visible {
+  outline: 2px solid var(--border-active);
+}
+
+.sotrix-delete-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-matrix);
+  border-left: 1px solid var(--border-default);
+  border-radius: inherit;
+  z-index: 5;
+  box-shadow: inset 1px 0 3px rgba(0, 0, 0, 0.25);
+}
+
+.sotrix-delete-notch {
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 8px;
+  background-color: var(--bg-matrix);
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+  z-index: 20;
+}
+
+.sotrix-delete-circle {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.sotrix-delete-circle:focus-visible {
+  outline: 2px solid var(--border-active);
+}
+
+.sotrix-delete-circle.confirm:hover {
+  background-color: rgba(255, 95, 46, 0.15);
+  border-color: #FF5F2E;
+  color: #FF5F2E;
+}
+
+.sotrix-delete-circle.cancel:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-active);
+  color: var(--text-primary);
+}
+
 
 

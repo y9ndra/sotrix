@@ -12,6 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",
     "axios": "^1.18.1",
+    "motion": "^13.4.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-easy-crop": "^6.2.3",
