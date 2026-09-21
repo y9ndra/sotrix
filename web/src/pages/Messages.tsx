@@ -188,7 +188,7 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           try {
             navigator.vibrate(15);
-          } catch (_) {}
+          } catch {}
         }
         hasVibratedRef.current = true;
       } else if (clamped < 35 && hasVibratedRef.current) {

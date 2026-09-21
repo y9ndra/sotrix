@@ -18,7 +18,7 @@ const AuthInitializer = () => {
           clearUser();
           removeToken();
         }
-      } catch (error) {
+      } catch {
         clearUser();
         removeToken();
       } finally {

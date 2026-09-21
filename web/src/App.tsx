@@ -42,7 +42,9 @@ function App() {
 
     if (socket) {
       socket.on("connect", () => {
-        console.log("Connected to Socket.IO server:", socket.id, "as user:", user._id || (user as any).id);
+        if (import.meta.env.DEV) {
+          console.log("Connected to Socket.IO server:", socket.id, "as user:", user._id || (user as any).id);
+        }
 
         // Fetch current online users presence list immediately
         socket.emit("presence:get");
@@ -54,17 +56,23 @@ function App() {
 
       // Global Presence event listeners
       const handlePresenceList = (data: { users: string[] }) => {
-        console.log("🟢 Received presence:list:", data?.users);
+        if (import.meta.env.DEV) {
+          console.log("🟢 Received presence:list:", data?.users);
+        }
         usePresenceStore.getState().setOnlineUsers(data?.users || []);
       };
 
       const handlePresenceOnline = ({ userId }: { userId: string }) => {
-        console.log("🟢 User came online:", userId);
+        if (import.meta.env.DEV) {
+          console.log("🟢 User came online:", userId);
+        }
         usePresenceStore.getState().addUser(userId);
       };
 
       const handlePresenceOffline = ({ userId }: { userId: string }) => {
-        console.log("⚪ User went offline:", userId);
+        if (import.meta.env.DEV) {
+          console.log("⚪ User went offline:", userId);
+        }
         usePresenceStore.getState().removeUser(userId);
       };
 
@@ -73,14 +81,18 @@ function App() {
       socket.on("presence:offline", handlePresenceOffline);
 
       socket.on("test:pong", (data) => {
-        console.log("Received pong from backend:", data);
+        if (import.meta.env.DEV) {
+          console.log("Received pong from backend:", data);
+        }
       });
 
       socket.on("notification:new", (notification: Notification) => {
-        console.log(
-          "🔔 New real-time notification received:",
-          notification
-        );
+        if (import.meta.env.DEV) {
+          console.log(
+            "🔔 New real-time notification received:",
+            notification
+          );
+        }
         addNotification(notification);
 
         // Optimistically prepend to TanStack infinite cache
@@ -488,7 +500,9 @@ function App() {
       socket.on("message:batch-deleted", handleGlobalMessageBatchDeleted);
 
       socket.on("disconnect", () => {
-        console.log("Disconnected from Socket.IO server");
+        if (import.meta.env.DEV) {
+          console.log("Disconnected from Socket.IO server");
+        }
       });
 
       return () => {
@@ -511,7 +525,7 @@ function App() {
     return () => {
       disconnectSocket();
     };
-  }, [isAuthenticated, user?._id, (user as any)?.id, addNotification, queryClient]);
+  }, [isAuthenticated, user, addNotification, queryClient]);
 
   return (
     <>

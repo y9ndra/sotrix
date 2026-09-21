@@ -112,13 +112,12 @@ function Signup() {
 
     setLoading(true);
     try {
-      const response = await signup({
+      await signup({
         name: trimmedName,
         username: trimmedUsername,
         email: trimmedEmail,
         password,
       });
-      console.log(response);
       setSuccess("Signup successful! Redirecting to login...");
       setName("");
       setUsername("");

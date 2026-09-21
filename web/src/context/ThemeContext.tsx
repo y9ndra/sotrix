@@ -22,7 +22,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setThemeState(newTheme);
     try {
       localStorage.setItem('sotrix_theme', newTheme);
-    } catch (e) {}
+    } catch {}
     document.documentElement.setAttribute('data-theme', newTheme);
     window.dispatchEvent(new CustomEvent('sotrix_theme_change', { detail: newTheme }));
   };
@@ -54,7 +54,7 @@ export const useTheme = (): ThemeContextType => {
       setTheme: (t: Theme) => {
         try {
           localStorage.setItem('sotrix_theme', t);
-        } catch (e) {}
+        } catch {}
         if (typeof document !== 'undefined') {
           document.documentElement.setAttribute('data-theme', t);
         }
@@ -63,7 +63,7 @@ export const useTheme = (): ThemeContextType => {
         const next = currentTheme === 'dark' ? 'light' : 'dark';
         try {
           localStorage.setItem('sotrix_theme', next);
-        } catch (e) {}
+        } catch {}
         if (typeof document !== 'undefined') {
           document.documentElement.setAttribute('data-theme', next);
         }

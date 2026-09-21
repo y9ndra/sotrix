@@ -90,7 +90,7 @@ const Explore = () => {
       setIsPostSearched(true);
       const response = await searchPosts(postSearchQuery);
       setPostSearchResults(response.data);
-    } catch (err) {
+    } catch {
       setPostSearchError("Failed to search posts. Please try again.");
     } finally {
       setPostSearchLoading(false);

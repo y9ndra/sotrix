@@ -1,32 +1,51 @@
-# React + TypeScript + Vite
+# 🌐 Sotrix Web Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The official frontend single-page application (SPA) for **Sotrix** — built with React 19, Vite, TanStack Query v5, and Zustand.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ⚡ Tech Stack & Highlights
 
-## React Compiler
+- **Framework**: [React 19](https://react.dev/) + [Vite](https://vite.dev/)
+- **Routing**: [React Router v7](https://reactrouter.com/)
+- **Server State**: [TanStack Query v5](https://tanstack.com/query/latest) (optimistic UI mutations, cursor-based infinite queries, cache-aside hydration)
+- **Client State**: [Zustand](https://zustand-demo.pmnd.rs/) (auth store, presence, notifications, interactive widgets)
+- **Real-Time WebSockets**: [Socket.IO Client](https://socket.io/) (live chat, typing indicators, presence broadcasting)
+- **Styling**: Vanilla CSS tokens & variables with responsive layouts and dark/light themes
+- **Linter & Tooling**: [Oxlint](https://oxc.rs/) + TypeScript
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 🚀 Getting Started
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### 1. Install Dependencies
+```bash
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+
+| Variable | Description | Default |
+|---|---|---|
+| `VITE_API_BASE_URL` | Backend REST API endpoint | `http://localhost:5000/api` |
+| `VITE_SOCKET_URL` | Backend Socket.IO server URL | `http://localhost:5000` |
+
+### 3. Start Development Server
+```bash
+npm run dev
+```
+
+### 4. Build for Production
+```bash
+npm run build
+```
+The compiled output will be generated in `dist/`.
+
+### 5. Lint
+```bash
+npm run lint
+```

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import UserCard from "../components/UserCard";
@@ -34,24 +34,17 @@ const Search = () => {
     return () => parent.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // State for Suggested Users
+  // Search input state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearchQuery, setActiveSearchQuery] = useState("");
+  const isSearched = activeSearchQuery.trim().length > 0;
+
+  // Suggested users state
   const [users, setUsers] = useState<SuggestedUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [usersNextCursor, setUsersNextCursor] = useState<string | null>(null);
-  const [usersHasMore, setUsersHasMore] = useState(true);
-
-  // State for Searching Users
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeSearchQuery, setActiveSearchQuery] = useState("");
-
-  // Debounce search query changes by 300ms for live search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setActiveSearchQuery(searchQuery.trim());
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const [usersNextCursor, setUsersNextCursor] = useState<string | null | undefined>(null);
+  const [usersHasMore, setUsersHasMore] = useState(false);
 
   const fetchSuggestedUsers = async () => {
     try {
@@ -61,14 +54,14 @@ const Search = () => {
       setUsers(response.data);
       setUsersNextCursor(response.pagination.nextCursor);
       setUsersHasMore(response.pagination.hasMore);
-    } catch (err) {
+    } catch {
       setUsersError("Failed to load suggested users");
     } finally {
       setUsersLoading(false);
     }
   };
 
-  const loadMoreSuggestedUsers = async () => {
+  const loadMoreSuggestedUsers = useCallback(async () => {
     if (!usersNextCursor || !usersHasMore || usersLoading) return;
     try {
       setUsersLoading(true);
@@ -77,12 +70,12 @@ const Search = () => {
       setUsers((prev) => [...prev, ...response.data]);
       setUsersNextCursor(response.pagination.nextCursor);
       setUsersHasMore(response.pagination.hasMore);
-    } catch (err) {
+    } catch {
       setUsersError("Failed to load more users");
     } finally {
       setUsersLoading(false);
     }
-  };
+  }, [usersNextCursor, usersHasMore, usersLoading]);
 
   // Infinite query for searching users
   const {
@@ -104,7 +97,6 @@ const Search = () => {
   });
 
   const searchResults = searchData?.pages.flatMap((page) => page.data) ?? [];
-  const isSearched = !!activeSearchQuery;
   const searchError = searchErrorObj ? "Failed to search users. Please try again." : null;
 
   // IntersectionObserver for searching users
@@ -145,7 +137,7 @@ const Search = () => {
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [usersHasMore, usersLoading, isSearched, usersNextCursor]);
+  }, [usersHasMore, usersLoading, isSearched, loadMoreSuggestedUsers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

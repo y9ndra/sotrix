@@ -19,7 +19,9 @@ export const useNotificationSocket = () => {
     }
 
     const handleNewNotification = (notification: Notification) => {
-      console.log("🔔 Real-time notification received via hook:", notification);
+      if (import.meta.env.DEV) {
+        console.log("🔔 Real-time notification received via hook:", notification);
+      }
       addNotification(notification);
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
