@@ -8,7 +8,11 @@ import { getOrCreateConversation } from "../services/chat.service";
 import { queryKeys } from "../lib/queryKeys";
 import { useAuthStore } from "../store/authStore";
 import { getUserPosts, deletePost } from "../services/post.service";
-import { removePostFromAllInfiniteCaches } from "../lib/queryCache";
+import {
+  removePostFromAllInfiniteCaches,
+  updateUserInAllUserCaches,
+  invalidateFollowQueries,
+} from "../lib/queryCache";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
 import { logout } from "../api/auth.api";
@@ -346,9 +350,8 @@ const Profile = () => {
         isFollowing: result.following,
         followersCount: result.followersCount,
       }));
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.feed });
-      queryClient.invalidateQueries({ queryKey: queryKeys.posts.userPosts(targetId) });
+      updateUserInAllUserCaches(queryClient, targetId, result.following, result.followersCount);
+      await invalidateFollowQueries(queryClient, targetId);
     } catch (err: any) {
       console.error("Failed to toggle follow status", err);
     } finally {

@@ -7,6 +7,8 @@ export const queryKeys = {
     detail: (postId: string) => ["posts", postId] as const,
     userPosts: (userId: string) =>
       ["posts", "user", userId] as const,
+    search: (query: string) =>
+      ["posts", "search", query] as const,
   },
 
   comments: {

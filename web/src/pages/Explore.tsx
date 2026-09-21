@@ -1,15 +1,22 @@
 import { useState, useEffect, useRef } from "react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import PostCard from "../components/PostCard";
 import { getExplorePosts } from "../services/explore.service";
-import type { Post, PostsResponse } from "../types/post";
+import type { PostsResponse } from "../types/post";
 import { searchPosts } from "../services/post.service";
+import type { SearchPostsResponse } from "../services/post.service";
 import { queryKeys } from "../lib/queryKeys";
+import { useRefreshOnActive } from "../hooks/useRefreshOnActive";
 import RubiksLoader from "../components/RubiksLoader";
 
 const Explore = () => {
   const queryClient = useQueryClient();
+  const location = useLocation();
+
+  const isExploreActive = location.pathname.startsWith("/explore");
+  useRefreshOnActive(isExploreActive, queryKeys.posts.explore);
 
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const lastScrollTop = useRef(0);
@@ -47,7 +54,6 @@ const Explore = () => {
     queryFn: ({ pageParam }) => getExplorePosts(pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
-    staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
@@ -73,35 +79,33 @@ const Explore = () => {
 
   const posts = postsData?.pages.flatMap((page) => page.data) ?? [];
 
-  // State for Searching Posts
+  // State & Query for Searching Posts
   const [postSearchQuery, setPostSearchQuery] = useState("");
-  const [postSearchResults, setPostSearchResults] = useState<Post[]>([]);
-  const [postSearchLoading, setPostSearchLoading] = useState(false);
-  const [postSearchError, setPostSearchError] = useState<string | null>(null);
-  const [isPostSearched, setIsPostSearched] = useState(false);
+  const [activePostSearchQuery, setActivePostSearchQuery] = useState("");
+  const isPostSearched = activePostSearchQuery.trim().length > 0;
 
-  const handlePostSearch = async (e: React.FormEvent) => {
+  const {
+    data: postSearchData,
+    isLoading: postSearchLoading,
+    error: postSearchErrorObj,
+  } = useQuery({
+    queryKey: queryKeys.posts.search(activePostSearchQuery),
+    queryFn: () => searchPosts(activePostSearchQuery),
+    enabled: isPostSearched,
+  });
+
+  const postSearchResults = postSearchData?.data ?? [];
+  const postSearchError = postSearchErrorObj ? "Failed to search posts. Please try again." : null;
+
+  const handlePostSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!postSearchQuery.trim()) return;
-
-    try {
-      setPostSearchLoading(true);
-      setPostSearchError(null);
-      setIsPostSearched(true);
-      const response = await searchPosts(postSearchQuery);
-      setPostSearchResults(response.data);
-    } catch {
-      setPostSearchError("Failed to search posts. Please try again.");
-    } finally {
-      setPostSearchLoading(false);
-    }
+    setActivePostSearchQuery(postSearchQuery.trim());
   };
 
   const handleClearPostSearch = () => {
     setPostSearchQuery("");
-    setPostSearchResults([]);
-    setPostSearchError(null);
-    setIsPostSearched(false);
+    setActivePostSearchQuery("");
   };
 
   const handleFollowToggleInCache = (authorId: string, isFollowing: boolean) => {
@@ -186,22 +190,31 @@ const Explore = () => {
                 post={post}
                 showFollowToggle={true}
                 onFollowToggle={(authorId, isFollowing) => {
-                  setPostSearchResults((prev) =>
-                    prev.map((p) => {
-                      const currentAuthorId = p.author?._id || (p.author as any)?.id;
-                      if (currentAuthorId === authorId && p.author) {
+                  handleFollowToggleInCache(authorId, isFollowing);
+                  if (activePostSearchQuery) {
+                    queryClient.setQueryData<SearchPostsResponse>(
+                      queryKeys.posts.search(activePostSearchQuery),
+                      (oldData) => {
+                        if (!oldData || !Array.isArray(oldData.data)) return oldData;
                         return {
-                          ...p,
-                          author: {
-                            ...p.author,
-                            isFollowing,
-                          },
+                          ...oldData,
+                          data: oldData.data.map((p) => {
+                            const currentAuthorId = p.author?._id || (p.author as any)?.id;
+                            if (currentAuthorId === authorId && p.author) {
+                              return {
+                                ...p,
+                                author: {
+                                  ...p.author,
+                                  isFollowing,
+                                },
+                              };
+                            }
+                            return p;
+                          }),
                         };
                       }
-                      return p;
-                    })
-                  );
-                  handleFollowToggleInCache(authorId, isFollowing);
+                    );
+                  }
                 }}
               />
             ))}
@@ -209,7 +222,7 @@ const Explore = () => {
 
           {postSearchResults.length === 0 && !postSearchLoading && !postSearchError && (
             <p className="explore-empty-msg">
-              no posts found matching "{postSearchQuery}"
+              no posts found matching "{activePostSearchQuery}"
             </p>
           )}
         </div>

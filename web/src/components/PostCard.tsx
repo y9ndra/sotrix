@@ -11,6 +11,8 @@ import {
   updateAuthorInAllInfiniteCaches,
   updatePostInAllInfiniteCaches,
   removePostFromAllInfiniteCaches,
+  updateUserInAllUserCaches,
+  invalidateFollowQueries,
 } from "../lib/queryCache";
 import { updatePost, deletePost } from "../services/post.service";
 import { convertEmojiShortcodes } from "../utils/emoji";
@@ -109,6 +111,7 @@ const PostCard = ({
         ...author,
         isFollowing: !isFollowing,
       }));
+      updateUserInAllUserCaches(queryClient, targetAuthorId, !isFollowing);
 
       // Optimistically update local follow state
       setIsFollowing((prev) => !prev);
@@ -134,16 +137,8 @@ const PostCard = ({
         onFollowToggle(targetAuthorId, res.following);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.feed,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.users.suggested,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.conversations.all,
-      });
+    onSettled: (_data, _error, targetAuthorId) => {
+      invalidateFollowQueries(queryClient, targetAuthorId);
     },
   });
 

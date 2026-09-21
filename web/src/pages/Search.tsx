@@ -1,19 +1,30 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import type { InfiniteData } from "@tanstack/react-query";
 import UserCard from "../components/UserCard";
 import { getSuggestedUsers } from "../services/explore.service";
-import type { SuggestedUser } from "../services/explore.service";
 import { searchUsers } from "../services/user.service";
-import type { SearchUsersResponse } from "../services/user.service";
 import { queryKeys } from "../lib/queryKeys";
+import { updateUserInAllUserCaches } from "../lib/queryCache";
+import { useRefreshOnActive } from "../hooks/useRefreshOnActive";
 import RubiksLoader from "../components/RubiksLoader";
 
 const Search = () => {
   const queryClient = useQueryClient();
+  const location = useLocation();
+
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const lastScrollTop = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Search input state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearchQuery, setActiveSearchQuery] = useState("");
+  const isSearched = activeSearchQuery.trim().length > 0;
+
+  const isSearchActive = location.pathname.startsWith("/search");
+  useRefreshOnActive(isSearchActive, queryKeys.users.suggested);
+  useRefreshOnActive(isSearchActive && isSearched, queryKeys.users.search(activeSearchQuery));
 
   // Smart scroll reveal logic listening to parent slot container scroll events
   useEffect(() => {
@@ -34,48 +45,29 @@ const Search = () => {
     return () => parent.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Search input state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeSearchQuery, setActiveSearchQuery] = useState("");
-  const isSearched = activeSearchQuery.trim().length > 0;
+  // Infinite query for suggested users
+  const {
+    data: suggestedData,
+    isLoading: suggestedLoading,
+    error: suggestedErrorObj,
+    fetchNextPage: loadMoreSuggestedUsers,
+    hasNextPage: suggestedHasMore,
+    isFetchingNextPage: isFetchingNextSuggestedPage,
+  } = useInfiniteQuery({
+    queryKey: queryKeys.users.suggested,
+    queryFn: ({ pageParam }) => getSuggestedUsers(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.nextCursor ?? undefined;
+    },
+    enabled: !isSearched,
+  });
 
-  // Suggested users state
-  const [users, setUsers] = useState<SuggestedUser[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [usersError, setUsersError] = useState<string | null>(null);
-  const [usersNextCursor, setUsersNextCursor] = useState<string | null | undefined>(null);
-  const [usersHasMore, setUsersHasMore] = useState(false);
-
-  const fetchSuggestedUsers = async () => {
-    try {
-      setUsersLoading(true);
-      setUsersError(null);
-      const response = await getSuggestedUsers();
-      setUsers(response.data);
-      setUsersNextCursor(response.pagination.nextCursor);
-      setUsersHasMore(response.pagination.hasMore);
-    } catch {
-      setUsersError("Failed to load suggested users");
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  const loadMoreSuggestedUsers = useCallback(async () => {
-    if (!usersNextCursor || !usersHasMore || usersLoading) return;
-    try {
-      setUsersLoading(true);
-      setUsersError(null);
-      const response = await getSuggestedUsers(usersNextCursor);
-      setUsers((prev) => [...prev, ...response.data]);
-      setUsersNextCursor(response.pagination.nextCursor);
-      setUsersHasMore(response.pagination.hasMore);
-    } catch {
-      setUsersError("Failed to load more users");
-    } finally {
-      setUsersLoading(false);
-    }
-  }, [usersNextCursor, usersHasMore, usersLoading]);
+  const users = suggestedData?.pages.flatMap((page) => page.data) ?? [];
+  const usersLoading = suggestedLoading;
+  const usersError = suggestedErrorObj ? "Failed to load suggested users" : null;
+  const usersHasMore = Boolean(suggestedHasMore);
 
   // Infinite query for searching users
   const {
@@ -124,7 +116,7 @@ const Search = () => {
 
   useEffect(() => {
     const element = suggestedLoadMoreRef.current;
-    if (!element || !usersHasMore || usersLoading || isSearched) return;
+    if (!element || !usersHasMore || isFetchingNextSuggestedPage || isSearched) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -137,7 +129,7 @@ const Search = () => {
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [usersHasMore, usersLoading, isSearched, loadMoreSuggestedUsers]);
+  }, [usersHasMore, isFetchingNextSuggestedPage, isSearched, loadMoreSuggestedUsers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,58 +143,8 @@ const Search = () => {
   };
 
   const handleUserFollowChange = (userId: string, isFollowing: boolean) => {
-    const following = Boolean(isFollowing);
-    setUsers((prev) =>
-      prev.map((u) => {
-        const currentId = u._id || (u as any).id;
-        if (currentId === userId) {
-          const delta = following ? 1 : -1;
-          const currentCount = typeof u.followersCount === "number" ? u.followersCount : 0;
-          return {
-            ...u,
-            isFollowing: following,
-            followersCount: Math.max(0, currentCount + delta),
-          };
-        }
-        return u;
-      })
-    );
-
-    if (activeSearchQuery) {
-      queryClient.setQueryData<InfiniteData<SearchUsersResponse>>(
-        queryKeys.users.search(activeSearchQuery),
-        (oldData) => {
-          if (!oldData || !Array.isArray(oldData.pages)) return oldData;
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) => {
-              if (!page || !Array.isArray(page.data)) return page;
-              return {
-                ...page,
-                data: page.data.map((u) => {
-                  const currentId = u._id || (u as any).id;
-                  if (currentId === userId) {
-                    const delta = following ? 1 : -1;
-                    const currentCount = typeof u.followersCount === "number" ? u.followersCount : 0;
-                    return {
-                      ...u,
-                      isFollowing: following,
-                      followersCount: Math.max(0, currentCount + delta),
-                    };
-                  }
-                  return u;
-                }),
-              };
-            }),
-          };
-        }
-      );
-    }
+    updateUserInAllUserCaches(queryClient, userId, Boolean(isFollowing));
   };
-
-  useEffect(() => {
-    fetchSuggestedUsers();
-  }, []);
 
   return (
     <div className="explore-container" ref={containerRef}>

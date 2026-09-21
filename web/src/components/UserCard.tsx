@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toggleFollowUser } from "../services/follow.service";
 import type { SuggestedUser } from "../services/explore.service";
-import { queryKeys } from "../lib/queryKeys";
+import { invalidateFollowQueries } from "../lib/queryCache";
+import { useAuthStore } from "../store/authStore";
+import { useDemoModalStore } from "../store/demoModalStore";
+import { isDemoUser } from "../utils/demo";
 
 interface UserCardProps {
   user: SuggestedUser;
@@ -12,6 +15,7 @@ interface UserCardProps {
 
 const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
   const queryClient = useQueryClient();
+  const currentUser = useAuthStore((state) => state.user);
   const targetUserId = user._id || (user as any).id || "";
   const [isFollowing, setIsFollowing] = useState(Boolean(user.isFollowing));
   const [followersCount, setFollowersCount] = useState(user.followersCount || 0);
@@ -25,6 +29,10 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
   const handleFollowToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isDemoUser(currentUser)) {
+      useDemoModalStore.getState().openDemoModal("following creators");
+      return;
+    }
     if (loading || !targetUserId) return;
 
     try {
@@ -41,8 +49,9 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
 
       setIsFollowing(nextFollowing);
       setFollowersCount(Math.max(0, nextCount));
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.feed });
+
+      await invalidateFollowQueries(queryClient, targetUserId);
+
       if (onFollowStateChange) {
         onFollowStateChange(targetUserId, nextFollowing);
       }

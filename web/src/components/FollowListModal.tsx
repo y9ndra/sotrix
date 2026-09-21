@@ -9,7 +9,7 @@ import {
   type FollowUserItem,
 } from "../services/follow.service";
 import { useAuthStore } from "../store/authStore";
-import { queryKeys } from "../lib/queryKeys";
+import { invalidateFollowQueries, updateUserInAllUserCaches } from "../lib/queryCache";
 import RubiksLoader from "./RubiksLoader";
 import { isDemoUser } from "../utils/demo";
 import { useDemoModalStore } from "../store/demoModalStore";
@@ -161,9 +161,8 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
         )
       );
 
-      // Invalidate relevant react-query caches
-      queryClient.invalidateQueries({ queryKey: queryKeys.feed });
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
+      updateUserInAllUserCaches(queryClient, targetUser._id, res.following, res.followersCount);
+      await invalidateFollowQueries(queryClient, targetUser._id);
 
       if (onFollowStateChange) {
         onFollowStateChange(targetUser._id, res.following);

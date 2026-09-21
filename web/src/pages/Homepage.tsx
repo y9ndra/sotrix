@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import CreatePost from "../components/CreatePost";
 import PostCard from "../components/PostCard";
 import { useAuthStore } from "../store/authStore";
 import { useFeed } from "../hooks/useFeed";
+import { useRefreshOnActive } from "../hooks/useRefreshOnActive";
 import { queryKeys } from "../lib/queryKeys";
 import type { Post } from "../types/post.types";
 import RubiksLoader from "../components/RubiksLoader";
@@ -11,6 +13,10 @@ import RubiksLoader from "../components/RubiksLoader";
 function Homepage() {
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
+  const location = useLocation();
+
+  const isHomeActive = location.pathname === "/";
+  useRefreshOnActive(isHomeActive, queryKeys.feed);
 
   const {
     data,
