@@ -24,6 +24,15 @@ class FakeUserRepository implements IUserRepository {
     return null;
   }
 
+  async findByEmail(email: string, excludeId?: string): Promise<any> {
+    for (const [id, user] of this.users.entries()) {
+      if (user.email === email && id !== excludeId) {
+        return { ...user };
+      }
+    }
+    return null;
+  }
+
   async findByEmailOrUsername(
     identifier: string,
     username?: string

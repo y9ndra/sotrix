@@ -10,6 +10,10 @@ export interface IUserRepository {
     username: string,
     excludeId?: string
   ): Promise<IUser | null>;
+  findByEmail(
+    email: string,
+    excludeId?: string
+  ): Promise<IUser | null>;
   findByEmailOrUsername(
     identifier: string,
     username?: string
@@ -59,6 +63,17 @@ export class MongoUserRepository implements IUserRepository {
     excludeId?: string
   ): Promise<IUser | null> {
     const filter: any = { username };
+    if (excludeId) {
+      filter._id = { $ne: excludeId };
+    }
+    return User.findOne(filter).exec();
+  }
+
+  async findByEmail(
+    email: string,
+    excludeId?: string
+  ): Promise<IUser | null> {
+    const filter: any = { email };
     if (excludeId) {
       filter._id = { $ne: excludeId };
     }

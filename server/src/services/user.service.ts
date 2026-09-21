@@ -15,6 +15,7 @@ import {
 export interface UpdateProfileInput {
   name?: string;
   username?: string;
+  email?: string;
   bio?: string;
   profilePicUrl?: string;
   profilePicPublicId?: string;
@@ -91,6 +92,17 @@ export class UserService {
       );
       if (existingUser) {
         throw new Error("Username is already taken");
+      }
+    }
+
+    if (sanitizedUpdates.email) {
+      sanitizedUpdates.email = sanitizedUpdates.email.trim().toLowerCase();
+      const existingEmail = await this.userRepo.findByEmail(
+        sanitizedUpdates.email,
+        userId
+      );
+      if (existingEmail) {
+        throw new Error("Email is already taken");
       }
     }
 

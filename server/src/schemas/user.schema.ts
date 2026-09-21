@@ -10,6 +10,11 @@ export const updateProfileSchema = z.object({
     .min(3, "Username must be at least 3 characters")
     .max(30, "Username must not exceed 30 characters")
     .optional(),
+  email: z
+    .string()
+    .trim()
+    .email("Invalid email address")
+    .optional(),
   bio: z
     .string()
     .max(160, "Bio cannot exceed 160 characters")

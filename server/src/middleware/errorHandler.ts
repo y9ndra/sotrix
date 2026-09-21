@@ -63,6 +63,8 @@ export const errorHandler = (
     if (
       msg.startsWith("Invalid") ||
       msg === "Username is already taken" ||
+      msg === "Email is already taken" ||
+      msg.includes("already taken") ||
       msg.includes("already exists") ||
       msg.includes("is required")
     ) {
