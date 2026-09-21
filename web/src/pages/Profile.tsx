@@ -88,7 +88,7 @@ const Profile = () => {
 
   // Edit Profile State
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editForm, setEditForm] = useState({ name: "", username: "", bio: "" });
+  const [editForm, setEditForm] = useState({ name: "", username: "", email: "", bio: "" });
   const [profilePic, setProfilePic] = useState<File | null>(null);
   const [profilePicPreview, setProfilePicPreview] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
@@ -243,6 +243,7 @@ const Profile = () => {
     setEditForm({
       name: user?.name || "",
       username: user?.username || "",
+      email: user?.email || currentUser?.email || "",
       bio: user?.bio || "",
     });
     setProfilePic(null);
@@ -302,6 +303,9 @@ const Profile = () => {
       const formData = new FormData();
       formData.append("name", editForm.name);
       formData.append("username", editForm.username);
+      if (editForm.email) {
+        formData.append("email", editForm.email.trim());
+      }
       formData.append("bio", editForm.bio);
       if (profilePic) {
         formData.append("profilePic", profilePic);
@@ -481,6 +485,18 @@ const Profile = () => {
                       onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
                       placeholder="Username"
                       className="profile-form-input"
+                    />
+                  </div>
+
+                  <div className="profile-form-group">
+                    <label className="profile-form-label">email</label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      placeholder="Your email address"
+                      className="profile-form-input"
+                      required
                     />
                   </div>
 
