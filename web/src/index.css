@@ -1172,6 +1172,11 @@ button, input, textarea, select {
   padding: 16px;
 }
 
+.sheet-content .notifications-container {
+  margin: 0 auto;
+  padding: 16px;
+}
+
 .notifications-header {
   display: flex;
   align-items: center;
@@ -1259,8 +1264,7 @@ button, input, textarea, select {
 }
 
 .notification-item.read {
-  opacity: 0.55;
-  background-color: rgba(10, 10, 10, 0.4);
+  opacity: 0.9;
 }
 
 .notification-content {

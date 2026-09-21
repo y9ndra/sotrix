@@ -4,7 +4,6 @@ import { queryKeys } from "../lib/queryKeys";
 import {
   getNotifications,
   markAsRead,
-  markAllAsRead,
 } from "../services/notification.service";
 import type { Notification } from "../types/notification";
 import { useNavigate } from "react-router-dom";
@@ -15,9 +14,7 @@ const Notifications = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const storeNotifications = useNotificationStore((state) => state.notifications);
-  const storeUnreadCount = useNotificationStore((state) => state.unreadCount);
   const storeMarkAsRead = useNotificationStore((state) => state.markAsRead);
-  const storeMarkAllAsRead = useNotificationStore((state) => state.markAllAsRead);
   const setStoreNotifications = useNotificationStore((state) => state.setNotifications);
 
   // Infinite query for notifications
@@ -116,36 +113,6 @@ const Notifications = () => {
     },
   });
 
-  // Mutation to mark all notifications as read
-  const markAllReadMutation = useMutation({
-    mutationFn: markAllAsRead,
-    onMutate: () => {
-      // 1. Update Zustand store
-      storeMarkAllAsRead();
-
-      // 2. Optimistically update TanStack query infinite list
-      queryClient.setQueryData<any>(queryKeys.notifications.all, (oldData: any) => {
-        if (!oldData?.pages) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page: any) => ({
-            ...page,
-            data: page.data.map((n: any) => ({ ...n, read: true })),
-          })),
-        };
-      });
-
-      // 3. Optimistically set unread count to 0
-      queryClient.setQueryData(queryKeys.notifications.unreadCount, {
-        success: true,
-        data: { unreadCount: 0 },
-      });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
-    },
-  });
 
   const getNotificationDestination = (notification: Notification): string | null => {
     switch (notification.type) {
@@ -188,23 +155,10 @@ const Notifications = () => {
     }
   };
 
-  const hasUnread = notifications.some((n: Notification) => !n.read) || storeUnreadCount > 0;
 
   return (
     <div>
       <div className="notifications-container">
-        <div className="notifications-header">
-          {notifications.length > 0 && (
-            <button
-              onClick={() => markAllReadMutation.mutate()}
-              disabled={markAllReadMutation.isPending || !hasUnread}
-              className="btn"
-              style={{ width: "auto", padding: "6px 14px", fontSize: "12px" }}
-            >
-              {markAllReadMutation.isPending ? "marking..." : "mark all read"}
-            </button>
-          )}
-        </div>
 
         {error && <p style={{ color: "#ef4444", marginBottom: "16px", fontFamily: "var(--font-mono)", fontSize: "13px" }}>Failed to load notifications</p>}
 

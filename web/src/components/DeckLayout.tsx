@@ -8,9 +8,14 @@ import Messages from "../pages/Messages";
 import Profile from "../pages/Profile";
 import { useNotificationInitialization } from "../hooks/useNotificationInitialization";
 import { useAuthStore } from "../store/authStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../lib/queryKeys";
+import { markAllAsRead as markAllAsReadApi } from "../services/notification.service";
+import { useNotificationStore } from "../store/notification.store";
 
 const DeckLayout = () => {
   useNotificationInitialization();
+  const queryClient = useQueryClient();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -80,6 +85,50 @@ const DeckLayout = () => {
       return () => clearTimeout(timer);
     }
   }, [isNotificationsActive]);
+
+  const prevNotificationsActiveRef = useRef(isNotificationsActive);
+
+  // When user closes notifications sheet, mark all notifications as read
+  useEffect(() => {
+    if (prevNotificationsActiveRef.current && !isNotificationsActive) {
+      const state = useNotificationStore.getState();
+      const hasUnread =
+        state.unreadCount > 0 || state.notifications.some((n) => !n.read);
+
+      if (hasUnread) {
+        // 1. Update Zustand store
+        state.markAllAsRead();
+
+        // 2. Optimistically update TanStack query infinite list
+        queryClient.setQueryData<any>(queryKeys.notifications.all, (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              data: page.data.map((n: any) => ({ ...n, read: true })),
+            })),
+          };
+        });
+
+        // 3. Optimistically set unread count to 0
+        queryClient.setQueryData(queryKeys.notifications.unreadCount, {
+          success: true,
+          data: { unreadCount: 0 },
+        });
+
+        // 4. Persist to server
+        markAllAsReadApi().catch((err) => {
+          console.error("Failed to mark notifications as read on close:", err);
+        });
+
+        // 5. Invalidate queries to ensure full server sync
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
+      }
+    }
+    prevNotificationsActiveRef.current = isNotificationsActive;
+  }, [isNotificationsActive, queryClient]);
 
   const handleCloseNotifications = useCallback(() => {
     navigate(-1);
