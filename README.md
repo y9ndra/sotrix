@@ -44,10 +44,10 @@
   <img src="web/public/banner.jpg" alt="Sotrix Banner" width="100%" style="border-radius: 10px; max-height: 420px; object-fit: cover;" />
 </p>
 
-> **🚀 Live Portfolio Showcase & Recruiter Demo:**
+> **Live Portfolio Showcase & Recruiter Demo:**
 > - **Web Client**: [https://sotrix.yugendhra.me](https://sotrix.yugendhra.me)
 > - **1-Click Demo Account**: Click **"✦ Explore as Demo User"** on the login page (or use `demo@sotrix.dev` / `demo123456`).
-> - **Swagger API Documentation**: [https://sotrix-backend.onrender.com/api-docs](https://sotrix-backend.onrender.com/api-docs)
+> - **Swagger API Documentation**: [https://sotrix.onrender.com/api-docs](https://sotrix.onrender.com/api-docs)
 
 ---
 
@@ -108,7 +108,7 @@ The application is structured into clearly separated layers: an Express REST and
 ## Key Features
 
 ### REST API Surface
-- 35+ REST endpoints organized across 9 domain modules (Auth, Users, Posts, Feed & Explore, Comments, Likes, Conversations, Notifications, Health).
+- 45+ REST endpoints organized across 10 domain modules (Auth, Users, Posts, Feed, Explore, Comments, Likes, Conversations, Notifications, Media Pipeline, Health & Metrics).
 - Interactive OpenAPI 3.0 schema inspection via Swagger UI at `/api-docs`.
 
 ### Authentication & Sessions
@@ -149,7 +149,7 @@ The application is structured into clearly separated layers: an Express REST and
 
 - **Backend**: Node.js 22 LTS, Express.js, TypeScript, Zod
 - **Frontend**: React 19, Vite, TanStack Query v5, Zustand, React Router v7
-- **Database & Cache**: MongoDB Atlas (Mongoose), Redis (Upstash)
+- **Database & Cache**: MongoDB Atlas (Mongoose), Redis Cloud (ioredis)
 - **Queues & Real-Time**: BullMQ, Socket.IO
 - **Media Processing**: Sharp, Multer, Cloudinary
 - **Testing & Tooling**: Jest, Supertest, Oxlint, Swagger
@@ -169,7 +169,8 @@ The application is structured into clearly separated layers: an Express REST and
 | **Likes** | `/api/posts/:id/like` | Post like toggle |
 | **Conversations**| `/api/conversations` | Private 1-on-1 chat initialization, inbox listing, and paginated message history |
 | **Notifications**| `/api/notifications` | User notification lists, unread counters, and mark-as-read endpoints |
-| **Health** | `/health`, `/api/health` | Container liveness and health probes |
+| **Media / Upload** | `/api/upload`, `/api/media` | Image upload and asynchronous processing pipeline |
+| **Observability** | `/health`, `/metrics`, `/api-docs` | Container health checks, Prometheus metrics, and Swagger UI |
 
 ---
 
@@ -200,7 +201,7 @@ Resource-intensive and non-blocking tasks run through Redis-backed **BullMQ** qu
 - Node.js 20.x or 22.x LTS
 - npm or yarn / pnpm
 - Docker & Docker Compose (optional, for containerized run)
-- Running Redis instance (local or free cloud [Upstash](https://upstash.com/))
+- Running Redis instance (local or free cloud [Redis Cloud](https://redis.io/try-free/) via `ioredis`)
 - MongoDB database (local or free [MongoDB Atlas](https://www.mongodb.com/atlas))
 
 ---
@@ -302,7 +303,7 @@ Sotrix is ready for zero-cost cloud deployment across free-tier providers:
 - **Frontend**: Hosted on **Vercel** with automatic SPA rewrites (`vercel.json`).
 - **Backend API**: Hosted on **Render** as a Dockerized web service (`server/Dockerfile`).
 - **Database**: **MongoDB Atlas** M0 shared cluster.
-- **Redis & Queues**: **Upstash** serverless Redis.
+- **Redis & Queues**: **Redis Cloud** via `ioredis`.
 - **Media CDN**: **Cloudinary** free tier.
 
 ---
