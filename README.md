@@ -1,21 +1,17 @@
-<!-- ================================================================= -->
-<!-- PROJECT HEADER & BRANDING                                       -->
-<!-- ================================================================= -->
-<div align="center">
+<p align="center">
+  <img src="web/public/banner.jpg" alt="Sotrix Banner" width="100%" style="border-radius: 10px; max-height: 420px; object-fit: cover;" />
+</p>
 
-  <!-- Logo placeholder: replace src with your logo path if needed -->
-  <a href="https://github.com/y9ndra/sotrix">
-    <img src="web/public/favicon.svg" alt="Sotrix Logo" width="88" height="88" />
-  </a>
+<div align="center">
 
   <h1 align="center">Sotrix</h1>
 
   <p align="center">
-    Full-stack social networking platform and real-time messaging application.
+    <strong>Production-ready, full-stack real-time social networking and direct messaging platform.</strong>
   </p>
 
   <p align="center">
-    Built with TypeScript, Node.js, Express, React 19, MongoDB Atlas, Redis, BullMQ, and Socket.IO.
+    Built with TypeScript, Node.js, Express, React 19, MongoDB Atlas, Redis Cloud, BullMQ, and Socket.IO.
   </p>
 
   <p align="center">
@@ -39,10 +35,6 @@
   </p>
 
 </div>
-
-<p align="center">
-  <img src="web/public/banner.jpg" alt="Sotrix Banner" width="100%" style="border-radius: 10px; max-height: 420px; object-fit: cover;" />
-</p>
 
 > **Live Portfolio Showcase & Recruiter Demo:**
 > - **Web Client**: [https://sotrix.yugendhra.me](https://sotrix.yugendhra.me)
