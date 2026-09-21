@@ -29,8 +29,6 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
   onClose,
   userId,
   initialTab = "followers",
-  followersCount,
-  followingCount,
   onFollowStateChange,
 }) => {
   const navigate = useNavigate();
@@ -246,7 +244,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
                   transition: "all 0.15s ease",
                 }}
               >
-                followers {typeof followersCount === "number" ? `(${followersCount})` : ""}
+                followers
               </button>
               <button
                 type="button"
@@ -266,7 +264,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
                   transition: "all 0.15s ease",
                 }}
               >
-                following {typeof followingCount === "number" ? `(${followingCount})` : ""}
+                following
               </button>
             </div>
 
