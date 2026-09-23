@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthInitializer from './components/AuthInitializer';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
+import NotFound from './pages/NotFound';
 import DeckLayout from './components/DeckLayout';
 import RubiksCursor from './components/RubiksCursor';
 import GlobalLoader from './components/GlobalLoader';
@@ -557,6 +558,9 @@ function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile/:id" element={<Profile />} />
         </Route>
+
+        {/* Catch-all 404 Route for Unmatched Paths / Endpoints */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

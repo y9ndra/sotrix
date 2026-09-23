@@ -16,6 +16,7 @@ import uploadRoutes from './routes/upload.routes';
 import notificationRoutes from './routes/notification.routes';
 import conversationRoutes from './routes/conversation.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { notFoundHandler } from './middleware/notFoundHandler';
 import { globalLimiter } from './middleware/rateLimiter';
 import { metricsMiddleware } from './middleware/metrics.middleware';
 import { register } from './config/metrics';
@@ -109,7 +110,7 @@ app.use('/api', uploadRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api/conversations', conversationRoutes);
 
-// Swagger API Documentation (mounted before errorHandler)
+// Swagger API Documentation (mounted before notFoundHandler and errorHandler)
 app.use(
   "/api-docs",
   swaggerUi.serve,
@@ -117,6 +118,9 @@ app.use(
     customSiteTitle: "Sotrix API Docs",
   })
 );
+
+// 404 Catch-All Middleware for unhandled routes
+app.use(notFoundHandler);
 
 // Register centralized error handling middleware after all routes
 app.use(errorHandler);
