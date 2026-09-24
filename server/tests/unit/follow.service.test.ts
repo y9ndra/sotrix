@@ -210,6 +210,20 @@ describe("FollowService (with Dependency Injected Fake Repositories)", () => {
         followService.toggleFollow(followerId, nonExistentId)
       ).rejects.toThrow("User not found");
     });
+
+    it("should throw error if user tries to follow a demo user", async () => {
+      const demoUserId = new mongoose.Types.ObjectId().toString();
+      await fakeUserRepo.create({
+        _id: demoUserId,
+        username: "demo",
+        email: "demo@sotrix.dev",
+        isDemo: true,
+      });
+
+      await expect(
+        followService.toggleFollow(followerId, demoUserId)
+      ).rejects.toThrow("User not found");
+    });
   });
 
   describe("Follow & Unfollow State Transitions", () => {

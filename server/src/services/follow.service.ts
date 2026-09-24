@@ -44,7 +44,7 @@ export class FollowService {
     followingId: string
   ): Promise<ToggleFollowResult> {
     const targetUser = await this.userRepo.findById(followingId);
-    if (!targetUser) {
+    if (!targetUser || targetUser.isDemo || targetUser.email === "demo@sotrix.dev" || targetUser.username === "demo") {
       throw new Error("User not found");
     }
 
@@ -116,7 +116,7 @@ export class FollowService {
         const targetUser = await this.userRepo.findById(followingId, {
           session,
         });
-        if (!targetUser) {
+        if (!targetUser || targetUser.isDemo || targetUser.email === "demo@sotrix.dev" || targetUser.username === "demo") {
           throw new Error("User not found");
         }
 
@@ -210,7 +210,11 @@ export class FollowService {
     }
 
     const targetUser = await this.userRepo.findById(targetUserId);
-    if (!targetUser) {
+    if (
+      !targetUser ||
+      ((targetUser.isDemo || targetUser.email === "demo@sotrix.dev" || targetUser.username === "demo") &&
+        viewerId !== targetUserId)
+    ) {
       throw new Error("User not found");
     }
 
@@ -285,7 +289,7 @@ export class FollowService {
         Follow.find(query)
           .sort({ createdAt: -1, _id: -1 })
           .limit(limit + 1)
-          .populate("follower", "name username bio profilePicUrl followersCount")
+          .populate("follower", "name username bio profilePicUrl followersCount isDemo email")
           .exec(),
         Follow.countDocuments({ following: targetUserId }),
       ]);
@@ -312,7 +316,14 @@ export class FollowService {
         user: item.follower as any,
         followedAt: item.createdAt,
       }))
-      .filter((entry) => entry.user && entry.user._id);
+      .filter(
+        (entry) =>
+          entry.user &&
+          entry.user._id &&
+          !entry.user.isDemo &&
+          entry.user.username !== "demo" &&
+          entry.user.email !== "demo@sotrix.dev"
+      );
 
     const followerIds = followerUsers.map((entry) => entry.user._id.toString());
     const followedSet = new Set<string>();
@@ -361,7 +372,11 @@ export class FollowService {
     }
 
     const targetUser = await this.userRepo.findById(targetUserId);
-    if (!targetUser) {
+    if (
+      !targetUser ||
+      ((targetUser.isDemo || targetUser.email === "demo@sotrix.dev" || targetUser.username === "demo") &&
+        viewerId !== targetUserId)
+    ) {
       throw new Error("User not found");
     }
 
@@ -436,7 +451,7 @@ export class FollowService {
         Follow.find(query)
           .sort({ createdAt: -1, _id: -1 })
           .limit(limit + 1)
-          .populate("following", "name username bio profilePicUrl followersCount")
+          .populate("following", "name username bio profilePicUrl followersCount isDemo email")
           .exec(),
         Follow.countDocuments({ follower: targetUserId }),
       ]);
@@ -463,7 +478,14 @@ export class FollowService {
         user: item.following as any,
         followedAt: item.createdAt,
       }))
-      .filter((entry) => entry.user && entry.user._id);
+      .filter(
+        (entry) =>
+          entry.user &&
+          entry.user._id &&
+          !entry.user.isDemo &&
+          entry.user.username !== "demo" &&
+          entry.user.email !== "demo@sotrix.dev"
+      );
 
     const followingIds = followingUsers.map((entry) => entry.user._id.toString());
     const followedSet = new Set<string>();

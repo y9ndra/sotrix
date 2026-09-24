@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import Conversation, { IConversation } from "../models/conversation.model";
 import Message from "../models/message.model";
 import Follow from "../models/follow.model";
-import "../models/user.model"; // Ensure User model is registered for populate
+import User from "../models/user.model";
 
 /**
  * Creates a deterministic participant key for one-to-one chats
@@ -29,6 +29,14 @@ export const getOrCreateConversation = async (
 
   if (userA.toString() === userB.toString()) {
     throw new Error("Cannot create a conversation with yourself");
+  }
+
+  const hasDemoParticipant = await User.exists({
+    _id: { $in: [userA, userB] },
+    $or: [{ isDemo: true }, { email: "demo@sotrix.dev" }, { username: "demo" }],
+  });
+  if (hasDemoParticipant) {
+    throw new Error("Cannot message demo user");
   }
 
   const participantKey = createParticipantKey(userA, userB);

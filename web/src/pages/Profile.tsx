@@ -625,7 +625,7 @@ const Profile = () => {
                             <span className="profile-btn-text">settings</span>
                           </button>
                         </>
-                      ) : (
+                      ) : !isDemoUser(user) ? (
                         <button
                           onClick={handleToggleFollow}
                           disabled={followLoading}
@@ -665,9 +665,9 @@ const Profile = () => {
                             </>
                           )}
                         </button>
-                      )}
+                      ) : null}
 
-                      {!isOwnProfile && user.isFollowing && (
+                      {!isOwnProfile && !isDemoUser(user) && user.isFollowing && (
                         <button
                           onClick={handleStartChat}
                           disabled={chatLoading}

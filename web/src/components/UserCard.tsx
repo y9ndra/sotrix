@@ -77,6 +77,10 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
 
   const initialLetter = (user.name || user.username || "U").charAt(0).toUpperCase();
 
+  if (isDemoUser(user)) {
+    return null;
+  }
+
   return (
     <div className="user-card">
       <div className="user-card-left">

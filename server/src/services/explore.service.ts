@@ -111,7 +111,12 @@ export const getExplorePosts = async (
   const follows = await Follow.find({ follower: currentUserId }).select("following");
   const followedUserIds = follows.map((f) => f.following);
 
-  const excludedUserIds = [currentUserId, ...followedUserIds];
+  const demoUsers = await User.find({
+    $or: [{ isDemo: true }, { email: "demo@sotrix.dev" }, { username: "demo" }],
+  }).select("_id").lean();
+  const demoUserIds = demoUsers.map((u: any) => u._id);
+
+  const excludedUserIds = [currentUserId, ...followedUserIds, ...demoUserIds];
 
   const query: any = {
     author: { $nin: excludedUserIds },
@@ -183,6 +188,11 @@ export const getSuggestedUsers = async (
   const followedUserIds = follows.map((f: any) => f.following.toString());
   const followedSet = new Set(followedUserIds);
 
+  const demoUsers = await User.find({
+    $or: [{ isDemo: true }, { email: "demo@sotrix.dev" }, { username: "demo" }],
+  }).select("_id").lean();
+  const demoUserIds = demoUsers.map((u: any) => u._id.toString());
+
   let cursorObj: SuggestedUsersCursor | null = null;
   if (cursor) {
     try {
@@ -202,9 +212,12 @@ export const getSuggestedUsers = async (
   const phase: "unfollowed" | "followed" = cursorObj?.phase || "unfollowed";
 
   if (phase === "unfollowed") {
-    const excludedUserIds = [currentUserId, ...followedUserIds];
+    const excludedUserIds = [currentUserId, ...followedUserIds, ...demoUserIds];
     const unfollowedQuery: any = {
       _id: { $nin: excludedUserIds },
+      isDemo: { $ne: true },
+      email: { $ne: "demo@sotrix.dev" },
+      username: { $ne: "demo" },
     };
 
     if (cursorObj && cursorObj.phase === "unfollowed") {
@@ -263,7 +276,10 @@ export const getSuggestedUsers = async (
 
     if (followedUserIds.length > 0 && remainingLimit > 0) {
       const followedQuery: any = {
-        _id: { $in: followedUserIds },
+        _id: { $in: followedUserIds, $nin: demoUserIds },
+        isDemo: { $ne: true },
+        email: { $ne: "demo@sotrix.dev" },
+        username: { $ne: "demo" },
       };
 
       const fetchedFollowed = await User.find(followedQuery)
@@ -324,7 +340,10 @@ export const getSuggestedUsers = async (
   }
 
   const followedQuery: any = {
-    _id: { $in: followedUserIds },
+    _id: { $in: followedUserIds, $nin: demoUserIds },
+    isDemo: { $ne: true },
+    email: { $ne: "demo@sotrix.dev" },
+    username: { $ne: "demo" },
   };
 
   if (cursorObj && cursorObj.phase === "followed") {

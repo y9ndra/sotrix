@@ -60,6 +60,13 @@ export class UserService {
       logger.debug({ key }, "User cached");
     }
 
+    if (
+      (userObj.isDemo || userObj.email === "demo@sotrix.dev" || userObj.username === "demo") &&
+      (!currentUserId || currentUserId !== userId)
+    ) {
+      throw new Error("User not found");
+    }
+
     let isFollowing = false;
 
     if (currentUserId && currentUserId !== userId) {
@@ -167,7 +174,12 @@ export class UserService {
     const phase = decoded?.phase || "unfollowed";
 
     const baseSearchFilter = {
-      $or: [{ username: regex }, { name: regex }],
+      $and: [
+        { isDemo: { $ne: true } },
+        { email: { $ne: "demo@sotrix.dev" } },
+        { username: { $ne: "demo" } },
+        { $or: [{ username: regex }, { name: regex }] },
+      ],
     };
 
     if (phase === "unfollowed") {
