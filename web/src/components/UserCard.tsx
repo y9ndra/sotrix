@@ -3,14 +3,14 @@ import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toggleFollowUser } from "../services/follow.service";
 import type { SuggestedUser } from "../services/explore.service";
-import { invalidateFollowQueries } from "../lib/queryCache";
+import { invalidateFollowQueries, updateUserInAllUserCaches } from "../lib/queryCache";
 import { useAuthStore } from "../store/authStore";
 import { useDemoModalStore } from "../store/demoModalStore";
 import { isDemoUser } from "../utils/demo";
 
 interface UserCardProps {
   user: SuggestedUser;
-  onFollowStateChange?: (userId: string, isFollowing: boolean) => void;
+  onFollowStateChange?: (userId: string, isFollowing: boolean, followersCount?: number) => void;
 }
 
 const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
@@ -50,11 +50,13 @@ const UserCard = ({ user, onFollowStateChange }: UserCardProps) => {
       setIsFollowing(nextFollowing);
       setFollowersCount(Math.max(0, nextCount));
 
-      await invalidateFollowQueries(queryClient, targetUserId);
+      updateUserInAllUserCaches(queryClient, targetUserId, nextFollowing, nextCount);
 
       if (onFollowStateChange) {
-        onFollowStateChange(targetUserId, nextFollowing);
+        onFollowStateChange(targetUserId, nextFollowing, nextCount);
       }
+
+      await invalidateFollowQueries(queryClient, targetUserId);
     } catch (err) {
       console.error("Failed to toggle follow status", err);
     } finally {

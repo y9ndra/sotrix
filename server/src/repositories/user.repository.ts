@@ -128,7 +128,7 @@ export class MongoUserRepository implements IUserRepository {
     return User.findByIdAndUpdate(
       userId,
       { $inc: { followersCount: delta } },
-      { returnDocument: "after", session }
+      { new: true, returnDocument: "after", session }
     ).exec();
   }
 

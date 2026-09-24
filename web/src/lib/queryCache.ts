@@ -140,8 +140,11 @@ export const updateUserInAllUserCaches = (
               const uId = user._id || user.id;
               if (uId && uId.toString() === targetUserId.toString()) {
                 const currentCount = typeof user.followersCount === "number" ? user.followersCount : 0;
+                const currentIsFollowing = Boolean(user.isFollowing);
                 const newCount = typeof followersCount === "number"
                   ? followersCount
+                  : currentIsFollowing === isFollowing
+                  ? currentCount
                   : Math.max(0, currentCount + (isFollowing ? 1 : -1));
                 return {
                   ...user,
@@ -158,8 +161,11 @@ export const updateUserInAllUserCaches = (
       const uId = oldData.data._id || oldData.data.id;
       if (uId && uId.toString() === targetUserId.toString()) {
         const currentCount = typeof oldData.data.followersCount === "number" ? oldData.data.followersCount : 0;
+        const currentIsFollowing = Boolean(oldData.data.isFollowing);
         const newCount = typeof followersCount === "number"
           ? followersCount
+          : currentIsFollowing === isFollowing
+          ? currentCount
           : Math.max(0, currentCount + (isFollowing ? 1 : -1));
         queryClient.setQueryData(queryKey, {
           ...oldData,
@@ -174,8 +180,11 @@ export const updateUserInAllUserCaches = (
       const uId = oldData._id || oldData.id;
       if (uId && uId.toString() === targetUserId.toString()) {
         const currentCount = typeof oldData.followersCount === "number" ? oldData.followersCount : 0;
+        const currentIsFollowing = Boolean(oldData.isFollowing);
         const newCount = typeof followersCount === "number"
           ? followersCount
+          : currentIsFollowing === isFollowing
+          ? currentCount
           : Math.max(0, currentCount + (isFollowing ? 1 : -1));
         queryClient.setQueryData(queryKey, {
           ...oldData,

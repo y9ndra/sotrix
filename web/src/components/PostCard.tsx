@@ -133,6 +133,7 @@ const PostCard = ({
     },
     onSuccess: (res, targetAuthorId) => {
       setIsFollowing(res.following);
+      updateUserInAllUserCaches(queryClient, targetAuthorId, res.following, res.followersCount);
       if (onFollowToggle) {
         onFollowToggle(targetAuthorId, res.following);
       }

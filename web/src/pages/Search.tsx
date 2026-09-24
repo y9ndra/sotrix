@@ -142,8 +142,8 @@ const Search = () => {
     setActiveSearchQuery("");
   };
 
-  const handleUserFollowChange = (userId: string, isFollowing: boolean) => {
-    updateUserInAllUserCaches(queryClient, userId, Boolean(isFollowing));
+  const handleUserFollowChange = (userId: string, isFollowing: boolean, followersCount?: number) => {
+    updateUserInAllUserCaches(queryClient, userId, Boolean(isFollowing), followersCount);
   };
 
   return (
