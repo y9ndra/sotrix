@@ -208,6 +208,7 @@ function Signup() {
                 type="password"
                 onChange={handlepasswordchange}
                 error={fieldErrors.password}
+                autoComplete="new-password"
               />
 
               <Input
@@ -217,6 +218,7 @@ function Signup() {
                 type="password"
                 onChange={handleconfirmpasswordchange}
                 error={fieldErrors.confirmPassword}
+                autoComplete="new-password"
               />
 
               <Button

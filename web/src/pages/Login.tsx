@@ -163,6 +163,7 @@ function Login() {
                 type="password"
                 onChange={handlepasswordchange}
                 error={fieldErrors.password}
+                autoComplete="current-password"
               />
 
               <Button
