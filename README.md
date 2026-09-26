@@ -15,6 +15,9 @@
   </p>
 
   <p align="center">
+    <a href="https://github.com/y9ndra/sotrix/releases">
+      <img src="https://img.shields.io/badge/release-v1.0.0-10b981?style=flat-square" alt="Release: v1.0.0" />
+    </a>
     <a href="https://github.com/y9ndra/sotrix/actions/workflows/ci.yml">
       <img src="https://img.shields.io/github/actions/workflow/status/y9ndra/sotrix/ci.yml?branch=main&label=CI%20Build&logo=githubactions&logoColor=white&style=flat-square" alt="CI Status" />
     </a>
