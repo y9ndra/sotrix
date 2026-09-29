@@ -11,13 +11,20 @@ export interface NotificationActor {
   profilePicUrl?: string;
 }
 
+export interface NotificationPost {
+  _id: string;
+  content?: string;
+  imageUrl?: string;
+}
+
 export interface Notification {
   _id: string;
   recipient: string;
   actor: NotificationActor;
   type: NotificationType;
-  post?: string;
+  post?: string | NotificationPost | null;
   read: boolean;
   createdAt: string;
   updatedAt: string;
 }
+

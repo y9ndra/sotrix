@@ -5,14 +5,73 @@ import {
   getNotifications,
   markAsRead,
 } from "../services/notification.service";
-import type { Notification } from "../types/notification";
+import type { Notification, NotificationPost } from "../types/notification";
 import { useNavigate } from "react-router-dom";
 import { useNotificationStore } from "../store/notification.store";
+import { useAuthStore } from "../store/authStore";
 import RubiksLoader from "../components/RubiksLoader";
+
+const LikeIcon = () => (
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+  </svg>
+);
+
+const CommentIcon = () => (
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+  </svg>
+);
+
+const FollowIcon = () => (
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+  </svg>
+);
+
+const formatNotificationTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (isNaN(diffInSeconds) || diffInSeconds < 0) {
+    return date.toLocaleDateString();
+  }
+
+  if (diffInSeconds < 60) {
+    return "just now";
+  }
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes}m ago`;
+  }
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours}h ago`;
+  }
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `${diffInDays}d ago`;
+  }
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const getPostObject = (post: Notification["post"]): NotificationPost | null => {
+  if (post && typeof post === "object" && "_id" in post) {
+    return post as NotificationPost;
+  }
+  return null;
+};
 
 const Notifications = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const currentUser = useAuthStore((state) => state.user);
+  const currentUserId = currentUser?._id || (currentUser as any)?.id || currentUser?.username;
+
   const storeNotifications = useNotificationStore((state) => state.notifications);
   const storeMarkAsRead = useNotificationStore((state) => state.markAsRead);
   const setStoreNotifications = useNotificationStore((state) => state.setNotifications);
@@ -113,7 +172,6 @@ const Notifications = () => {
     },
   });
 
-
   const getNotificationDestination = (notification: Notification): string | null => {
     switch (notification.type) {
       case "follow":
@@ -122,6 +180,9 @@ const Notifications = () => {
           : null;
       case "like":
       case "comment":
+        if (currentUserId) {
+          return `/profile/${currentUserId}`;
+        }
         if (notification.actor) {
           return `/profile/${notification.actor._id || (notification.actor as any).id || notification.actor.username}`;
         }
@@ -140,15 +201,19 @@ const Notifications = () => {
       markReadMutation.mutate(notification._id);
     }
 
-    const destination = getNotificationDestination(notification);
-    if (destination) {
-      navigate(destination);
+    if (notification.actor) {
+      navigate(`/profile/${notification.actor._id || (notification.actor as any).id || notification.actor.username}`);
     }
   };
 
   const handleCardClick = (notification: Notification) => {
     if (!notification.read) {
       markReadMutation.mutate(notification._id);
+    }
+
+    const destination = getNotificationDestination(notification);
+    if (destination) {
+      navigate(destination);
     }
   };
 
@@ -165,11 +230,9 @@ const Notifications = () => {
     }
   };
 
-
   return (
     <div>
       <div className="notifications-container">
-
         {error && <p style={{ color: "#ef4444", marginBottom: "16px", fontFamily: "var(--font-mono)", fontSize: "13px" }}>Failed to load notifications</p>}
 
         <div className="notifications-list">
@@ -179,6 +242,7 @@ const Notifications = () => {
               notification.actor?.username ||
               "someone";
             const actorInitial = actorName.charAt(0).toUpperCase();
+            const postObj = getPostObject(notification.post);
 
             return (
               <div
@@ -195,27 +259,38 @@ const Notifications = () => {
                 className={`notification-item ${notification.read ? "read" : "unread"}`}
               >
                 <div className="notification-content">
-                  <div
-                    className="notification-avatar"
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => handleActorClick(e, notification)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleActorClick(e, notification);
-                      }
-                    }}
-                  >
-                    {notification.actor?.profilePicUrl ? (
-                      <img
-                        src={notification.actor.profilePicUrl}
-                        alt={actorName}
-                      />
-                    ) : (
-                      actorInitial
-                    )}
+                  <div className="notification-avatar-container">
+                    <div
+                      className="notification-avatar"
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => handleActorClick(e, notification)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleActorClick(e, notification);
+                        }
+                      }}
+                    >
+                      {notification.actor?.profilePicUrl ? (
+                        <img
+                          src={notification.actor.profilePicUrl}
+                          alt={actorName}
+                        />
+                      ) : (
+                        actorInitial
+                      )}
+                    </div>
+                    <div
+                      className={`notification-type-badge badge-${notification.type}`}
+                      title={notification.type}
+                    >
+                      {notification.type === "like" && <LikeIcon />}
+                      {notification.type === "comment" && <CommentIcon />}
+                      {notification.type === "follow" && <FollowIcon />}
+                    </div>
                   </div>
+
                   <div className="notification-details">
                     <div className="notification-text">
                       <span
@@ -236,17 +311,37 @@ const Notifications = () => {
                         {getActionText(notification.type)}
                       </span>
                     </div>
+
+                    {postObj?.content && (
+                      <div className="notification-post-snippet" title={postObj.content}>
+                        “{postObj.content}”
+                      </div>
+                    )}
+
                     <span className="notification-time">
-                      {new Date(notification.createdAt).toLocaleString()}
+                      {formatNotificationTime(notification.createdAt)}
                     </span>
                   </div>
                 </div>
 
-                {!notification.read && (
-                  <div className="notification-status">
-                    <div className="notification-dot"></div>
-                  </div>
-                )}
+                <div className="notification-right">
+                  {postObj?.imageUrl && (
+                    <div className="notification-thumbnail-wrapper">
+                      <img
+                        src={postObj.imageUrl}
+                        alt="Post thumbnail"
+                        className="notification-post-thumbnail"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+
+                  {!notification.read && (
+                    <div className="notification-status">
+                      <div className="notification-dot" />
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
