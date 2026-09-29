@@ -6,7 +6,7 @@ export interface INotification extends Document {
 
   type: "like" | "comment" | "follow";
 
-  post?: mongoose.Types.ObjectId;
+  post?: mongoose.Types.ObjectId | any;
 
   read: boolean;
 

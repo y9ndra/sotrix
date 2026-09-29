@@ -52,7 +52,10 @@ export const createNotification = async ({
       existingNotification.read = false;
       existingNotification.createdAt = new Date();
       await existingNotification.save();
-      await existingNotification.populate("actor", "name username email profilePicUrl");
+      await existingNotification.populate([
+        { path: "actor", select: "name username email profilePicUrl" },
+        { path: "post", select: "content imageUrl" },
+      ]);
 
       try {
         emitNotification(
@@ -73,7 +76,10 @@ export const createNotification = async ({
     post: postId,
   });
 
-  await notification.populate("actor", "name username email profilePicUrl");
+  await notification.populate([
+    { path: "actor", select: "name username email profilePicUrl" },
+    { path: "post", select: "content imageUrl" },
+  ]);
 
   try {
     emitNotification(
@@ -138,6 +144,7 @@ export const getNotifications = async (
 
   const notifications = await Notification.find(query)
     .populate("actor", "name username email profilePicUrl")
+    .populate("post", "content imageUrl")
     .sort({
       createdAt: -1,
       _id: -1,
