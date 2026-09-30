@@ -3449,7 +3449,8 @@ input::-ms-clear {
   }
 
   .nav-logo {
-    font-size: 15px;
+    font-size: 13px;
+    letter-spacing: 0.16em;
   }
 
   .nav-utilities {
@@ -3465,7 +3466,7 @@ input::-ms-clear {
   }
 
   .nav-icon {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .nav-logout-btn {
@@ -3482,14 +3483,14 @@ input::-ms-clear {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 56px;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
     background-color: var(--bg-card);
     border-top: 1px solid var(--border-default);
     z-index: 100;
     justify-content: space-around;
     align-items: center;
     box-sizing: border-box;
-    padding: 0 8px;
+    padding: 0 8px env(safe-area-inset-bottom, 0px) 8px;
   }
 
   .mobile-nav-link {
@@ -3497,8 +3498,10 @@ input::-ms-clear {
     font-size: 12px;
     color: var(--text-secondary);
     text-decoration: none;
-    text-transform: lowercase;
-    padding: 8px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    padding: 8px 6px;
     transition: all var(--transition-fast);
     display: inline-flex;
     align-items: center;
@@ -3512,6 +3515,7 @@ input::-ms-clear {
     color: var(--text-primary);
     font-weight: 600;
     border-bottom: 2px solid var(--accent-matrix);
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
   }
 
   .mobile-messages-badge {
@@ -3521,7 +3525,7 @@ input::-ms-clear {
     min-width: 16px;
     height: 16px;
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: 9.5px;
     font-weight: 700;
     color: #10b981;
     background-color: rgba(16, 185, 129, 0.14);
@@ -3537,8 +3541,9 @@ input::-ms-clear {
   @media (max-width: 380px) {
     .mobile-nav-link {
       font-size: 11px;
-      padding: 8px 4px;
-      gap: 3px;
+      letter-spacing: 0.05em;
+      padding: 8px 3px;
+      gap: 2px;
     }
     .mobile-messages-badge {
       min-width: 14px;
@@ -3553,11 +3558,26 @@ input::-ms-clear {
     width: 100% !important;
   }
 
+  .sheet-content {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Explore space tabs mobile spacing */
+  .explore-tabs {
+    gap: 12px;
+  }
+
+  .explore-tab-btn {
+    padding: 10px 10px;
+    font-size: 13.5px;
+  }
+
   /* Increase bottom padding to prevent bottomnav overlaps */
   .explore-container,
   .profile-container,
-  .dashboard-container {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  .dashboard-container,
+  .notifications-container {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
@@ -3899,6 +3919,40 @@ input::-ms-clear {
 
   .emoji-trigger-icon {
     font-size: 15px;
+  }
+
+  /* Notification cards mobile responsiveness */
+  .notification-item {
+    padding: 12px 10px;
+  }
+
+  .notification-content {
+    gap: 10px;
+  }
+
+  .notification-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .notification-thumbnail-wrapper {
+    width: 38px;
+    height: 38px;
+  }
+
+  .notification-right {
+    margin-left: 8px;
+    gap: 8px;
+  }
+
+  .notification-text {
+    font-size: 13px;
+  }
+
+  .notification-post-snippet {
+    font-size: 11.5px;
+    margin-top: 4px;
   }
 }
 
