@@ -5,7 +5,7 @@ import { searchUsersService } from "../../src/services/user.service";
 import { searchPostsService } from "../../src/services/post.service";
 import { getSuggestedUsers } from "../../src/services/explore.service";
 
-describe("Day 37 — Text Search & Index Optimization Tests", () => {
+describe("Text Search & Index Optimization Tests", () => {
   beforeAll(async () => {
     // Ensure indexes are built in the test database
     await User.syncIndexes();

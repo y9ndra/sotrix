@@ -21,7 +21,7 @@ jest.mock("../../src/services/cloudinary.service", () => ({
   }),
 }));
 
-describe("Day 36 Complete Flow - Upload -> Queue -> Worker -> Sharp -> Cloudinary -> MongoDB", () => {
+describe("Media Processing Pipeline - Upload -> Queue -> Worker -> Sharp -> Cloudinary -> MongoDB", () => {
   let authToken: string;
   const originalFetch = global.fetch;
 
