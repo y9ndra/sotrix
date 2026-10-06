@@ -2309,7 +2309,15 @@ const Messages: React.FC = () => {
         queryKeys.conversations.messages(id),
         (oldData) => {
           if (!oldData) return oldData;
-          const markRead = (m: ChatMessage) => ({ ...m, isRead: true });
+          const markRead = (m: ChatMessage) => {
+            const sId =
+              typeof m.sender === "string"
+                ? m.sender
+                : m.sender?._id || (m.sender as any)?.id;
+            return currentUserId && String(sId) !== String(currentUserId)
+              ? { ...m, isRead: true }
+              : m;
+          };
           if ("pages" in oldData) {
             return {
               ...oldData,
@@ -2333,14 +2341,22 @@ const Messages: React.FC = () => {
       return;
     }
 
-    // When switching away from a previously selected conversation, mark its messages in cache as read
-    // so that opening it a second time shows zero unread messages!
+    // When switching away from a previously selected conversation, mark only incoming messages in cache as read
+    // so that opening it a second time shows zero unread messages without falsely marking our own sent messages as read!
     if (selectedConversationId) {
       queryClient.setQueryData<InfiniteData<MessagesResponse> | MessagesResponse>(
         queryKeys.conversations.messages(selectedConversationId),
         (oldData) => {
           if (!oldData) return oldData;
-          const markRead = (m: ChatMessage) => ({ ...m, isRead: true });
+          const markRead = (m: ChatMessage) => {
+            const sId =
+              typeof m.sender === "string"
+                ? m.sender
+                : m.sender?._id || (m.sender as any)?.id;
+            return currentUserId && String(sId) !== String(currentUserId)
+              ? { ...m, isRead: true }
+              : m;
+          };
           if ("pages" in oldData) {
             return {
               ...oldData,
@@ -2408,7 +2424,15 @@ const Messages: React.FC = () => {
         queryKeys.conversations.messages(selectedConversationId),
         (oldData) => {
           if (!oldData) return oldData;
-          const markRead = (m: ChatMessage) => ({ ...m, isRead: true });
+          const markRead = (m: ChatMessage) => {
+            const sId =
+              typeof m.sender === "string"
+                ? m.sender
+                : m.sender?._id || (m.sender as any)?.id;
+            return currentUserId && String(sId) !== String(currentUserId)
+              ? { ...m, isRead: true }
+              : m;
+          };
           if ("pages" in oldData) {
             return {
               ...oldData,
