@@ -52,11 +52,18 @@ function Login() {
         // Fetch user data after login to populate the Zustand store
         const userResponse = await getMe();
         if (userResponse.data && userResponse.data.user) {
-          setUser(userResponse.data.user);
-          setSuccess("Logged in successfully!");
+          const loggedUser = userResponse.data.user;
+          setUser(loggedUser);
           setUsername("");
           setPassword("");
-          navigate("/", { replace: true });
+
+          if (!loggedUser.isEmailVerified && !loggedUser.isDemo) {
+            setSuccess("Please verify your email to continue...");
+            navigate("/verify-email", { replace: true });
+          } else {
+            setSuccess("Logged in successfully!");
+            navigate("/", { replace: true });
+          }
         } else {
           setError("Failed to fetch user profile after authentication");
         }

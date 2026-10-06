@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import VerifyEmail from './pages/VerifyEmail';
 import Profile from './pages/Profile';
 import Explore from './pages/Explore';
 import Search from './pages/Search';
@@ -538,6 +539,7 @@ function App() {
         {/* Unprotected Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Protected Layered Deck Workspace Routes */}
         <Route

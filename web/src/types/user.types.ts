@@ -13,4 +13,5 @@ export interface User {
   profilePicUrl?: string;
   profilePicPublicId?: string;
   isDemo?: boolean;
+  isEmailVerified?: boolean;
 }

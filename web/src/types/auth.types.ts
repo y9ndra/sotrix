@@ -28,5 +28,32 @@ export interface UserResponse {
   user: User;
 }
 
+export interface VerifyOtpRequest {
+  otp: string;
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  user: User;
+}
+
+export interface ResendOtpResponse {
+  success: boolean;
+  message: string;
+  email?: string;
+}
+
+export interface ChangeEmailRequest {
+  newEmail: string;
+  currentPassword: string;
+}
+
+export interface ChangeEmailResponse {
+  success: boolean;
+  message: string;
+  email: string;
+}
+
 
 

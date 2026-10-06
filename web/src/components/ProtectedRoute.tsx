@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
 
   if (!isInitialized) {
     return <RubiksLoader fullscreen text="INITIALIZING SOTRIX" size="md" />;
@@ -17,6 +18,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (user && !user.isEmailVerified && !user.isDemo) {
+    return <Navigate to="/verify-email" replace />;
   }
 
   return children;

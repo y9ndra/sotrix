@@ -3,10 +3,13 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import AuthBrand from "../components/AuthBrand";
 import AuthStage from "../components/AuthStage";
-import { signup } from "../api/auth.api";
+import { signup, login, getMe } from "../api/auth.api";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import { saveToken } from "../services/token.service";
 
 function Signup() {
+  const setUser = useAuthStore((state) => state.setUser);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -118,7 +121,30 @@ function Signup() {
         email: trimmedEmail,
         password,
       });
-      setSuccess("Signup successful! Redirecting to login...");
+      setSuccess("Account created! Logging in to verify your email...");
+
+      // Automatically authenticate and route directly to /verify-email
+      try {
+        const loginRes = await login({ identifier: trimmedUsername, password });
+        if (loginRes.data && loginRes.data.token) {
+          saveToken(loginRes.data.token);
+          const userRes = await getMe();
+          if (userRes.data && userRes.data.user) {
+            setUser(userRes.data.user);
+            setName("");
+            setUsername("");
+            setEmail("");
+            setPassword("");
+            setConfirmPassword("");
+            setFieldErrors({});
+            navigate("/verify-email", { replace: true });
+            return;
+          }
+        }
+      } catch (autoLoginErr) {
+        // Fallback to manual login redirect if auto-login encounters an issue
+      }
+
       setName("");
       setUsername("");
       setEmail("");
