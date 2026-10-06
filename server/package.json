@@ -11,7 +11,8 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch --runInBand",
     "test:unit": "jest tests/unit --runInBand",
-    "test:integration": "jest tests/integration tests/auth --runInBand"
+    "test:integration": "jest tests/integration tests/auth --runInBand",
+    "sync:prod": "ts-node --transpile-only src/scripts/copy-prod-to-local.ts"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
