@@ -16,6 +16,7 @@ import {
   SignupServiceResult,
   AuthUser,
 } from "../types/auth.types";
+import { generateAndSendOtp } from "./verification.service";
 
 export const signupUser = async (input: SignupInput): Promise<SignupServiceResult> => {
   const { name, username, email, password } = input;
@@ -45,7 +46,15 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
     username: normalizedUsername,
     email: normalizedEmail,
     password: hashedPassword,
+    isEmailVerified: false,
   });
+
+  // Automatically generate and dispatch verification OTP
+  try {
+    await generateAndSendOtp((newUser._id as any).toString(), normalizedEmail, newUser.username);
+  } catch (err) {
+    // Allow signup to succeed even if initial mail delivery encounters an issue; user can click resend
+  }
 
   return {
     user: {
@@ -53,6 +62,7 @@ export const signupUser = async (input: SignupInput): Promise<SignupServiceResul
       name: newUser.name,
       username: newUser.username,
       email: newUser.email,
+      isEmailVerified: false,
     },
   };
 };
@@ -117,6 +127,7 @@ export const loginUser = async (input: LoginInput): Promise<LoginServiceResult> 
       profilePicUrl: user.profilePicUrl,
       profilePicPublicId: user.profilePicPublicId,
       isDemo,
+      isEmailVerified: Boolean(user.isEmailVerified || isDemo),
     },
   };
 };
@@ -143,6 +154,7 @@ export const getUserProfile = async (userId: string): Promise<AuthUser> => {
     profilePicUrl: user.profilePicUrl,
     profilePicPublicId: user.profilePicPublicId,
     isDemo,
+    isEmailVerified: Boolean(user.isEmailVerified || isDemo),
   };
 };
 

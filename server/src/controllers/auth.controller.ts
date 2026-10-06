@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
-import { SignupInput, LoginInput } from "../schemas/auth.schema";
+import * as verificationService from "../services/verification.service";
+import { SignupInput, LoginInput, VerifyEmailInput, ChangeEmailInput } from "../schemas/auth.schema";
+import { userRepository } from "../repositories";
+import EmailOtp from "../models/email-otp.model";
 import { config } from "../config/env";
 import { logger } from "../config/logger";
 
@@ -190,3 +193,116 @@ export const logout = async (
     return next(error);
   }
 };
+
+export const verifyEmail = async (
+  req: Request<{}, {}, VerifyEmailInput>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { otp } = req.body;
+    const result = await verificationService.verifyOtp(userId, otp);
+
+    logger.info({ userId }, "User email verified successfully");
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      user: result.user,
+    });
+  } catch (error: any) {
+    if (
+      error.message.includes("Invalid verification code") ||
+      error.message.includes("expired") ||
+      error.message.includes("Too many")
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+    return next(error);
+  }
+};
+
+export const resendOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    // Check if there is an active pending email in an existing OTP record
+    const existingOtp = await EmailOtp.findOne({ userId });
+    const targetEmail = existingOtp?.targetEmail || user.email;
+
+    if (!targetEmail) {
+      return res.status(400).json({ message: "No email address found to send verification code." });
+    }
+
+    await verificationService.generateAndSendOtp(userId, targetEmail, user.username);
+
+    logger.info({ userId, targetEmail }, "Verification OTP resent");
+
+    return res.status(200).json({
+      success: true,
+      message: `A new verification code has been sent to ${targetEmail}`,
+      email: targetEmail,
+    });
+  } catch (error: any) {
+    if (error.message.includes("Please wait")) {
+      return res.status(429).json({ message: error.message });
+    }
+    return next(error);
+  }
+};
+
+export const changeEmail = async (
+  req: Request<{}, {}, ChangeEmailInput>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { newEmail, currentPassword } = req.body;
+    const result = await verificationService.requestEmailUpdate(userId, currentPassword, newEmail);
+
+    logger.info({ userId, newEmail }, "User requested email update & verification");
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      email: newEmail.trim().toLowerCase(),
+    });
+  } catch (error: any) {
+    if (
+      error.message.includes("already in use") ||
+      error.message.includes("Incorrect current password") ||
+      error.message.includes("valid email") ||
+      error.message.includes("already verified") ||
+      error.message.includes("Please wait")
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+    return next(error);
+  }
+};

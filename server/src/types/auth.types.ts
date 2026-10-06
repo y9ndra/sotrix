@@ -7,6 +7,7 @@ export interface AuthUser {
   profilePicUrl?: string;
   profilePicPublicId?: string;
   isDemo?: boolean;
+  isEmailVerified?: boolean;
 }
 
 export interface LoginServiceResult {

@@ -11,6 +11,7 @@ export interface IUser extends Document {
   profilePicUrl?: string;
   profilePicPublicId?: string;
   isDemo?: boolean;
+  isEmailVerified?: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -25,6 +26,7 @@ const UserSchema = new Schema<IUser>(
     profilePicUrl: { type: String, default: "" },
     profilePicPublicId: { type: String, default: "" },
     isDemo: { type: Boolean, default: false },
+    isEmailVerified: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

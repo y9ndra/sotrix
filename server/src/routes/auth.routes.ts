@@ -1,9 +1,9 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { login, signup, getMe, refresh, logout } from "../controllers/auth.controller";
+import { login, signup, getMe, refresh, logout, verifyEmail, resendOtp, changeEmail } from "../controllers/auth.controller";
 import { authenticate } from "../middleware/authenticate";
 import { validate } from "../middleware/validate";
-import { signupSchema, loginSchema } from "../schemas/auth.schema";
+import { signupSchema, loginSchema, verifyEmailSchema, changeEmailSchema } from "../schemas/auth.schema";
 
 const router = Router();
 
@@ -38,10 +38,33 @@ const refreshLimiter = rateLimit({
   message: { message: "Too many session refresh requests. Please try again later." },
 });
 
+// Limiter for OTP verification attempts (prevent brute force)
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: isTest ? 1000 : 25,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many verification attempts. Please wait 15 minutes." },
+});
+
+// Limiter for resending OTP emails (prevent mail abuse)
+const resendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: isTest ? 1000 : 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many email requests. Please wait a few minutes." },
+});
+
 router.post("/signup", signupLimiter, validate(signupSchema), signup);
 router.post("/login", loginLimiter, validate(loginSchema), login);
 router.post("/refresh", refreshLimiter, refresh);
 router.post("/logout", logout);
 router.get("/me", authenticate, getMe);
+
+// Email verification endpoints
+router.post("/verify-email", authenticate, otpLimiter, validate(verifyEmailSchema), verifyEmail);
+router.post("/resend-otp", authenticate, resendLimiter, resendOtp);
+router.post("/change-email", authenticate, resendLimiter, validate(changeEmailSchema), changeEmail);
 
 export default router;

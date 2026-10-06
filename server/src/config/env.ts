@@ -35,6 +35,8 @@ export const config = {
   NODE_ENV: process.env.NODE_ENV || "development",
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
   allowedOrigins,
+  RESEND_API_KEY: process.env.RESEND_API_KEY || "",
+  EMAIL_FROM: process.env.EMAIL_FROM || "Sotrix <verify@sotrix.yugendhra.me>",
 };
 
 // Validate that important database URL exists

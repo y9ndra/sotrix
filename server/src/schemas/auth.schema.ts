@@ -36,3 +36,16 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+export const verifyEmailSchema = z.object({
+  otp: z.string().trim().regex(/^\d{6}$/, "Verification code must be exactly 6 digits"),
+});
+
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const changeEmailSchema = z.object({
+  newEmail: z.string().trim().email("Invalid email address"),
+  currentPassword: z.string().min(1, "Current password is required"),
+});
+
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
+
