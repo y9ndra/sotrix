@@ -103,7 +103,7 @@ The application is structured into clearly separated layers: an Express REST and
 ## Key Features
 
 ### REST API Surface
-- 45+ REST endpoints organized across 10 domain modules (Auth, Users, Posts, Feed, Explore, Comments, Likes, Conversations, Notifications, Media Pipeline, Health & Metrics).
+- 50+ REST endpoints (49 unique REST operations, 53 registered route handlers) organized across 11 domain modules (Auth, Users, Posts, Feed, Explore, Comments, Likes, Conversations, Notifications, Media Pipeline, Health & Metrics).
 - Interactive OpenAPI 3.0 schema inspection via Swagger UI at `/api-docs`.
 
 ### Authentication & Sessions
