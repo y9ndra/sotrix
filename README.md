@@ -109,6 +109,7 @@ The application is structured into clearly separated layers: an Express REST and
 ### Authentication & Sessions
 - Dual-token setup: short-lived 15-minute access tokens with 7-day rotating refresh tokens stored in HttpOnly, secure cookies.
 - Cryptographic password hashing using bcrypt with 10 salt rounds.
+- **Email Verification & OTP Delivery**: Transactional 6-digit email OTP delivery via Resend, brute-force throttling, resend cooldowns, and secure in-session email modification.
 - Strict token invalidation and session cleanup on logout.
 
 ### Real-Time Messaging & Presence
@@ -146,6 +147,7 @@ The application is structured into clearly separated layers: an Express REST and
 - **Frontend**: React 19, Vite, TanStack Query v5, Zustand, React Router v7
 - **Database & Cache**: MongoDB Atlas (Mongoose), Redis Cloud (ioredis)
 - **Queues & Real-Time**: BullMQ, Socket.IO
+- **Email Delivery**: Resend (Transactional OTP & Verification emails)
 - **Media Processing**: Sharp, Multer, Cloudinary
 - **Testing & Tooling**: Jest, Supertest, Oxlint, Swagger
 - **DevOps**: Docker, Docker Compose, NGINX, GitHub Actions CI
@@ -156,7 +158,7 @@ The application is structured into clearly separated layers: an Express REST and
 
 | Module | Base Path | Description |
 | :--- | :--- | :--- |
-| **Auth** | `/api/auth` | Registration, login, refresh token rotation, session profile, and logout |
+| **Auth** | `/api/auth` | Registration, login, token refresh, email OTP verification (`/verify-email`, `/resend-otp`, `/change-email`), session profile, and logout |
 | **Users** | `/api/users` | Profile retrieval, user search, profile updates, and follow/unfollow toggle |
 | **Posts** | `/api/posts` | Post publishing (with multipart upload), user posts, search, updates, deletion |
 | **Feed & Explore** | `/api/feed`, `/api/explore` | Following feed, discovery feed, and creator recommendations |
@@ -231,7 +233,10 @@ docker compose up --build
 cd server
 npm install
 cp .env.example .env
-# Fill in your DATABASE_URL, JWT_SECRET, and REDIS_URL
+# Fill in your DATABASE_URL, JWT_SECRET, REDIS_URL, and RESEND_API_KEY
+
+# Optional: Replicate production cloud database to local MongoDB
+npm run sync:prod
 
 # Start API server in development mode
 npm run dev
@@ -300,6 +305,7 @@ Sotrix is ready for zero-cost cloud deployment across free-tier providers:
 - **Database**: **MongoDB Atlas** M0 shared cluster.
 - **Redis & Queues**: **Redis Cloud** via `ioredis`.
 - **Media CDN**: **Cloudinary** free tier.
+- **Email Service**: **Resend** for transactional OTP and account verification delivery.
 
 ---
 

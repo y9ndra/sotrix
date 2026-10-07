@@ -127,6 +127,142 @@ export const swaggerSpec: OpenAPIV3.Document = {
                 },
             },
         },
+        "/api/auth/verify-email": {
+            post: {
+                tags: ["Authentication"],
+                summary: "Verify user email with OTP code",
+                description: "Verifies the authenticated user's email address using the 6-digit verification code sent via Resend. Marks user account as verified upon success.",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["otp"],
+                                properties: {
+                                    otp: {
+                                        type: "string",
+                                        example: "123456",
+                                        pattern: "^\\d{6}$",
+                                        description: "6-digit numeric verification code",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    "200": {
+                        description: "Email verified successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Email verified successfully" },
+                                        user: {
+                                            type: "object",
+                                            properties: {
+                                                id: { type: "string", example: "660c1e8284534ef037bfa110" },
+                                                username: { type: "string", example: "yugendhra" },
+                                                email: { type: "string", example: "user@example.com" },
+                                                isEmailVerified: { type: "boolean", example: true },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    "400": { description: "Invalid or expired verification code" },
+                    "401": { description: "Unauthorized (invalid or missing access token)" },
+                    "429": { description: "Too many verification attempts (rate limited for 15 minutes)" },
+                },
+            },
+        },
+        "/api/auth/resend-otp": {
+            post: {
+                tags: ["Authentication"],
+                summary: "Resend verification OTP email",
+                description: "Generates and sends a fresh 6-digit email verification OTP to the user's pending unverified email via Resend. Enforces a 60-second cooldown period.",
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    "200": {
+                        description: "Verification code sent successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "A new verification code has been sent to user@example.com" },
+                                        email: { type: "string", example: "user@example.com" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    "400": { description: "Email is already verified or no pending email found" },
+                    "401": { description: "Unauthorized (invalid or missing access token)" },
+                    "429": { description: "Resend cooldown active or too many email requests" },
+                },
+            },
+        },
+        "/api/auth/change-email": {
+            post: {
+                tags: ["Authentication"],
+                summary: "Change unverified email address",
+                description: "Allows an unverified user to update their email address by verifying their current account password. Dispatches a new OTP to the newly specified email address.",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["newEmail", "currentPassword"],
+                                properties: {
+                                    newEmail: {
+                                        type: "string",
+                                        format: "email",
+                                        example: "newaddress@example.com",
+                                        description: "New email address to associate and verify",
+                                    },
+                                    currentPassword: {
+                                        type: "string",
+                                        format: "password",
+                                        example: "password123",
+                                        description: "Current account password for authorization",
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    "200": {
+                        description: "Verification code dispatched to new email address",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        success: { type: "boolean", example: true },
+                                        message: { type: "string", example: "Verification code sent to new email address" },
+                                        email: { type: "string", example: "newaddress@example.com" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    "400": { description: "Incorrect current password, invalid email format, or email already registered" },
+                    "401": { description: "Unauthorized (invalid or missing access token)" },
+                    "429": { description: "Cooldown active or too many email requests" },
+                },
+            },
+        },
 
         // ==========================================
         // 👤 USERS
