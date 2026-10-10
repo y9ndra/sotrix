@@ -24,6 +24,9 @@
     <a href="https://github.com/y9ndra/sotrix/blob/main/LICENSE">
       <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT" />
     </a>
+    <a href="https://github.com/y9ndra/sotrix/blob/main/CODE_OF_CONDUCT.md">
+      <img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=flat-square" alt="Contributor Covenant" />
+    </a>
     <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white&style=flat-square" alt="TypeScript" />
     <img src="https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=nodedotjs&logoColor=white&style=flat-square" alt="Node.js" />
     <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black&style=flat-square" alt="React 19" />
@@ -60,6 +63,7 @@
 - [Testing](#testing)
 - [Security](#security)
 - [Production Cloud Deployment](#production-cloud-deployment)
+- [Contributing](#contributing)
 - [Support](#support)
 - [License & Author](#license--author)
 
@@ -306,6 +310,13 @@ Sotrix is ready for zero-cost cloud deployment across free-tier providers:
 - **Redis & Queues**: **Redis Cloud** via `ioredis`.
 - **Media CDN**: **Cloudinary** free tier.
 - **Email Service**: **Resend** for transactional OTP and account verification delivery.
+
+---
+
+## Contributing
+
+Contributions, issues, and feature requests are welcome!
+Please review our **[Contributing Guidelines](CONTRIBUTING.md)** and **[Code of Conduct](CODE_OF_CONDUCT.md)** before submitting pull requests.
 
 ---
 
