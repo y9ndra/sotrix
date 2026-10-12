@@ -133,8 +133,8 @@ export default function ForgotPassword() {
   };
 
   // Step 2: Submit OTP and set new password
-  const handleResetSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleResetSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError("");
     setSuccess("");
     const newErrors: Record<string, string> = {};
@@ -350,7 +350,9 @@ export default function ForgotPassword() {
 
                 <Button
                   name={loading ? "Resetting Password..." : "Reset Password"}
-                  onClick={(e) => handleResetSubmit(e as any)}
+                  onClick={() => {
+                    handleResetSubmit();
+                  }}
                   disabled={loading}
                   className="auth-submit-btn"
                 />
