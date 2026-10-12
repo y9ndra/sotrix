@@ -10,7 +10,7 @@ import {
   verifyRefreshToken,
 } from "../utils/token";
 import { config } from "../config/env";
-import { SignupInput, LoginInput } from "../schemas/auth.schema";
+import { SignupInput, LoginInput, ChangePasswordInput } from "../schemas/auth.schema";
 import {
   LoginServiceResult,
   SignupServiceResult,
@@ -269,3 +269,54 @@ export const logoutUser = async (
     */
   }
 };
+
+export const changeUserPassword = async (
+  userId: string,
+  input: ChangePasswordInput,
+  currentRefreshToken?: string
+): Promise<{ success: boolean; message: string }> => {
+  const { currentPassword, newPassword } = input;
+
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.isDemo || user.email === "demo@sotrix.dev" || user.username === "demo") {
+    throw new Error("Password changes are disabled for the demo account.");
+  }
+
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password!);
+  if (!isPasswordValid) {
+    throw new Error("Incorrect current password.");
+  }
+
+  if (currentPassword === newPassword) {
+    throw new Error("New password must be different from current password.");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedPassword;
+  await user.save();
+
+  // Invalidate other sessions if current refresh token is provided
+  if (currentRefreshToken) {
+    try {
+      const payload = verifyRefreshToken(currentRefreshToken);
+      await Session.deleteMany({
+        user: user._id,
+        _id: { $ne: new mongoose.Types.ObjectId(payload.sessionId) },
+      });
+    } catch {
+      await Session.deleteMany({ user: user._id });
+    }
+  } else {
+    await Session.deleteMany({ user: user._id });
+  }
+
+  return {
+    success: true,
+    message: "Password changed successfully.",
+  };
+};
+
