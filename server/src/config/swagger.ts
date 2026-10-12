@@ -263,6 +263,88 @@ export const swaggerSpec: OpenAPIV3.Document = {
                 },
             },
         },
+        "/api/auth/change-password": {
+            post: {
+                tags: ["Auth"],
+                summary: "Change account password",
+                description: "Updates the authenticated user's password after verifying their current password. Revokes other active sessions.",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["currentPassword", "newPassword"],
+                                properties: {
+                                    currentPassword: { type: "string", format: "password", example: "oldPassword123" },
+                                    newPassword: { type: "string", format: "password", minLength: 8, example: "newSecurePassword456" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    "200": { description: "Password changed successfully" },
+                    "400": { description: "Incorrect current password or invalid new password" },
+                    "401": { description: "Unauthorized" },
+                    "403": { description: "Restricted for demo account" },
+                },
+            },
+        },
+        "/api/auth/forgot-password": {
+            post: {
+                tags: ["Auth"],
+                summary: "Request password reset code",
+                description: "Sends a 6-digit password reset OTP code to the email associated with the provided username or email.",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["identifier"],
+                                properties: {
+                                    identifier: { type: "string", example: "user@example.com" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    "200": { description: "Reset code dispatched if matching account found" },
+                    "429": { description: "Too many email requests or cooldown active" },
+                },
+            },
+        },
+        "/api/auth/reset-password": {
+            post: {
+                tags: ["Auth"],
+                summary: "Reset account password with OTP",
+                description: "Verifies the 6-digit OTP code and updates the user's password. Invalidation of all sessions is enforced.",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["identifier", "otp", "newPassword"],
+                                properties: {
+                                    identifier: { type: "string", example: "user@example.com" },
+                                    otp: { type: "string", example: "123456" },
+                                    newPassword: { type: "string", format: "password", minLength: 8, example: "newSecurePassword456" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    "200": { description: "Password reset successfully" },
+                    "400": { description: "Invalid OTP code, expired code, or invalid password" },
+                    "429": { description: "Too many verification attempts" },
+                },
+            },
+        },
 
         // ==========================================
         // 👤 USERS

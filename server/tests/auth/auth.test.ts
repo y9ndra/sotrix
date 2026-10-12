@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../../src/app";
 import User from "../../src/models/user.model";
+import EmailOtp from "../../src/models/email-otp.model";
 
 const signupTestUser = async () => {
   const userData = {
@@ -306,4 +307,134 @@ describe("Auth API", () => {
       expect(replayResponse.status).toBe(401);
     });
   });
+
+  describe("POST /api/auth/change-password", () => {
+    it("should reject unauthenticated requests", async () => {
+      const response = await request(app)
+        .post("/api/auth/change-password")
+        .send({
+          currentPassword: "oldpassword123",
+          newPassword: "newpassword123",
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it("should reject incorrect current password", async () => {
+      const userData = await signupTestUser();
+
+      const loginRes = await request(app)
+        .post("/api/auth/login")
+        .send({
+          identifier: userData.email,
+          password: userData.password,
+        });
+
+      const token = loginRes.body.token;
+
+      const response = await request(app)
+        .post("/api/auth/change-password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          currentPassword: "wrongpassword",
+          newPassword: "newpassword123",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("Incorrect current password");
+    });
+
+    it("should change password successfully with valid current password", async () => {
+      const userData = await signupTestUser();
+
+      const loginRes = await request(app)
+        .post("/api/auth/login")
+        .send({
+          identifier: userData.email,
+          password: userData.password,
+        });
+
+      const token = loginRes.body.token;
+
+      const response = await request(app)
+        .post("/api/auth/change-password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          currentPassword: userData.password,
+          newPassword: "freshpassword123",
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+
+      // Verify login with new password succeeds
+      const newLoginRes = await request(app)
+        .post("/api/auth/login")
+        .send({
+          identifier: userData.email,
+          password: "freshpassword123",
+        });
+
+      expect(newLoginRes.status).toBe(200);
+      expect(newLoginRes.body.success).toBe(true);
+    });
+  });
+
+  describe("POST /api/auth/forgot-password", () => {
+    it("should return 200 for existing user and generate password reset OTP", async () => {
+      const userData = await signupTestUser();
+
+      const response = await request(app)
+        .post("/api/auth/forgot-password")
+        .send({
+          identifier: userData.email,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+
+      const otpRecord = await EmailOtp.findOne({
+        targetEmail: userData.email,
+        type: "PASSWORD_RESET",
+      });
+
+      expect(otpRecord).not.toBeNull();
+      expect(otpRecord?.type).toBe("PASSWORD_RESET");
+    });
+
+    it("should return 200 for non-existent user to avoid enumeration", async () => {
+      const response = await request(app)
+        .post("/api/auth/forgot-password")
+        .send({
+          identifier: "nobody@doesnotexist.com",
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+  });
+
+  describe("POST /api/auth/reset-password", () => {
+    it("should reject invalid reset code", async () => {
+      const userData = await signupTestUser();
+
+      await request(app)
+        .post("/api/auth/forgot-password")
+        .send({
+          identifier: userData.email,
+        });
+
+      const response = await request(app)
+        .post("/api/auth/reset-password")
+        .send({
+          identifier: userData.email,
+          otp: "000000",
+          newPassword: "brandnewpassword123",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("Invalid verification code");
+    });
+  });
 });
+

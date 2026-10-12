@@ -1,7 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
 import * as verificationService from "../services/verification.service";
-import { SignupInput, LoginInput, VerifyEmailInput, ChangeEmailInput } from "../schemas/auth.schema";
+import {
+  SignupInput,
+  LoginInput,
+  VerifyEmailInput,
+  ChangeEmailInput,
+  ChangePasswordInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from "../schemas/auth.schema";
 import { userRepository } from "../repositories";
 import EmailOtp from "../models/email-otp.model";
 import { config } from "../config/env";
@@ -305,4 +313,108 @@ export const changeEmail = async (
     }
     return next(error);
   }
-};
+};
+
+export const changePassword = async (
+  req: Request<{}, {}, ChangePasswordInput>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    const currentRefreshToken = req.cookies?.refreshToken;
+
+    const result = await authService.changeUserPassword(
+      userId,
+      { currentPassword, newPassword },
+      currentRefreshToken
+    );
+
+    logger.info({ userId }, "User changed their password successfully");
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error: any) {
+    if (
+      error.message.includes("Incorrect current password") ||
+      error.message.includes("different from") ||
+      error.message.includes("at least 8 characters") ||
+      error.message.includes("disabled for the demo account")
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+    return next(error);
+  }
+};
+
+export const forgotPassword = async (
+  req: Request<{}, {}, ForgotPasswordInput>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { identifier } = req.body;
+    if (!identifier) {
+      return res.status(400).json({ message: "Email or username is required" });
+    }
+
+    const result = await verificationService.requestPasswordReset(identifier);
+
+    logger.info({ identifier }, "Password reset requested");
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      email: result.email,
+    });
+  } catch (error: any) {
+    if (error.message.includes("Please wait")) {
+      return res.status(429).json({ message: error.message });
+    }
+    if (error.message.includes("disabled for the demo account")) {
+      return res.status(400).json({ message: error.message });
+    }
+    return next(error);
+  }
+};
+
+export const resetPassword = async (
+  req: Request<{}, {}, ResetPasswordInput>,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { identifier, otp, newPassword } = req.body;
+    const result = await verificationService.resetPasswordWithOtp(
+      identifier,
+      otp,
+      newPassword
+    );
+
+    logger.info({ identifier }, "Password reset completed successfully");
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error: any) {
+    if (
+      error.message.includes("Invalid reset request") ||
+      error.message.includes("expired") ||
+      error.message.includes("Too many failed attempts") ||
+      error.message.includes("Invalid verification code") ||
+      error.message.includes("disabled for the demo account")
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+    return next(error);
+  }
+};
+

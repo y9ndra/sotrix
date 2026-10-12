@@ -1,9 +1,10 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { login, signup, getMe, refresh, logout, verifyEmail, resendOtp, changeEmail } from "../controllers/auth.controller";
+import { login, signup, getMe, refresh, logout, verifyEmail, resendOtp, changeEmail, changePassword, forgotPassword, resetPassword } from "../controllers/auth.controller";
 import { authenticate } from "../middleware/authenticate";
+import { blockDemoUser } from "../middleware/blockDemo";
 import { validate } from "../middleware/validate";
-import { signupSchema, loginSchema, verifyEmailSchema, changeEmailSchema } from "../schemas/auth.schema";
+import { signupSchema, loginSchema, verifyEmailSchema, changeEmailSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas/auth.schema";
 
 const router = Router();
 
@@ -66,5 +67,10 @@ router.get("/me", authenticate, getMe);
 router.post("/verify-email", authenticate, otpLimiter, validate(verifyEmailSchema), verifyEmail);
 router.post("/resend-otp", authenticate, resendLimiter, resendOtp);
 router.post("/change-email", authenticate, resendLimiter, validate(changeEmailSchema), changeEmail);
+
+// Password recovery and change endpoints
+router.post("/change-password", authenticate, blockDemoUser, validate(changePasswordSchema), changePassword);
+router.post("/forgot-password", resendLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post("/reset-password", otpLimiter, validate(resetPasswordSchema), resetPassword);
 
 export default router;
