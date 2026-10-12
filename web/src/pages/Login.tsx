@@ -173,6 +173,28 @@ function Login() {
                 autoComplete="current-password"
               />
 
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "-10px",
+                  marginBottom: "16px",
+                }}
+              >
+                <Link
+                  to="/forgot-password"
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-secondary, #a1a1aa)",
+                    textDecoration: "none",
+                    fontFamily: "var(--font-mono, monospace)",
+                    transition: "color 0.15s ease",
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               <Button
                 name={loading ? "Logging in..." : "Login"}
                 onClick={handlelogin}

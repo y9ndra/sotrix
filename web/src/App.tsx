@@ -3,6 +3,7 @@ import './App.css';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/Profile';
 import Explore from './pages/Explore';
 import Search from './pages/Search';
@@ -540,6 +541,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Protected Layered Deck Workspace Routes */}
         <Route
