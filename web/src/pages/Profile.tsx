@@ -15,7 +15,7 @@ import {
 } from "../lib/queryCache";
 import PostCard from "../components/PostCard";
 import { createPortal } from "react-dom";
-import { logout } from "../api/auth.api";
+import { logout, changePassword } from "../api/auth.api";
 import { disconnectSocket, getSocket } from "../services/socket.service";
 import { removeToken } from "../services/token.service";
 import { useNotificationStore } from "../store/notification.store";
@@ -112,6 +112,73 @@ const Profile = () => {
   // Profile Settings Modal State
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
+  // Change Password State inside Settings Modal
+  const [isChangePasswordExpanded, setIsChangePasswordExpanded] = useState<boolean>(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState<string>("");
+  const [newPasswordInput, setNewPasswordInput] = useState<string>("");
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState<string>("");
+  const [changePasswordLoading, setChangePasswordLoading] = useState<boolean>(false);
+  const [changePasswordError, setChangePasswordError] = useState<string>("");
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState<string>("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false);
+  const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+
+  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePasswordError("");
+    setChangePasswordSuccess("");
+
+    if (currentUser?.isDemo || user?.isDemo) {
+      setChangePasswordError("Password changes are disabled for the demo account.");
+      return;
+    }
+
+    if (!currentPasswordInput) {
+      setChangePasswordError("Current password is required.");
+      return;
+    }
+
+    if (!newPasswordInput || newPasswordInput.length < 8) {
+      setChangePasswordError("New password must be at least 8 characters.");
+      return;
+    }
+
+    if (newPasswordInput !== confirmPasswordInput) {
+      setChangePasswordError("New passwords do not match.");
+      return;
+    }
+
+    if (currentPasswordInput === newPasswordInput) {
+      setChangePasswordError("New password must be different from current password.");
+      return;
+    }
+
+    setChangePasswordLoading(true);
+    try {
+      const response = await changePassword({
+        currentPassword: currentPasswordInput,
+        newPassword: newPasswordInput,
+      });
+
+      setChangePasswordSuccess(response.data?.message || "Password changed successfully!");
+      setCurrentPasswordInput("");
+      setNewPasswordInput("");
+      setConfirmPasswordInput("");
+      setTimeout(() => {
+        setChangePasswordSuccess("");
+        setIsChangePasswordExpanded(false);
+      }, 2500);
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ||
+        "Failed to change password. Please check your current password.";
+      setChangePasswordError(msg);
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  };
 
   // Follow List Modal State
   const [isFollowModalOpen, setIsFollowModalOpen] = useState<boolean>(false);
@@ -938,6 +1005,272 @@ const Profile = () => {
                       <div className="settings-row">
                         <span className="settings-row-label">email</span>
                         <span className="settings-row-value">{user?.email || currentUser?.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Security Section (Change Password) */}
+                <div className="settings-group">
+                  <h4 className="settings-group-title">security</h4>
+                  <div className="settings-group-box">
+                    <div
+                      className="settings-row"
+                      style={{
+                        cursor: "pointer",
+                        userSelect: "none",
+                      }}
+                      onClick={() => {
+                        setIsChangePasswordExpanded((prev) => !prev);
+                        setChangePasswordError("");
+                        setChangePasswordSuccess("");
+                      }}
+                    >
+                      <div>
+                        <span className="settings-row-label" style={{ display: "block" }}>Password</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          {isChangePasswordExpanded ? "Hide password form" : "Change account password"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        style={{
+                          background: isChangePasswordExpanded ? "var(--bg-card-hover, rgba(255,255,255,0.08))" : "transparent",
+                          border: "1px solid var(--border-default)",
+                          color: isChangePasswordExpanded ? "var(--text-primary)" : "var(--accent-matrix, #10b981)",
+                          borderRadius: "6px",
+                          padding: "5px 12px",
+                          fontSize: "12px",
+                          fontFamily: "var(--font-mono)",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        {isChangePasswordExpanded ? "Cancel" : "Change"}
+                      </button>
+                    </div>
+
+                    {isChangePasswordExpanded && (
+                      <div
+                        style={{
+                          padding: "16px",
+                          backgroundColor: "rgba(0, 0, 0, 0.2)",
+                          borderTop: "1px solid var(--border-default)",
+                        }}
+                      >
+                        {changePasswordError && (
+                          <div className="alert-error" style={{ marginBottom: "12px", fontSize: "12px" }}>
+                            {changePasswordError}
+                          </div>
+                        )}
+                        {changePasswordSuccess && (
+                          <div className="alert-success" style={{ marginBottom: "12px", fontSize: "12px" }}>
+                            {changePasswordSuccess}
+                          </div>
+                        )}
+
+                        <form onSubmit={handleChangePasswordSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                          {/* Current Password Field */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-mono)" }}>
+                              Current password
+                            </label>
+                            <div style={{ position: "relative" }}>
+                              <input
+                                type={showCurrentPassword ? "text" : "password"}
+                                value={currentPasswordInput}
+                                onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                                placeholder="••••••••••••"
+                                autoComplete="current-password"
+                                style={{
+                                  width: "100%",
+                                  boxSizing: "border-box",
+                                  padding: "8px 36px 8px 12px",
+                                  backgroundColor: "var(--bg-input, rgba(255,255,255,0.03))",
+                                  border: "1px solid var(--border-default)",
+                                  borderRadius: "6px",
+                                  color: "var(--text-primary)",
+                                  fontSize: "13px",
+                                  fontFamily: "var(--font-mono)",
+                                  outline: "none",
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowCurrentPassword((prev) => !prev)}
+                                style={{
+                                  position: "absolute",
+                                  right: "8px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  color: "var(--text-muted)",
+                                  padding: "4px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                                title={showCurrentPassword ? "Hide" : "Show"}
+                              >
+                                {showCurrentPassword ? (
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                                    <line x1="2" y1="2" x2="22" y2="22" />
+                                  </svg>
+                                ) : (
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* New Password Field */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-mono)" }}>
+                              New password (min 8 chars)
+                            </label>
+                            <div style={{ position: "relative" }}>
+                              <input
+                                type={showNewPassword ? "text" : "password"}
+                                value={newPasswordInput}
+                                onChange={(e) => setNewPasswordInput(e.target.value)}
+                                placeholder="••••••••••••"
+                                autoComplete="new-password"
+                                style={{
+                                  width: "100%",
+                                  boxSizing: "border-box",
+                                  padding: "8px 36px 8px 12px",
+                                  backgroundColor: "var(--bg-input, rgba(255,255,255,0.03))",
+                                  border: "1px solid var(--border-default)",
+                                  borderRadius: "6px",
+                                  color: "var(--text-primary)",
+                                  fontSize: "13px",
+                                  fontFamily: "var(--font-mono)",
+                                  outline: "none",
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowNewPassword((prev) => !prev)}
+                                style={{
+                                  position: "absolute",
+                                  right: "8px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  color: "var(--text-muted)",
+                                  padding: "4px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                                title={showNewPassword ? "Hide" : "Show"}
+                              >
+                                {showNewPassword ? (
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                                    <line x1="2" y1="2" x2="22" y2="22" />
+                                  </svg>
+                                ) : (
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Confirm Password Field */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-mono)" }}>
+                              Confirm new password
+                            </label>
+                            <div style={{ position: "relative" }}>
+                              <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={confirmPasswordInput}
+                                onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                                placeholder="••••••••••••"
+                                autoComplete="new-password"
+                                style={{
+                                  width: "100%",
+                                  boxSizing: "border-box",
+                                  padding: "8px 36px 8px 12px",
+                                  backgroundColor: "var(--bg-input, rgba(255,255,255,0.03))",
+                                  border: "1px solid var(--border-default)",
+                                  borderRadius: "6px",
+                                  color: "var(--text-primary)",
+                                  fontSize: "13px",
+                                  fontFamily: "var(--font-mono)",
+                                  outline: "none",
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                style={{
+                                  position: "absolute",
+                                  right: "8px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  color: "var(--text-muted)",
+                                  padding: "4px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                                title={showConfirmPassword ? "Hide" : "Show"}
+                              >
+                                {showConfirmPassword ? (
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                                    <line x1="2" y1="2" x2="22" y2="22" />
+                                  </svg>
+                                ) : (
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={changePasswordLoading}
+                            style={{
+                              marginTop: "6px",
+                              padding: "9px 16px",
+                              backgroundColor: "var(--accent-matrix, #10b981)",
+                              color: "#000000",
+                              fontWeight: 600,
+                              fontSize: "12px",
+                              fontFamily: "var(--font-mono)",
+                              border: "none",
+                              borderRadius: "6px",
+                              cursor: changePasswordLoading ? "not-allowed" : "pointer",
+                              opacity: changePasswordLoading ? 0.7 : 1,
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            {changePasswordLoading ? "Updating Password..." : "Update Password"}
+                          </button>
+                        </form>
                       </div>
                     )}
                   </div>
