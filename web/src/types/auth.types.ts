@@ -55,5 +55,36 @@ export interface ChangeEmailResponse {
   email: string;
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ForgotPasswordRequest {
+  identifier: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  email?: string;
+}
+
+export interface ResetPasswordRequest {
+  identifier: string;
+  otp: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
 
 

@@ -10,6 +10,12 @@ import type {
   ResendOtpResponse,
   ChangeEmailRequest,
   ChangeEmailResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from "../types/auth.types";
 
 const login = async (data: LoginRequest) => {
@@ -44,6 +50,18 @@ const changeEmail = async (data: ChangeEmailRequest) => {
   return api.post<ChangeEmailResponse>("/auth/change-email", data);
 };
 
+const changePassword = async (data: ChangePasswordRequest) => {
+  return api.post<ChangePasswordResponse>("/auth/change-password", data);
+};
+
+const forgotPassword = async (data: ForgotPasswordRequest) => {
+  return api.post<ForgotPasswordResponse>("/auth/forgot-password", data);
+};
+
+const resetPassword = async (data: ResetPasswordRequest) => {
+  return api.post<ResetPasswordResponse>("/auth/reset-password", data);
+};
+
 export {
   login,
   signup,
@@ -53,6 +71,9 @@ export {
   verifyEmailOtp,
   resendVerificationOtp,
   changeEmail,
+  changePassword,
+  forgotPassword,
+  resetPassword,
 };
 
 
