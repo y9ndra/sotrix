@@ -5,7 +5,7 @@ export const swaggerSpec: OpenAPIV3.Document = {
 
     info: {
         title: "Sotrix API",
-        version: "1.0.0",
+        version: "1.1.0",
         description: "Backend REST API specification for Sotrix Social Engine",
     },
 

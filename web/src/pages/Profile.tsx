@@ -1394,7 +1394,7 @@ const Profile = () => {
                   <div className="settings-group-box">
                     <div className="settings-row">
                       <span className="settings-row-label">version</span>
-                      <span className="settings-row-value">v1.0.0</span>
+                      <span className="settings-row-value">v1.1.0</span>
                     </div>
                     <div className="settings-row">
                       <span className="settings-row-label">platform</span>

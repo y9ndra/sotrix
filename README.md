@@ -16,7 +16,7 @@
 
   <p align="center">
     <a href="https://github.com/y9ndra/sotrix/releases">
-      <img src="https://img.shields.io/badge/release-v1.0.0-10b981?style=flat-square" alt="Release: v1.0.0" />
+      <img src="https://img.shields.io/badge/release-v1.1.0-10b981?style=flat-square" alt="Release: v1.1.0" />
     </a>
     <a href="https://github.com/y9ndra/sotrix/actions/workflows/ci.yml">
       <img src="https://img.shields.io/github/actions/workflow/status/y9ndra/sotrix/ci.yml?branch=main&label=CI%20Build&logo=githubactions&logoColor=white&style=flat-square" alt="CI Status" />
@@ -162,7 +162,7 @@ The application is structured into clearly separated layers: an Express REST and
 
 | Module | Base Path | Description |
 | :--- | :--- | :--- |
-| **Auth** | `/api/auth` | Registration, login, token refresh, email OTP verification (`/verify-email`, `/resend-otp`, `/change-email`), session profile, and logout |
+| **Auth** | `/api/auth` | Registration, login, token refresh, email verification, password change & recovery (`/change-password`, `/forgot-password`, `/reset-password`), profile, and logout |
 | **Users** | `/api/users` | Profile retrieval, user search, profile updates, and follow/unfollow toggle |
 | **Posts** | `/api/posts` | Post publishing (with multipart upload), user posts, search, updates, deletion |
 | **Feed & Explore** | `/api/feed`, `/api/explore` | Following feed, discovery feed, and creator recommendations |

@@ -1,6 +1,6 @@
 {
   "name": "sotrix-backend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Backend server for sotrix social media app",
   "main": "dist/server.js",
   "scripts": {
